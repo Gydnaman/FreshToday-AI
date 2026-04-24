@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->decimal('price', 10, 2);
+            $table->string('image')->nullable();
+            $table->decimal('carbon_footprint', 8, 3)->nullable(); // 单位kg CO2e
+            $table->integer('stock')->default(0);
+            $table->unsignedBigInteger('category_id')->nullable();
             $table->timestamps();
         });
     }
