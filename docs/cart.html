@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Cart - GreenBite · Sustainable Food Subscriptions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .cart-item { animation: fadeInUp 0.3s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .qty-btn { transition: background 0.15s; }
+        .qty-btn:hover { background: #f0fdf4; }
+    </style>
+</head>
+<body class="antialiased bg-gray-50 flex flex-col min-h-screen">
+    <!-- Navbar -->
+    <header class="bg-white shadow border-b border-gray-100">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-green-600 flex items-center gap-2">
+                <i data-lucide="leaf" class="w-8 h-8"></i> GreenBite
+            </a>
+            <nav class="hidden md:flex gap-6 items-center">
+                <a href="catalog.html" class="text-gray-600 hover:text-green-600 font-medium">Catalog</a>
+                <a href="subscriptions.html" class="text-gray-600 hover:text-green-600 font-medium">Subscriptions</a>
+                <a href="orders.html" class="text-gray-600 hover:text-green-600 font-medium">My Orders</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <a href="cart.html" class="text-green-600 relative">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">3</span>
+                </a>
+                <a href="auth.html" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition font-medium shadow-sm">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <div class="min-h-screen bg-gray-50 py-12 px-4">
+            <div class="max-w-5xl mx-auto">
+                <div class="mb-8">
+                    <h1 class="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
+                        <i data-lucide="shopping-cart" class="w-8 h-8 text-green-600"></i> My Cart
+                    </h1>
+                    <p class="text-gray-500 mt-1">Review your items before checkout</p>
+                </div>
+
+                <!-- Cart Content -->
+                <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-4" id="cart-items-list">
+                        <!-- Demo items -->
+                        <div class="cart-item bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                            <div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="salad" class="w-7 h-7 text-green-500"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-gray-900 truncate">Organic Baby Spinach</h3>
+                                <p class="text-sm text-gray-400 mt-0.5">HK$38.00 each</p>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <div class="inline-flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                        <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+                                            <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                        <span class="w-8 text-center font-semibold text-sm text-gray-800">2</span>
+                                        <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+                                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                    <button class="text-red-400 hover:text-red-600 transition text-xs font-medium flex items-center gap-1">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <p class="font-bold text-green-600 text-lg">HK$76.00</p>
+                            </div>
+                        </div>
+
+                        <div class="cart-item bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                            <div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="egg" class="w-7 h-7 text-green-500"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-gray-900 truncate">Local Free-Range Eggs</h3>
+                                <p class="text-sm text-gray-400 mt-0.5">HK$52.00 each</p>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <div class="inline-flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                        <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+                                            <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                        <span class="w-8 text-center font-semibold text-sm text-gray-800">1</span>
+                                        <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+                                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                    <button class="text-red-400 hover:text-red-600 transition text-xs font-medium flex items-center gap-1">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <p class="font-bold text-green-600 text-lg">HK$52.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-6">
+                            <h2 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                                <i data-lucide="receipt" class="w-5 h-5 text-green-600"></i> Order Summary
+                            </h2>
+                            <div class="space-y-3 text-sm text-gray-600 mb-5">
+                                <div class="flex justify-between">
+                                    <span>Subtotal (3 items)</span>
+                                    <span class="font-semibold text-gray-900">HK$128.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5 text-green-500"></i> Delivery Fee</span>
+                                    <span class="font-semibold text-gray-900">HK$30.00</span>
+                                </div>
+                                <div class="flex justify-between text-green-600">
+                                    <span class="flex items-center gap-1"><i data-lucide="leaf" class="w-3.5 h-3.5"></i> Carbon Offset</span>
+                                    <span class="font-semibold">Included</span>
+                                </div>
+                                <div class="border-t border-gray-100 pt-3 flex justify-between text-base font-bold text-gray-900">
+                                    <span>Total</span>
+                                    <span class="text-green-600">HK$158.00</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-5">
+                                <p class="text-xs text-gray-500 mb-1.5">
+                                    Add <strong>HK$72.00</strong> more for free delivery!
+                                </p>
+                                <div class="w-full bg-gray-100 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-500" style="width:64%"></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-green-50 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-xs text-green-700 font-medium">
+                                <i data-lucide="leaf" class="w-4 h-4"></i>
+                                All products sourced from HK & GBA organic farms
+                            </div>
+
+                            <a href="checkout.html" class="block w-full text-center bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-base hover:from-green-600 hover:to-emerald-700 transition shadow-lg shadow-green-500/30">
+                                Proceed to Checkout →
+                            </a>
+
+                            <a href="catalog.html" class="block text-center text-sm text-gray-400 hover:text-green-600 mt-3 transition">
+                                ← Continue Shopping
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2 mb-4 text-green-400"><i data-lucide="leaf"></i> GreenBite</h3>
+                    <p class="text-gray-400 text-sm">Supporting local Hong Kong farmers and reducing carbon footprints through sustainable agriculture.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="catalog.html" class="hover:text-white transition">Product Catalog</a></li>
+                        <li><a href="subscriptions.html" class="hover:text-white transition">Plans</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Help</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white transition">Shipping Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Newsletter</h4>
+                    <div class="flex">
+                        <input type="email" placeholder="Your email" class="px-3 py-2 rounded-l-lg w-full text-black focus:outline-none">
+                        <button class="bg-green-600 px-4 py-2 rounded-r-lg hover:bg-green-500 transition">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500">&copy; 2026 GreenBite HK. All rights reserved.</div>
+        </div>
+    </footer>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

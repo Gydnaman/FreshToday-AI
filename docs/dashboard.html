@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Dashboard - GreenBite · Sustainable Food Subscriptions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+    </style>
+</head>
+<body class="antialiased bg-gray-50 flex flex-col min-h-screen">
+    <!-- Navbar (Logged-in state) -->
+    <header class="bg-white shadow border-b border-gray-100">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-green-600 flex items-center gap-2">
+                <i data-lucide="leaf" class="w-8 h-8"></i> GreenBite
+            </a>
+            <nav class="hidden md:flex gap-6 items-center">
+                <a href="catalog.html" class="text-gray-600 hover:text-green-600 font-medium">Catalog</a>
+                <a href="subscriptions.html" class="text-gray-600 hover:text-green-600 font-medium">Subscriptions</a>
+                <a href="orders.html" class="text-gray-600 hover:text-green-600 font-medium">My Orders</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <a href="cart.html" class="text-gray-600 hover:text-green-600 relative">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">3</span>
+                </a>
+                <!-- Logged-in avatar -->
+                <div class="relative" id="user-menu-wrapper">
+                    <button id="user-menu-btn" class="flex items-center gap-2 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-2 rounded-xl transition focus:outline-none">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm">D</div>
+                        <span class="text-gray-700 font-medium text-sm hidden md:block">Demo User</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                    </button>
+                    <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                            <p class="text-sm font-bold text-gray-800 truncate">Demo User</p>
+                            <p class="text-xs text-gray-500 truncate">demo@greenbite.hk</p>
+                        </div>
+                        <a href="dashboard.html" class="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> My Dashboard
+                        </a>
+                        <a href="orders.html" class="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition">
+                            <i data-lucide="package" class="w-4 h-4"></i> My Orders
+                        </a>
+                        <div class="border-t border-gray-100"></div>
+                        <a href="index.html" class="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> Log Out
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <div class="container mx-auto px-4 py-12">
+            <div class="max-w-4xl mx-auto">
+
+                <!-- Welcome Header -->
+                <div class="flex items-center justify-between mb-8 animate-fade-in-up">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-gray-900">Welcome back, Demo User! 👋</h1>
+                        <p class="text-gray-500 mt-1">Your FreshAI wellness hub</p>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">D</div>
+                </div>
+
+                <!-- Profile Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 animate-fade-in-up">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="user-circle" class="w-5 h-5 text-green-600"></i> My Profile
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">Full Name</p>
+                            <p class="text-gray-900 font-semibold">Demo User</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">Email Address</p>
+                            <p class="text-gray-900 font-semibold">demo@greenbite.hk</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">Member Since</p>
+                            <p class="text-gray-900 font-semibold">April 2026</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-gray-500 text-sm font-medium">Carbon Saved</h3>
+                            <div class="text-2xl font-extrabold text-gray-900 mt-1">12.5 <span class="text-base text-gray-500">kg CO2e</span></div>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full text-green-600"><i data-lucide="tree-deciduous" class="w-6 h-6"></i></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-gray-500 text-sm font-medium">Orders Placed</h3>
+                            <div class="text-2xl font-extrabold text-gray-900 mt-1">3</div>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full text-blue-600"><i data-lucide="package" class="w-6 h-6"></i></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-gray-500 text-sm font-medium">Active Subscription</h3>
+                            <div class="text-2xl font-extrabold text-gray-900 mt-1">Individual</div>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full text-purple-600"><i data-lucide="repeat" class="w-6 h-6"></i></div>
+                    </div>
+                </div>
+
+                <!-- AI Menu Section -->
+                <div class="bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl shadow-xl overflow-hidden mb-8 animate-fade-in-up">
+                    <div class="p-8">
+                        <div class="flex items-center justify-between mb-6 border-b border-green-400/50 pb-4">
+                            <h2 class="text-2xl font-bold text-white flex items-center">
+                                <i data-lucide="sparkles" class="mr-3 w-6 h-6 text-yellow-300"></i>
+                                Today's Personalized Menu
+                            </h2>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-green-50 text-sm font-medium">AI Generated</span>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                            <p class="text-lg text-white leading-relaxed font-medium">
+                                🌅 <strong>Breakfast:</strong> Organic spinach & free-range egg omelette with brown rice porridge<br><br>
+                                🥗 <strong>Lunch:</strong> Bok choy stir-fry with tofu and heritage tomato salad<br><br>
+                                🍽️ <strong>Dinner:</strong> Pan-seared tofu steaks with sautéed kale, roasted seasonal vegetables, and brown rice
+                            </p>
+                        </div>
+                        <div class="mt-6 flex flex-wrap gap-3 justify-between items-center">
+                            <a href="survey.html" class="text-green-100 hover:text-white text-sm font-medium flex items-center gap-1 transition">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Regenerate Menu
+                            </a>
+                            <a href="catalog.html" class="bg-white text-green-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-50 transition shadow-sm">
+                                Add Ingredients to Cart
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preference Profile Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden animate-fade-in-up">
+                    <button id="profile-toggle" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition">
+                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 text-green-600"></i>
+                            My Preferences
+                            <span class="text-xs font-normal text-gray-400 ml-2">(used by AI)</span>
+                        </h2>
+                        <i data-lucide="chevron-down" id="profile-chevron" class="w-5 h-5 text-gray-400 transition-transform"></i>
+                    </button>
+                    <div id="profile-body" class="hidden px-6 pb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Lifestyle</p>
+                                <p class="font-semibold text-gray-800 text-sm">Office worker</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Household Size</p>
+                                <p class="font-semibold text-gray-800 text-sm">Just me (1)</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Goals</p>
+                                <p class="font-semibold text-gray-800 text-sm">
+                                    <span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full mr-1 mb-1">Greener, healthier eating</span>
+                                    <span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full mr-1 mb-1">Convenient fresh ingredients</span>
+                                </p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Diet Preference</p>
+                                <p class="font-semibold text-gray-800 text-sm">No restrictions</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Cooking Style</p>
+                                <p class="font-semibold text-gray-800 text-sm">Efficiency</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Mission Alignment</p>
+                                <p class="font-semibold text-gray-800 text-sm">Strongly agree</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a href="catalog.html" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transform transition">
+                        <div class="bg-green-100 p-3 rounded-xl text-green-600"><i data-lucide="shopping-basket" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm">Shop Catalog</p>
+                            <p class="text-gray-400 text-xs">Browse fresh produce</p>
+                        </div>
+                    </a>
+                    <a href="orders.html" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transform transition">
+                        <div class="bg-blue-100 p-3 rounded-xl text-blue-600"><i data-lucide="truck" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm">Track Orders</p>
+                            <p class="text-gray-400 text-xs">View your deliveries</p>
+                        </div>
+                    </a>
+                    <a href="subscriptions.html" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transform transition">
+                        <div class="bg-purple-100 p-3 rounded-xl text-purple-600"><i data-lucide="repeat" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm">Manage Plan</p>
+                            <p class="text-gray-400 text-xs">Change subscription</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2 mb-4 text-green-400"><i data-lucide="leaf"></i> GreenBite</h3>
+                    <p class="text-gray-400 text-sm">Supporting local Hong Kong farmers and reducing carbon footprints through sustainable agriculture.</p>
+                </div>
+                <div><h4 class="font-bold mb-4">Quick Links</h4><ul class="space-y-2 text-sm text-gray-400"><li><a href="catalog.html" class="hover:text-white transition">Product Catalog</a></li><li><a href="subscriptions.html" class="hover:text-white transition">Plans</a></li></ul></div>
+                <div><h4 class="font-bold mb-4">Help</h4><ul class="space-y-2 text-sm text-gray-400"><li><a href="#" class="hover:text-white transition">FAQ</a></li><li><a href="#" class="hover:text-white transition">Shipping Policy</a></li></ul></div>
+                <div><h4 class="font-bold mb-4">Newsletter</h4><div class="flex"><input type="email" placeholder="Your email" class="px-3 py-2 rounded-l-lg w-full text-black focus:outline-none"><button class="bg-green-600 px-4 py-2 rounded-r-lg hover:bg-green-500 transition">Subscribe</button></div></div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500">&copy; 2026 GreenBite HK. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        // Toggle dropdown
+        const menuBtn = document.getElementById('user-menu-btn');
+        const dropdown = document.getElementById('user-dropdown');
+        if (menuBtn && dropdown) {
+            menuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+            document.addEventListener('click', function() { dropdown.classList.add('hidden'); });
+        }
+        // Toggle preferences
+        $('#profile-toggle').on('click', function() {
+            $('#profile-body').toggleClass('hidden');
+            $('#profile-chevron').toggleClass('rotate-180');
+        });
+    </script>
+</body>
+</html>

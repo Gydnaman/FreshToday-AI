@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Subscription Plans - GreenBite · Sustainable Food Subscriptions</title>
+    <meta name="description" content="Choose your green plan. Fresh, organic deliveries tailored to your household.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+    </style>
+</head>
+<body class="antialiased bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Navbar -->
+    <header class="bg-white shadow border-b border-gray-100">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-green-600 flex items-center gap-2">
+                <i data-lucide="leaf" class="w-8 h-8"></i> GreenBite
+            </a>
+            <nav class="hidden md:flex gap-6 items-center">
+                <a href="catalog.html" class="text-gray-600 hover:text-green-600 font-medium">Catalog</a>
+                <a href="subscriptions.html" class="text-green-600 font-bold">Subscriptions</a>
+                <a href="orders.html" class="text-gray-600 hover:text-green-600 font-medium">My Orders</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <a href="cart.html" class="text-gray-600 hover:text-green-600 relative">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
+                </a>
+                <a href="auth.html" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition font-medium shadow-sm">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <div class="container mx-auto px-4 py-16 text-center">
+            <div class="animate-fade-in-up">
+                <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Choose Your Green Plan</h2>
+                <p class="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">Get fresh, organic deliveries tailored to your household size and cooking habits.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Plan 1 -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl transition transform hover:-translate-y-2">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Individual Box</h3>
+                        <p class="text-gray-500 mb-6">Perfect for 1-2 people</p>
+                        <div class="text-4xl font-extrabold text-green-600 mb-6">HK$280<span class="text-lg text-gray-400 font-normal">/week</span></div>
+                        <ul class="text-left space-y-4 mb-8">
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-500 mr-2"></i> 4-5 Seasonal Veggies</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-500 mr-2"></i> 2 Types of Local Fruits</li>
+                        </ul>
+                        <button class="w-full bg-green-100 text-green-700 py-3 rounded-xl font-bold hover:bg-green-600 hover:text-white transition">Subscribe Now</button>
+                    </div>
+                    
+                    <!-- Plan 2 -->
+                    <div class="bg-green-600 rounded-2xl shadow-lg border border-green-500 p-8 transform hover:-translate-y-2 transition relative md:-mt-4 md:mb-4">
+                        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-sm font-bold shadow-md">MOST POPULAR</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Family Box</h3>
+                        <p class="text-green-100 mb-6">Perfect for 3-4 people</p>
+                        <div class="text-4xl font-extrabold text-white mb-6">HK$450<span class="text-lg text-green-200 font-normal">/week</span></div>
+                        <ul class="text-left space-y-4 mb-8 text-green-50">
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-white mr-2"></i> 6-8 Seasonal Veggies</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-white mr-2"></i> 4 Types of Local Fruits</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-white mr-2"></i> Free Range Eggs</li>
+                        </ul>
+                        <button class="w-full bg-white text-green-700 py-3 rounded-xl font-bold hover:bg-gray-100 transition shadow">Subscribe Now</button>
+                    </div>
+                    
+                    <!-- Plan 3 -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl transition transform hover:-translate-y-2">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Custom Box</h3>
+                        <p class="text-gray-500 mb-6">Tailored to your needs</p>
+                        <div class="text-4xl font-extrabold text-green-600 mb-6">HK$150+<span class="text-lg text-gray-400 font-normal">/week</span></div>
+                        <ul class="text-left space-y-4 mb-8">
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-500 mr-2"></i> Full Catalog Access</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-500 mr-2"></i> Flexible Delivery Days</li>
+                        </ul>
+                        <button class="w-full bg-green-100 text-green-700 py-3 rounded-xl font-bold hover:bg-green-600 hover:text-white transition">Build Your Box</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2 mb-4 text-green-400"><i data-lucide="leaf"></i> GreenBite</h3>
+                    <p class="text-gray-400 text-sm">Supporting local Hong Kong farmers and reducing carbon footprints through sustainable agriculture.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="catalog.html" class="hover:text-white transition">Product Catalog</a></li>
+                        <li><a href="subscriptions.html" class="hover:text-white transition">Plans</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Help</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white transition">Shipping Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Newsletter</h4>
+                    <div class="flex">
+                        <input type="email" placeholder="Your email" class="px-3 py-2 rounded-l-lg w-full text-black focus:outline-none">
+                        <button class="bg-green-600 px-4 py-2 rounded-r-lg hover:bg-green-500 transition">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500">&copy; 2026 GreenBite HK. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>
