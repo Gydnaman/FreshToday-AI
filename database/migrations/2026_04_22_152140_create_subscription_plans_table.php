@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
-            $table->integer('duration')->comment('单位：天');
+            $table->integer('duration')->comment('Unit: days');
             $table->timestamps();
         });
     }

@@ -32,7 +32,7 @@ class User extends Authenticatable
         ];
     }
 
-    // 关系定义
+    // Relationship definitions
     public function orders()
     {
         return $this->hasMany(Order::class);

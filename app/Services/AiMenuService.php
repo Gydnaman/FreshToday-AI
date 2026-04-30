@@ -23,11 +23,11 @@ class AiMenuService
             return $this->generateFallbackMenu($preferences, $availableProducts);
         }
 
-        $prompt = "你是一位专业的营养师和健康顾问。请为用户生成一份符合其偏好的今日专属菜单（简短且极具吸引力）。\n"
-                . "用户的饮食习惯偏好: " . ($preferences['dietary_habits'] ?? '无特定限制') . "\n"
-                . "用户的核心目标: " . ($preferences['goals'] ?? '健康饮食') . "\n"
-                . "今天农场刚采摘的新鲜食材有: " . implode(', ', $availableProducts) . "。\n"
-                . "请直接回复一份 100 字左右的精美食谱搭配，鼓励用户享受这顿零碳足迹的健康大餐。";
+        $prompt = "You are a professional nutritionist and wellness consultant. Create a short and appealing personalized menu for today based on the user's preferences.\n"
+                . "Dietary habits: " . ($preferences['dietary_habits'] ?? 'No specific restrictions') . "\n"
+                . "Primary goals: " . ($preferences['goals'] ?? 'Healthy eating') . "\n"
+                . "Today's farm-fresh ingredients: " . implode(', ', $availableProducts) . ".\n"
+                . "Reply with an ~100-word plan and encourage the user to enjoy a lower-carbon, healthy meal.";
 
         try {
             $response = Http::post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={$apiKey}", [
@@ -56,9 +56,9 @@ class AiMenuService
     private function generateFallbackMenu($preferences, $availableProducts)
     {
         $ingredients = array_slice($availableProducts, 0, 2);
-        $itemsStr = implode(' 和 ', $ingredients);
-        $habit = $preferences['dietary_habits'] ?? '健康';
+        $itemsStr = implode(' and ', $ingredients);
+        $habit = $preferences['dietary_habits'] ?? 'Healthy';
         
-        return "🌱 【AI模拟生成】为您量身定制的{$habit}午餐：我们挑选了刚采摘的 {$itemsStr}，建议用少许橄榄油清炒，既能保留最高营养价值，又能完美契合您的减脂目标！零碳足迹，大自然的原汁原味，请尽情享用吧。";
+        return "🌱 [AI Demo] A {$habit} lunch just for you: we picked freshly harvested {$itemsStr}. Lightly sauté with a little olive oil to preserve nutrients and stay aligned with your goals. Lower-carbon and delicious—enjoy!";
     }
 }
