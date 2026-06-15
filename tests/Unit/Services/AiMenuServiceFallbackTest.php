@@ -39,6 +39,16 @@ class AiMenuServiceFallbackTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Sprint 2：注入 config 后 forget 单例，迫使容器重新解析
+        config(['ai.default' => 'gemini']);
+        config(['ai.providers.gemini.key' => 'fake_key_for_test']);
+        putenv('GEMINI_API_KEY=fake_key_for_test');
+        putenv('OPENAI_API_KEY');
+        putenv('DEEPSEEK_API_KEY');
+        config(['ai.providers.openai.key' => null]);
+        config(['ai.providers.deepseek.key' => null]);
+        $this->app->forgetInstance(\App\Services\Ai\Contracts\AiProviderInterface::class);
+        $this->app->forgetInstance(\App\Services\AiMenuService::class);
         $this->service = app(AiMenuService::class);
         $this->user = User::factory()->create();
         UserPreference::factory()->for($this->user)->create([
@@ -52,12 +62,22 @@ class AiMenuServiceFallbackTest extends TestCase
         // 注入测试用 key（Http::fake 不受 env 限制）
         config(['services.gemini.key' => 'fake_key_for_test']);
         putenv('GEMINI_API_KEY=fake_key_for_test');
+        // Sprint 2：显式锁定到 Gemini Provider（避免与 OPENAI/DEEPSEEK env 冲突）
+        config(['ai.default' => 'gemini']);
+        config(['ai.providers.gemini.key' => 'fake_key_for_test']);
+        // 清空其他 provider env，防止本机真实 KEY 干扰探测
+        putenv('OPENAI_API_KEY');
+        putenv('DEEPSEEK_API_KEY');
+        config(['ai.providers.openai.key' => null]);
+        config(['ai.providers.deepseek.key' => null]);
         Cache::flush();
     }
 
     protected function tearDown(): void
     {
         putenv('GEMINI_API_KEY'); // 清理
+        putenv('OPENAI_API_KEY');
+        putenv('DEEPSEEK_API_KEY');
         Cache::flush();
         parent::tearDown();
     }
@@ -142,8 +162,16 @@ class AiMenuServiceFallbackTest extends TestCase
      */
     public function test_no_api_key_falls_back_without_http_call(): void
     {
-        putenv('GEMINI_API_KEY'); // 清除 key
-        Http::fake(); // 即使 fake，若代码不调用就 0 次请求
+        // Sprint 2：本测试核心是"无 key 时 AiMenuService 不发任何 HTTP"
+        // 直接 bind 一个 NullProvider 进容器，绕开 Factory 探测（避免与 .env 真实 KEY 冲突）
+        $this->app->forgetInstance(\App\Services\Ai\Contracts\AiProviderInterface::class);
+        $this->app->forgetInstance(\App\Services\AiMenuService::class);
+        $this->app->instance(
+            \App\Services\Ai\Contracts\AiProviderInterface::class,
+            new \App\Services\Ai\Providers\NullProvider()
+        );
+        $this->service = app(AiMenuService::class);
+        Http::fake(); // 若代码不调用，recorded 数组应为空
 
         $menu = $this->service->generateDailyMenuForUser($this->user);
 

@@ -26,6 +26,16 @@ class AiMenuServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Sprint 2：注入 config 后 forget 单例，迫使容器重新解析
+        config(['ai.default' => 'gemini']);
+        config(['ai.providers.gemini.key' => 'fake_key_for_test']);
+        putenv('GEMINI_API_KEY=fake_key_for_test');
+        putenv('OPENAI_API_KEY');
+        putenv('DEEPSEEK_API_KEY');
+        config(['ai.providers.openai.key' => null]);
+        config(['ai.providers.deepseek.key' => null]);
+        $this->app->forgetInstance(\App\Services\Ai\Contracts\AiProviderInterface::class);
+        $this->app->forgetInstance(\App\Services\AiMenuService::class);
         $this->service = app(AiMenuService::class);
         $this->user = User::factory()->create();
         UserPreference::factory()->for($this->user)->create();
