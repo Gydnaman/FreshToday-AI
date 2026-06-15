@@ -145,6 +145,20 @@ class PaymentService
             return;
         }
 
+        // 业务级幂等：Payment 已 succeeded 表示之前成功处理过此事件
+        //（Stripe 等网关会在我们的 API 超时时重发 webhook 多次，event_id 可能不同）
+        if ($payment->status === 'succeeded') {
+            Log::info('Webhook idempotent skip: payment already succeeded', [
+                'payment_id' => $payment->id, 'txn_id' => $txnId,
+            ]);
+            $event->update([
+                'related_payment_id' => $payment->id,
+                'related_order_id'   => $payment->order_id,
+                'status'             => 'ignored',
+            ]);
+            return;
+        }
+
         $payment->update([
             'status'     => 'succeeded',
             'paid_at'    => now(),
