@@ -19,6 +19,7 @@
 /storage/*.key
 /storage/pail
 /storage/framework/dev-pids/
+/.codebuddy/
 /vendor
 Homestead.json
 Homestead.yaml
