@@ -1,0 +1,178 @@
+# =============================================================================
+# GreenBite Prometheus 主配置
+# 文档引用: docs/bmad/monitoring-and-runbooks.md §1-§3 + §10
+# 关联任务: REVIEW-REPORT v1.0 §5 P0-1 (Prometheus 监控配置)
+# 关联 Sprint: Sprint 1 (Sprint 0 升级至自建可视化)
+# =============================================================================
+
+global:
+  scrape_interval: 15s              # 默认抓取间隔
+  evaluation_interval: 15s         # 规则评估间隔
+  external_labels:
+    monitor: 'greenbite-mvp'
+    region: 'ap-east-1'             # AWS 香港区域
+    environment: 'production'
+    cluster: 'greenbite-prod'
+
+# =============================================================================
+# 告警加载
+# =============================================================================
+rule_files:
+  - "alerts.yml"
+  - "alerts_*.yml"
+
+# =============================================================================
+# 告警管理器 (Alertmanager)
+# =============================================================================
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+      scheme: http
+      timeout: 10s
+      path_prefix: /
+
+# =============================================================================
+# 抓取目标 (Scrape Targets)
+# =============================================================================
+scrape_configs:
+  # -----------------------------------------------------------------------
+  # Prometheus 自身监控
+  # -----------------------------------------------------------------------
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+
+  # -----------------------------------------------------------------------
+  # GreenBite Laravel App (自定义 /metrics 端点)
+  #   由 AppServiceProvider 暴露 promphp/prometheus_client_php 指标
+  #   端点: GET /metrics (内部鉴权 IP 白名单)
+  # -----------------------------------------------------------------------
+  - job_name: 'greenbite-app'
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets:
+          - 'app:80'
+        labels:
+          service: 'greenbite-app'
+          tier: 'backend'
+          language: 'php-fpm'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: app_instance
+        replacement: 'greenbite-app-1'
+
+  - job_name: 'greenbite-app-staging'
+    metrics_path: /metrics
+    scheme: https
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - 'staging.freshbite.hk'
+        labels:
+          service: 'greenbite-app'
+          tier: 'backend'
+          environment: 'staging'
+
+  # -----------------------------------------------------------------------
+  # Node Exporter (主机指标：CPU / 内存 / 磁盘 / 网络)
+  # -----------------------------------------------------------------------
+  - job_name: 'node-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'node-exporter:9100'
+        labels:
+          instance: 'greenbite-app-host'
+          os: 'linux'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: hostname
+
+  # -----------------------------------------------------------------------
+  # mysqld-exporter (MySQL 8.0 指标)
+  # -----------------------------------------------------------------------
+  - job_name: 'mysqld-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'mysqld-exporter:9104'
+        labels:
+          service: 'mysql'
+          version: '8.0'
+    metric_relabel_configs:
+      # 丢弃 info_schema 自检项，减少存储
+      - source_labels: [__name__]
+        regex: 'info_schema_.*'
+        action: drop
+
+  # -----------------------------------------------------------------------
+  # redis-exporter (Redis 7 指标)
+  # -----------------------------------------------------------------------
+  - job_name: 'redis-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'redis-exporter:9121'
+        labels:
+          service: 'redis'
+          version: '7'
+
+  # -----------------------------------------------------------------------
+  # Laravel Horizon (队列指标 — 来自 horizon-metrics 端点)
+  #   需在 horizon 配置中开启 metrics_path
+  # -----------------------------------------------------------------------
+  - job_name: 'horizon'
+    metrics_path: /horizon/api/metrics
+    scheme: http
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - 'app:80'
+        labels:
+          service: 'horizon'
+          tier: 'queue'
+
+  # -----------------------------------------------------------------------
+  # Nginx Ingress (HTTP 请求指标 — 由 nginx-prometheus-exporter 暴露)
+  # -----------------------------------------------------------------------
+  - job_name: 'nginx-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'nginx-exporter:9113'
+        labels:
+          service: 'nginx'
+
+  # -----------------------------------------------------------------------
+  # FPM Exporter (PHP-FPM 进程池状态)
+  # -----------------------------------------------------------------------
+  - job_name: 'fpm-exporter'
+    metrics_path: /fpm-status
+    scheme: http
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - 'app:80'
+        labels:
+          service: 'php-fpm'
+
+# =============================================================================
+# 远程写入 (Remote Write) — 长期归档到 Thanos / Cortex
+# Sprint 3+ 启用，MVP 阶段先本地存储
+# =============================================================================
+# remote_write:
+#   - url: "https://thanos.receiver.greenbite.hk/api/v1/receive"
+#     basic_auth:
+#       username: 'greenbite'
+#       password_file: /etc/prometheus/thanos.credentials
+#     write_relabel_configs:
+#       - source_labels: [__name__]
+#         regex: 'go_.*'
+#         action: drop
