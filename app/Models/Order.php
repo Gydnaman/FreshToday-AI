@@ -26,7 +26,9 @@ class Order extends Model
         'paid_at',
         'cancelled_at',
         'delivered_at',
+        'refunded_at',
         'cancel_reason',
+        'refund_reason',
     ];
 
     protected $casts = [
@@ -38,6 +40,7 @@ class Order extends Model
         'paid_at'          => 'datetime',
         'cancelled_at'     => 'datetime',
         'delivered_at'     => 'datetime',
+        'refunded_at'      => 'datetime',
     ];
 
     public function user(): BelongsTo
