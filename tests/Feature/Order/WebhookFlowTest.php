@@ -10,15 +10,20 @@ use App\Models\StripeWebhookEvent;
 use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Tests\TestCase;
 
 /**
  * Webhook 端到端测试（Sprint 1 关键集成）
  * 验证：Stripe webhook 100 次重复投递，仅 1 次状态变为 paid（幂等）
+ *
+ * 100 次连续请求会触发默认 throttle:api 60/min 限流，但 webhook 路由配置了
+ * throttle:10000,1 不应触发 429。本测试套用 WithoutMiddleware 是双保险：
+ * 100 次是为了验证「webhook 业务级幂等」而不是「限流器是否生效」。
  */
 class WebhookFlowTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithoutMiddleware;
 
     private OrderService $orderService;
     private User $user;

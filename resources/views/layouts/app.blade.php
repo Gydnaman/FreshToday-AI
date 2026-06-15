@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'GreenBite') - {{ i18n('home.subtitle') }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- @vite 仅在 manifest 存在时注入（开发/生产构建后才有；单测与 CI 无构建步骤时跳过） --}}
+    @if (file_exists(public_path('build/manifest.json')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>

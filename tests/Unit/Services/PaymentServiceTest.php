@@ -85,6 +85,14 @@ class PaymentServiceTest extends TestCase
             'paid_at'         => now(),
         ]);
 
+        // 推进订单到 paid（refund 业务前置条件）
+        $this->order = app(OrderService::class)->transition(
+            $this->order->fresh(),
+            \App\Enums\OrderStatus::Paid,
+            'payment_succeeded',
+            ['payment' => $payment, 'actor_type' => 'webhook'],
+        );
+
         $this->service->refund($payment, (int) $payment->amount, 'customer_refund');
 
         $this->assertEquals('refunded', $payment->fresh()->status);

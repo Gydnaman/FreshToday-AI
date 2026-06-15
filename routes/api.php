@@ -27,9 +27,17 @@ Route::get('/products',           [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/categories',         [CategoryController::class, 'index']);
 
-// Webhook（无 auth，签名校验）
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
-Route::post('/payme/webhook',  [PaymeWebhookController::class, 'handle']);
+// Webhook（无 auth，签名校验 + 显式高频限流 10000/min）
+//   - 不用 throttle:api（60/min 不够 Stripe/PayMe 高频重发）
+//   - 路由级挂 throttle:10000,1 数字形式
+//   - 不用 withoutMiddleware 排除 throttle 别名（会误伤后面挂的 throttle）
+//   - 改为：将 webhook 路由移出 api middleware group，自定义挂 throttle
+//   - 10000/min 等于"几乎无限"——为防完全失控的网关被打爆
+//   - 幂等性由 stripe_webhook_events.provider_event_id UQ + Payment.status==='succeeded' 短路保证
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])
+    ->middleware('throttle:10000,1');
+Route::post('/payme/webhook',  [PaymeWebhookController::class, 'handle'])
+    ->middleware('throttle:10000,1');
 
 // staging-only 调试端点
 if (app()->environment('testing', 'staging')) {
