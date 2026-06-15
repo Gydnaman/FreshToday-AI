@@ -93,9 +93,13 @@ class OrderService
                 $order->delivered_at = now();
             }
 
-            // 进入 refunded
+            // 进入 refunded：写 refund 审计字段 + 释放库存（终态，库存退还）
+            //   ⚠️ 不再调 PaymentService::refund()，避免与 PaymentService 互相调用形成递归
+            //   PaymentService::refund() 自己负责 payment.status + 调本 transition
             if ($to === OrderStatus::Refunded) {
-                $this->handleRefund($order, $context);
+                $order->refunded_at = now();
+                $order->refund_reason = $context['reason'] ?? null;
+                $this->releaseStock($order);
             }
 
             $order->status = $to;
@@ -233,24 +237,6 @@ class OrderService
         foreach ($order->products as $product) {
             $product->increment('stock', $product->pivot->quantity);
         }
-    }
-
-    private function handleRefund(Order $order, array $context): void
-    {
-        $payment = Payment::where('order_id', $order->id)
-            ->where('status', 'succeeded')
-            ->latest()->first();
-
-        if (! $payment) {
-            // 没有成功支付单，状态机已经转移到 refunded 但实际未发起退款
-            // 这种"凭空退款"是 GUARD-P2 失败，需要人工干预
-            throw new GuardFailedException('GUARD-P2', '订单无成功支付单，无法发起退款', [
-                'order_id' => $order->id,
-                'context'  => $context,
-            ]);
-        }
-
-        app(PaymentService::class)->refund($payment, (int) $payment->amount, $context['reason'] ?? 'order_refund');
     }
 
     private function generateOrderNo(): string
