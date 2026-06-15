@@ -6,19 +6,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class UserPreference extends Model
+class NotificationPreference extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'usage_purpose', 'dietary_habits', 'goals',
-        'allergies', 'household_size', 'cooking_skill', 'budget_hkd',
+        'user_id', 'email_order', 'email_menu', 'email_promo',
+        'sms_order', 'push_enabled', 'quiet_hours_start', 'quiet_hours_end',
     ];
 
     protected $casts = [
-        'allergies'      => 'array',
-        'budget_hkd'     => 'decimal:2',
-        'household_size' => 'integer',
+        'email_order' => 'boolean',
+        'email_menu'  => 'boolean',
+        'email_promo' => 'boolean',
+        'sms_order'   => 'boolean',
+        'push_enabled'=> 'boolean',
     ];
 
     public function user(): BelongsTo
