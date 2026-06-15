@@ -113,7 +113,8 @@ app/
   Services/              5 business services
     OrderService.php           7-state machine (SSOT)
     PaymentService.php         Stripe/PayMe/Alipay HK
-    AiMenuService.php          3-layer fallback (cache → DB → Gemini)
+    AiMenuService.php          3-layer fallback (cache → DB → Provider → template)
+    Ai/                        Provider 抽象层（AiProviderInterface + 3 个实现 + Factory）
     SubscriptionService.php
     NotificationService.php
 database/
@@ -140,7 +141,8 @@ tests/                   54 tests (39 passing, 15 known-failing — see Day 5 re
 |---|---|
 | **ADR-0004** | Webhook 幂等性：DB 去重（`stripe_webhook_events.provider_event_id` 唯一索引）+ Stripe-Signature HMAC 校验 |
 | **ADR-0005** | 订单状态机：Service 层 `canTransition`（拒绝 DB CHECK 因并发不可重入） |
-| **ADR-0006** | AI 菜单缓存与降级：Cache 抽象 + 三层降级（Cache→DB→Gemini→503）+ 限流 3 次/天 |
+| **ADR-0006** | AI 菜单缓存与降级：Cache 抽象 + 三层降级（Cache→DB→Provider→本地模板）+ 限流 3 次/天 |
+| **AI Provider 切换** | `AiProviderInterface` 抽象（`app/Services/Ai/Contracts/`）+ `AiProviderFactory` 自动探测；Gemini/OpenAI/DeepSeek 三家任选其一切换 |
 
 详细见 `docs/bmad/adr/`。
 
@@ -245,6 +247,32 @@ curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
 | `STRIPE_SECRET_KEY` | ❌ | 留空则支付走 mock 分支（不阻塞本地起站） |
 | `STRIPE_WEBHOOK_SECRET` | ❌ | 留空则 webhook 验签失败返回 401 |
 | `GEMINI_API_KEY` | ❌ | 留空则 AI 菜单走 DB 模板兜底（仍可看到菜单） |
+| `OPENAI_API_KEY` | ❌ | 同上，与 Gemini 二选一；同时设则按 ai.auto_detect_order 探测 |
+| `DEEPSEEK_API_KEY` | ❌ | 同上（OpenAI 兼容协议，HK 出口稳定） |
+| `AI_PROVIDER` | ❌ | 显式指定 gemini / openai / deepseek；留空走自动探测 |
+
+### AI Provider 切换（"插 KEY 即用"）
+
+你**只需要**告诉我"公司 + KEY"两件事：
+- **公司**：是 Google Gemini / OpenAI / DeepSeek / 其它（告诉我是哪家即可，我会按该家官方默认 base_url + 协议接好）
+- **API KEY**：直接贴给我
+- 可选：要不要换模型（默认各家都是性价比最优的那个）
+- 可选：要不要换 base_url（自有代理/Azure OpenAI 等）
+
+我会负责的事（你不用动）：
+- 写好 Provider 实现类（`app/Services/Ai/Providers/{Company}Provider.php`）
+- 在 `config/ai.php` 注册进 `providers` 与 `auto_detect_order`
+- 在 `.env.example` 加好注释化模板
+- 在 `AiProviderFactory::build()` 加好 `match` 分支
+- 默认协议/base_url/超时：按该家公开文档设好
+- 测试 + 文档
+
+例：
+- "**用 DeepSeek，key 是 `sk-abcd1234`**" → 我接好 DeepSeek V3（`api.deepseek.com/v1`，OpenAI 兼容协议）
+- "**用 OpenAI，key 是 `sk-...`，模型换 `gpt-4o`**" → 我接好 gpt-4o（`api.openai.com/v1`）
+- "**用 Azure OpenAI，endpoint 是 `xxx.openai.azure.com`，deployment 是 `my-gpt4`，key 是 `xxx`**" → 我接好 Azure 协议
+
+**关闭 AI**：注释掉所有 `*_API_KEY` → 走 `NullProvider` → 永远用本地模板（不报错、不影响其他功能）。
 | `PAYPEMERCHANT_ID` / `PAYPEMAPI_KEY` | ❌ | 留空则 PayMe 走 mock |
 
 ---
