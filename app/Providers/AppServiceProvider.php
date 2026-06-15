@@ -30,5 +30,11 @@ class AppServiceProvider extends ServiceProvider
                 $request->user()?->id ?: $request->ip()
             );
         });
+
+        // Webhook 专属限流器（备用，路由当前直接用 throttle:10000,1 数字形式）
+        // 见 ADR-0004（webhook 幂等性）
+        RateLimiter::for('webhook', function (Request $request) {
+            return Limit::perMinute(10000);
+        });
     }
 }

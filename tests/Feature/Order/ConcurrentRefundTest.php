@@ -54,14 +54,15 @@ class ConcurrentRefundTest extends TestCase
     private function makePendingOrder(int $quantity = 2, ?Product $product = null): Order
     {
         $p = $product ?? $this->product;
-        $initialStock = $p->stock;
+        // 读最新库存值（Eloquent $p->stock 可能是过期的 model 缓存）
+        $initialStock = Product::find($p->id)->stock;
         $order = $this->orderService->createOrder(
             user: $this->user,
             items: [['product_id' => $p->id, 'quantity' => $quantity]],
             shippingAddress: ['name' => 'Concurrent Tester', 'currency' => 'HKD'],
         );
         // 预占后库存下降
-        $this->assertEquals($initialStock - $quantity, $p->fresh()->stock, 'createOrder 应预占库存');
+        $this->assertEquals($initialStock - $quantity, Product::find($p->id)->stock, 'createOrder 应预占库存');
         return $order;
     }
 
@@ -217,6 +218,15 @@ class ConcurrentRefundTest extends TestCase
     {
         $order = $this->makePaidOrder(quantity: 2);
         $payment = Payment::where('order_id', $order->id)->where('status', 'succeeded')->first();
+
+        // 推进订单到 paid（refund 业务前置条件；与生产路径一致：
+        //   payment_succeeded webhook 触发 transition pending→paid）
+        $order = $this->orderService->transition(
+            $order->fresh(),
+            OrderStatus::Paid,
+            'payment_succeeded',
+            ['payment' => $payment, 'actor_type' => 'webhook'],
+        );
 
         $firstResult = $this->paymentService->refund($payment, (int) $payment->amount, 'first_call');
         $this->assertTrue($firstResult, '首次 refund 应返回 true');
