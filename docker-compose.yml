@@ -1,0 +1,301 @@
+# =============================================================================
+# GreenBite Production docker-compose (MySQL 8 + Redis 7 + App)
+# 文档引用: docs/bmad/deployment.md §2 (环境矩阵)
+# 关联任务: REVIEW-REPORT v1.0 §5 P0-1
+# 用途: 本地开发 / Staging / 单机生产部署
+# =============================================================================
+
+version: '3.9'
+
+x-app-base: &app-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: greenbite/app:latest
+  restart: unless-stopped
+  networks:
+    - greenbite-net
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  # ---------------------------------------------------------------------------
+  # App (Laravel 12 + PHP 8.2-fpm + Nginx + Supervisord)
+  # ---------------------------------------------------------------------------
+  app:
+    <<: *app-base
+    container_name: greenbite-app
+    hostname: app.greenbite.local
+    ports:
+      - "8080:80"
+    environment:
+      APP_NAME: "${APP_NAME:-GreenBite}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_KEY: "${APP_KEY}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${APP_URL:-https://www.freshbite.hk}"
+      LOG_CHANNEL: "${LOG_CHANNEL:-stack}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+
+      # Database
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-greenbite}"
+      DB_USERNAME: "${DB_USERNAME:-greenbite}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+
+      # Redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+
+      # Cache & Session
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+
+      # Mail
+      MAIL_MAILER: "${MAIL_MAILER:-log}"
+
+      # Stripe
+      STRIPE_KEY: "${STRIPE_KEY}"
+      STRIPE_SECRET: "${STRIPE_SECRET}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
+
+      # Gemini AI
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+      GEMINI_ENABLED: "${GEMINI_ENABLED:-true}"
+
+      # Sentry
+      SENTRY_LARAVEL_DSN: "${SENTRY_LARAVEL_DSN:-}"
+      SENTRY_TRACES_SAMPLE_RATE: "0.1"
+
+      # Horizon
+      HORIZON_DOMAIN: "${HORIZON_DOMAIN:-}"
+      HORIZON_PATH: "horizon"
+
+      # 时区
+      APP_TIMEZONE: "Asia/Hong_Kong"
+    volumes:
+      - app-storage:/app/storage
+      - app-logs:/app/storage/logs
+      - app-bootstrap-cache:/app/bootstrap/cache
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # MySQL 8.0 (主库 — 8h 增量 + 每日全量备份)
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: greenbite-mysql
+    hostname: mysql.greenbite.local
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${DB_DATABASE:-greenbite}"
+      MYSQL_USER: "${DB_USERNAME:-greenbite}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      TZ: "Asia/Hong_Kong"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --max-connections=512
+      - --innodb-buffer-pool-size=512M
+      - --slow-query-log=ON
+      - --long-query-time=1
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./docker/mysql/backups:/backups
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Redis 7 (Cache / Session / Queue)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: greenbite-redis
+    hostname: redis.greenbite.local
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - "256mb"
+      - --maxmemory-policy
+      - "allkeys-lru"
+      - --save
+      - "900 1"
+      - --save
+      - "300 10"
+      - --save
+      - "60 10000"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Prometheus (可选 — 与 ops/prometheus/ 配合)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: greenbite-prometheus
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    profiles:
+      - monitoring
+
+  # ---------------------------------------------------------------------------
+  # Grafana (可选)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: greenbite-grafana
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./ops/grafana/dashboard-greenbite.json:/var/lib/grafana/dashboards/greenbite.json:ro
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+    profiles:
+      - monitoring
+
+  # ---------------------------------------------------------------------------
+  # Node Exporter (主机指标 — 可选)
+  # ---------------------------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: greenbite-node-exporter
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    profiles:
+      - monitoring
+
+  # ---------------------------------------------------------------------------
+  # mysqld-exporter (MySQL 指标 — 可选)
+  # ---------------------------------------------------------------------------
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: greenbite-mysqld-exporter
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "9104:9104"
+    environment:
+      DATA_SOURCE_NAME: "${DB_USERNAME:-greenbite}:${DB_PASSWORD}@(mysql:3306)/${DB_DATABASE:-greenbite}"
+    depends_on:
+      - mysql
+    profiles:
+      - monitoring
+
+  # ---------------------------------------------------------------------------
+  # redis-exporter (Redis 指标 — 可选)
+  # ---------------------------------------------------------------------------
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    container_name: greenbite-redis-exporter
+    restart: unless-stopped
+    networks:
+      - greenbite-net
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    depends_on:
+      - redis
+    profiles:
+      - monitoring
+
+# =============================================================================
+# Networks & Volumes
+# =============================================================================
+networks:
+  greenbite-net:
+    driver: bridge
+    name: greenbite-net
+
+volumes:
+  app-storage:
+    driver: local
+  app-logs:
+    driver: local
+  app-bootstrap-cache:
+    driver: local
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

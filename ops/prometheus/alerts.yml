@@ -1,0 +1,380 @@
+# =============================================================================
+# GreenBite Prometheus 告警规则
+# 文档引用: docs/bmad/monitoring-and-runbooks.md
+#   - §3.2: ALR-001 ~ ALR-014 (Sprint 0 14 条)
+#   - §10.2: ALR-015 ~ ALR-019 (Sprint 1 新增 5 条)
+# 关联任务: REVIEW-REPORT v1.0 §5 P0-1
+# 告警分级: P0 / P1 / P2 / P3
+# 通知目标: #ops-alerts (Slack) + PagerDuty (P0)
+# =============================================================================
+
+groups:
+  # ========================================================================
+  # GROUP 1: 应用层 (Laravel + HTTP 5xx / 延迟 / 队列)
+  # ========================================================================
+  - name: greenbite-app-health
+    interval: 30s
+    rules:
+      # --------------------------------------------------------------------
+      # ALR-001: 5xx 错误率 > 1% (P0)
+      # --------------------------------------------------------------------
+      - alert: Http5xxErrorRateCritical
+        expr: |
+          (
+            sum(rate(http_requests_total{job="greenbite-app",status=~"5.."}[2m]))
+            /
+            sum(rate(http_requests_total{job="greenbite-app"}[2m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          level: P0
+          alert_id: ALR-001
+          team: devops
+        annotations:
+          summary: "GreenBite 5xx 错误率 > 1% 持续 2 分钟"
+          description: "当前 5xx 错误率 {{ $value | humanizePercentage }}，超过 1% 阈值。"
+          runbook_url: "https://github.com/greenbite/handbook/blob/main/runbooks/RB-001.md"
+          slack_channel: "#ops-alerts"
+          pagerduty: "true"
+
+      # --------------------------------------------------------------------
+      # ALR-002: 5xx 错误率 > 0.5% (P1)
+      # --------------------------------------------------------------------
+      - alert: Http5xxErrorRateHigh
+        expr: |
+          (
+            sum(rate(http_requests_total{job="greenbite-app",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="greenbite-app"}[5m]))
+          ) > 0.005
+        for: 5m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-002
+          team: devops
+        annotations:
+          summary: "GreenBite 5xx 错误率 > 0.5% 持续 5 分钟"
+          description: "当前 5xx 错误率 {{ $value | humanizePercentage }}，需关注。"
+
+      # --------------------------------------------------------------------
+      # ALR-003: P95 响应时间 > 800ms (P1)
+      # --------------------------------------------------------------------
+      - alert: HighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, route) (rate(http_request_duration_seconds_bucket{job="greenbite-app"}[5m]))
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-003
+          team: devops
+        annotations:
+          summary: "GreenBite P95 响应时间 > 800ms (route: {{ $labels.route }})"
+          description: "P95 延迟 = {{ $value }}s"
+
+  # ========================================================================
+  # GROUP 2: 队列与后台 Job (Horizon / Redis Queue)
+  # ========================================================================
+  - name: greenbite-queue-health
+    interval: 30s
+    rules:
+      # --------------------------------------------------------------------
+      # ALR-005: 队列积压 > 500 jobs (P1)
+      # --------------------------------------------------------------------
+      - alert: QueueBacklogHigh
+        expr: sum(horizon_jobs_pending_total{queue="default"}) > 500
+        for: 5m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-005
+          team: devops
+        annotations:
+          summary: "GreenBite default 队列积压 > 500 jobs"
+          description: "当前积压 {{ $value }} 个 job。"
+
+      # --------------------------------------------------------------------
+      # ALR-006: 队列积压 > 1000 jobs (P0)
+      # --------------------------------------------------------------------
+      - alert: QueueBacklogCritical
+        expr: sum(horizon_jobs_pending_total{queue="default"}) > 1000
+        for: 2m
+        labels:
+          severity: critical
+          level: P0
+          alert_id: ALR-006
+          team: devops
+        annotations:
+          summary: "GreenBite default 队列积压 > 1000 jobs (P0)"
+          description: "立即扩容 worker 或排查阻塞原因。"
+
+      # --------------------------------------------------------------------
+      # ALR-019: 队列 default 积压 > 100 持续 10min (Sprint 1)
+      # --------------------------------------------------------------------
+      - alert: QueueCancelExpiredBacklog
+        expr: |
+          sum(horizon_jobs_pending_total{queue="default"}) > 100
+        for: 10m
+        labels:
+          severity: medium
+          level: P1
+          alert_id: ALR-019
+          team: devops
+        annotations:
+          summary: "ALR-019 队列 default 持续积压 > 10min"
+          description: "CancelExpiredOrdersJob 可能卡住，影响库存释放。"
+          runbook_url: "https://github.com/greenbite/handbook/blob/main/runbooks/RB-006.md"
+
+      # --------------------------------------------------------------------
+      # 死信队列告警
+      # --------------------------------------------------------------------
+      - alert: FailedJobsSpike
+        expr: |
+          increase(horizon_failed_jobs_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-015-DLQ
+          team: devops
+        annotations:
+          summary: "GreenBite 失败 Job 5 分钟内 > 10 个"
+          description: "需 php artisan queue:failed 排查。"
+
+  # ========================================================================
+  # GROUP 3: Webhook 告警 (Sprint 1 §10 必交付)
+  # ========================================================================
+  - name: greenbite-webhook-alerts
+    interval: 30s
+    rules:
+      # --------------------------------------------------------------------
+      # ALR-015: webhook_lag_high (P95 延迟)
+      # --------------------------------------------------------------------
+      - alert: WebhookLagHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(webhook_processing_seconds_bucket[5m]))
+          ) > 300
+        for: 10m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-015
+          team: devops
+        annotations:
+          summary: "ALR-015 Webhook P95 处理时间 > 300s"
+          description: "Webhook P95 = {{ $value }}s，用户体验'支付成功但订单卡在 pending'。"
+          runbook_url: "https://github.com/greenbite/handbook/blob/main/runbooks/RB-005.md"
+
+      - alert: WebhookLagCritical
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(webhook_processing_seconds_bucket[5m]))
+          ) > 900
+        for: 5m
+        labels:
+          severity: critical
+          level: P0
+          alert_id: ALR-015-CRIT
+          team: devops
+        annotations:
+          summary: "ALR-015 Webhook P95 处理时间 > 900s (P0)"
+          description: "用户支付链路严重阻塞，需立即介入。"
+
+      # --------------------------------------------------------------------
+      # ALR-016: webhook_failed_spike
+      # --------------------------------------------------------------------
+      - alert: WebhookFailedSpike
+        expr: increase(stripe_webhook_events_total{status="failed"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-016
+          team: devops
+        annotations:
+          summary: "ALR-016 Webhook 失败率 5min 内 > 10 次"
+          description: "可能 IP 白名单 / 签名密钥 / MySQL 异常。"
+          runbook_url: "https://github.com/greenbite/handbook/blob/main/runbooks/RB-005.md#场景-a密钥不匹配"
+
+      # --------------------------------------------------------------------
+      # ALR-017: webhook_replay_attack
+      # --------------------------------------------------------------------
+      - alert: WebhookReplayAttack
+        expr: |
+          (
+            SELECT count(*)
+            FROM stripe_webhook_events
+            WHERE received_at > NOW() - INTERVAL 5 MINUTE
+            GROUP BY provider_event_id
+            HAVING count(*) > 3
+          ) > 0
+        for: 1m
+        labels:
+          severity: critical
+          level: P0
+          alert_id: ALR-017
+          team: devops
+        annotations:
+          summary: "ALR-017 检测到 Webhook 重放攻击"
+          description: "同一 provider_event_id 5min 内重复入库 > 3 次。可能是商户重试 bug 或恶意重放。需安全审计。"
+          security_team: "true"
+
+      # --------------------------------------------------------------------
+      # ALR-018: state_machine_backwards
+      # --------------------------------------------------------------------
+      - alert: OrderStateMachineBackwards
+        expr: |
+          (
+            SELECT count(*) as violation_count
+            FROM order_status_logs
+            WHERE FIELD(to_status, 'pending','paid','processing','shipped','delivered','refunded','cancelled')
+                  < FIELD(from_status, 'pending','paid','processing','shipped','delivered','refunded','cancelled')
+              AND created_at > NOW() - INTERVAL 1 HOUR
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          level: P0
+          alert_id: ALR-018
+          team: devops
+        annotations:
+          summary: "ALR-018 订单状态机出现逆向转移"
+          description: "1 小时内检测到 {{ $value }} 条非法状态转移（除 delivered → refunded 之外）。"
+          escalation: "reviewer-agent"
+
+  # ========================================================================
+  # GROUP 4: 基础设施 (MySQL / Redis / 主机资源)
+  # ========================================================================
+  - name: greenbite-infrastructure
+    interval: 30s
+    rules:
+      # --------------------------------------------------------------------
+      # ALR-008: DB 主从延迟 > 30s (P1)
+      # --------------------------------------------------------------------
+      - alert: MySQLReplicationLag
+        expr: mysql_slave_status_seconds_behind_master > 30
+        for: 1m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-008
+          team: devops
+        annotations:
+          summary: "MySQL 主从延迟 > 30s"
+          description: "Slave 落后 Master {{ $value }}s。"
+
+      # --------------------------------------------------------------------
+      # ALR-010: 磁盘使用 > 85% (P2)
+      # --------------------------------------------------------------------
+      - alert: DiskSpaceHigh
+        expr: |
+          (
+            (node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"})
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: medium
+          level: P2
+          alert_id: ALR-010
+          team: devops
+        annotations:
+          summary: "磁盘使用率 > 85% ({{ $labels.instance }})"
+          description: "使用率 {{ $value | printf \"%.1f\" }}%，需清理日志或扩容。"
+
+      # --------------------------------------------------------------------
+      # ALR-011: 内存使用 > 90% (P2)
+      # --------------------------------------------------------------------
+      - alert: MemoryHigh
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+            / node_memory_MemTotal_bytes
+          ) * 100 > 90
+        for: 5m
+        labels:
+          severity: medium
+          level: P2
+          alert_id: ALR-011
+          team: devops
+        annotations:
+          summary: "内存使用率 > 90%"
+          description: "使用率 {{ $value | printf \"%.1f\" }}%。"
+
+      # --------------------------------------------------------------------
+      # ALR-012: SSL 证书到期 < 14 天 (P1)
+      # --------------------------------------------------------------------
+      - alert: SSLCertExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 14
+        for: 1h
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-012
+          team: devops
+        annotations:
+          summary: "SSL 证书将在 14 天内到期"
+          description: "实例 {{ $labels.instance }} 证书到期。"
+
+  # ========================================================================
+  # GROUP 5: 第三方依赖 (Gemini / Stripe)
+  # ========================================================================
+  - name: greenbite-external-deps
+    interval: 1m
+    rules:
+      # --------------------------------------------------------------------
+      # ALR-009: Gemini API 4xx/5xx > 5% (P1)
+      # --------------------------------------------------------------------
+      - alert: GeminiAPIErrorRate
+        expr: |
+          (
+            sum(rate(gemini_api_requests_total{status=~"[45].."}[5m]))
+            /
+            sum(rate(gemini_api_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: high
+          level: P1
+          alert_id: ALR-009
+          team: devops
+        annotations:
+          summary: "Gemini API 错误率 > 5%"
+          description: "可能触发限流。考虑启用 GEMINI_ENABLED=false 降级。"
+
+      # --------------------------------------------------------------------
+      # ALR-013: Stripe Webhook 连续失败 > 3 次 (P0)
+      # --------------------------------------------------------------------
+      - alert: StripeWebhookConsecutiveFails
+        expr: |
+          (
+            SELECT MAX(consecutive_fails) as fails
+            FROM (
+              SELECT
+                event_type,
+                COUNT(*) FILTER (WHERE status='failed') OVER (
+                  ORDER BY received_at ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+                ) as consecutive_fails
+              FROM stripe_webhook_events
+              WHERE received_at > NOW() - INTERVAL 10 MINUTE
+            ) t
+            WHERE consecutive_fails >= 3
+          ) > 0
+        for: 1m
+        labels:
+          severity: critical
+          level: P0
+          alert_id: ALR-013
+          team: devops
+        annotations:
+          summary: "ALR-013 Stripe Webhook 连续 3 次失败"
+          description: "检查 STRIPE_WEBHOOK_SECRET、IP 白名单、MySQL 连接。"
+          runbook_url: "https://github.com/greenbite/handbook/blob/main/runbooks/RB-002.md"

@@ -1,0 +1,83 @@
+# =============================================================================
+# .dockerignore — GreenBite Production Image
+# 作用: 减小构建上下文，加速 docker build，隔离敏感文件
+# 文档引用: docs/bmad/deployment.md §3
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Docker (避免递归包含)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Node (在 Docker 镜像中由 node 阶段构建)
+node_modules
+npm-debug.log*
+yarn-error.log
+yarn-debug.log
+.pnpm-store
+
+# 文档与 IDE
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 测试与覆盖率
+tests/coverage
+coverage.xml
+.phpunit.result.cache
+phpunit.xml.bak
+
+# 临时与本地配置
+.env
+.env.backup
+.env.local
+.env.*.local
+.env.testing
+Homestead.json
+Homestead.yaml
+auth.json
+*.log
+
+# Laravel 缓存与存储（运行时生成）
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+!/storage/logs/.gitkeep
+!/storage/framework/cache/.gitkeep
+!/storage/framework/sessions/.gitkeep
+!/storage/framework/views/.gitkeep
+
+# Bootstrap 缓存（运行时生成）
+/bootstrap/cache/*.php
+!/bootstrap/cache/.gitkeep
+
+# 备份
+*.sql
+*.sql.gz
+*.tar.gz
+*.zip
+
+# 文档与示例
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+docs/
+scripts/
+
+# 编译产物（部分排除；public/build 由前端阶段产出）
+public/build
+public/storage
+
+# 性能分析
+*.hprof
+*.trc
