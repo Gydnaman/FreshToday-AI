@@ -1,0 +1,348 @@
+{
+  "_meta": {
+    "description": "GreenBite Sprint 1 mock fixtures for Cart / Order / Subscription UIs and tests.",
+    "generated_by": "golf",
+    "generated_at": "2026-06-12T16:40:00+08:00",
+    "source_of_truth": [
+      "docs/bmad/api-contract.md §2.3, §2.4, §2.7",
+      "docs/bmad/order-state-machine.md §A 7-state SSOT"
+    ],
+    "coverage": {
+      "carts": 3,
+      "orders": 5,
+      "order_current_statuses": ["cancelled", "refunded", "processing", "shipped", "delivered"],
+      "order_states_in_logs": ["pending", "paid", "processing", "shipped", "delivered", "cancelled", "refunded"],
+      "subscriptions": 2
+    }
+  },
+
+  "carts": [
+    {
+      "id": 101,
+      "user_id": 1,
+      "status": "active",
+      "currency": "HKD",
+      "item_count": 3,
+      "total": 168.0,
+      "created_at": "2026-06-12T10:15:00+08:00",
+      "updated_at": "2026-06-12T11:42:18+08:00",
+      "items": [
+        { "id": 1001, "product_id": 12, "product_name": "Organic Baby Spinach",    "image": "/img/products/spinach.jpg",  "unit_price": 28.0, "quantity": 2, "subtotal": 56.0 },
+        { "id": 1002, "product_id": 18, "product_name": "Heritage Tomato (500g)",  "image": "/img/products/tomato.jpg",   "unit_price": 38.0, "quantity": 1, "subtotal": 38.0 },
+        { "id": 1003, "product_id": 25, "product_name": "Free-Range Eggs (12pcs)", "image": "/img/products/eggs.jpg",     "unit_price": 74.0, "quantity": 1, "subtotal": 74.0 }
+      ]
+    },
+    {
+      "id": 102,
+      "user_id": 2,
+      "status": "active",
+      "currency": "HKD",
+      "item_count": 5,
+      "total": 312.5,
+      "created_at": "2026-06-11T19:08:00+08:00",
+      "updated_at": "2026-06-12T09:30:00+08:00",
+      "items": [
+        { "id": 2001, "product_id": 7,  "product_name": "Bok Choy",                "image": "/img/products/bokchoy.jpg",   "unit_price": 22.0, "quantity": 3, "subtotal": 66.0 },
+        { "id": 2002, "product_id": 14, "product_name": "Tofu (Organic, 400g)",   "image": "/img/products/tofu.jpg",     "unit_price": 32.0, "quantity": 2, "subtotal": 64.0 },
+        { "id": 2003, "product_id": 33, "product_name": "Brown Rice (1kg)",       "image": "/img/products/brownrice.jpg", "unit_price": 48.5, "quantity": 1, "subtotal": 48.5 },
+        { "id": 2004, "product_id": 19, "product_name": "Local Kale Bunch",       "image": "/img/products/kale.jpg",      "unit_price": 36.0, "quantity": 2, "subtotal": 72.0 },
+        { "id": 2005, "product_id": 41, "product_name": "Hong Kong Honey (250g)", "image": "/img/products/honey.jpg",     "unit_price": 62.0, "quantity": 1, "subtotal": 62.0 }
+      ]
+    },
+    {
+      "id": 103,
+      "user_id": 3,
+      "status": "abandoned",
+      "currency": "HKD",
+      "item_count": 1,
+      "total": 28.0,
+      "created_at": "2026-06-09T22:14:00+08:00",
+      "updated_at": "2026-06-10T01:00:00+08:00",
+      "items": [
+        { "id": 3001, "product_id": 12, "product_name": "Organic Baby Spinach", "image": "/img/products/spinach.jpg", "unit_price": 28.0, "quantity": 1, "subtotal": 28.0 }
+      ],
+      "abandoned_at": "2026-06-10T01:00:00+08:00",
+      "recovery_email_sent": true
+    }
+  ],
+
+  "orders": [
+    {
+      "id": 5001,
+      "order_no": "GB-2026-0612-001",
+      "user_id": 1,
+      "status": "cancelled",
+      "currency": "HKD",
+      "subtotal": 168.0,
+      "shipping_fee": 25.0,
+      "discount": 0.0,
+      "total_price": 193.0,
+      "shipping_address": {
+        "line1": "Flat 8B, Block 2, City Garden",
+        "district": "North Point",
+        "city": "Hong Kong",
+        "postal_code": "999077"
+      },
+      "items": [
+        { "id": 9001, "product_id": 12, "product_name": "Organic Baby Spinach",     "quantity": 2, "unit_price": 28.0, "subtotal": 56.0 },
+        { "id": 9002, "product_id": 18, "product_name": "Heritage Tomato (500g)",   "quantity": 1, "unit_price": 38.0, "subtotal": 38.0 },
+        { "id": 9003, "product_id": 25, "product_name": "Free-Range Eggs (12pcs)",  "quantity": 1, "unit_price": 74.0, "subtotal": 74.0 }
+      ],
+      "created_at": "2026-06-12T15:00:00+08:00",
+      "cancelled_at": "2026-06-12T15:08:30+08:00",
+      "cancellation_reason": "user_requested",
+      "updated_at": "2026-06-12T15:08:30+08:00",
+      "expires_at": "2026-06-12T15:30:00+08:00",
+      "payment_intent": null,
+      "status_logs": [
+        { "from": null,      "to": "pending",   "trigger": "POST /api/orders",        "at": "2026-06-12T15:00:00+08:00" },
+        { "from": "pending", "to": "cancelled", "trigger": "user DELETE /api/orders/{id}", "at": "2026-06-12T15:08:30+08:00" }
+      ]
+    },
+    {
+      "id": 5002,
+      "order_no": "GB-2026-0611-002",
+      "user_id": 2,
+      "status": "refunded",
+      "currency": "HKD",
+      "subtotal": 312.5,
+      "shipping_fee": 0.0,
+      "discount": 15.0,
+      "total_price": 297.5,
+      "coupon_code": "FRIENDS15",
+      "refund_amount": 297.5,
+      "refund_reason": "all_items_damaged_in_transit",
+      "shipping_address": {
+        "line1": "Tower 3, 28/F, The Belcher's",
+        "district": "Kennedy Town",
+        "city": "Hong Kong",
+        "postal_code": "999077"
+      },
+      "items": [
+        { "id": 9101, "product_id": 7,  "product_name": "Bok Choy",                "quantity": 3, "unit_price": 22.0, "subtotal": 66.0 },
+        { "id": 9102, "product_id": 14, "product_name": "Tofu (Organic, 400g)",   "quantity": 2, "unit_price": 32.0, "subtotal": 64.0 },
+        { "id": 9103, "product_id": 33, "product_name": "Brown Rice (1kg)",       "quantity": 1, "unit_price": 48.5, "subtotal": 48.5 },
+        { "id": 9104, "product_id": 19, "product_name": "Local Kale Bunch",       "quantity": 2, "unit_price": 36.0, "subtotal": 72.0 },
+        { "id": 9105, "product_id": 41, "product_name": "Hong Kong Honey (250g)", "quantity": 1, "unit_price": 62.0, "subtotal": 62.0 }
+      ],
+      "created_at": "2026-06-11T19:08:00+08:00",
+      "paid_at": "2026-06-11T19:14:22+08:00",
+      "shipped_at": "2026-06-11T20:30:00+08:00",
+      "delivered_at": "2026-06-12T08:00:00+08:00",
+      "refunded_at": "2026-06-12T14:25:00+08:00",
+      "updated_at": "2026-06-12T14:25:00+08:00",
+      "tracking_no": "SF5555550000HK",
+      "carrier": "SF Express",
+      "payment_intent": {
+        "id": "pi_3OzR9Z2eZvKYlo2C1abc",
+        "provider": "stripe",
+        "amount": 297.5,
+        "currency": "HKD",
+        "status": "refunded"
+      },
+      "refund_transaction": {
+        "id": "re_3OzR9Z2eZvKYlo2C1xyz",
+        "amount": 297.5,
+        "currency": "HKD",
+        "status": "succeeded",
+        "created_at": "2026-06-12T14:25:00+08:00"
+      },
+      "status_logs": [
+        { "from": null,        "to": "pending",    "trigger": "POST /api/orders",         "at": "2026-06-11T19:08:00+08:00" },
+        { "from": "pending",   "to": "paid",       "trigger": "stripe webhook succeeded", "at": "2026-06-11T19:14:22+08:00" },
+        { "from": "paid",      "to": "processing", "trigger": "ops accept",               "at": "2026-06-11T19:45:00+08:00" },
+        { "from": "processing","to": "shipped",    "trigger": "carrier pickup",           "at": "2026-06-11T20:30:00+08:00" },
+        { "from": "shipped",   "to": "delivered",  "trigger": "carrier delivered event",  "at": "2026-06-12T08:00:00+08:00" },
+        { "from": "delivered", "to": "refunded",   "trigger": "support ticket approved",  "at": "2026-06-12T14:25:00+08:00" }
+      ]
+    },
+    {
+      "id": 5003,
+      "order_no": "GB-2026-0610-003",
+      "user_id": 1,
+      "status": "processing",
+      "currency": "HKD",
+      "subtotal": 248.0,
+      "shipping_fee": 25.0,
+      "discount": 0.0,
+      "total_price": 273.0,
+      "shipping_address": {
+        "line1": "Flat 8B, Block 2, City Garden",
+        "district": "North Point",
+        "city": "Hong Kong",
+        "postal_code": "999077"
+      },
+      "items": [
+        { "id": 9201, "product_id": 5,  "product_name": "Cherry Tomato (250g)", "quantity": 2, "unit_price": 35.0,  "subtotal": 70.0 },
+        { "id": 9202, "product_id": 22, "product_name": "Avocado (2pcs)",       "quantity": 1, "unit_price": 48.0,  "subtotal": 48.0 },
+        { "id": 9203, "product_id": 30, "product_name": "Salmon Fillet (300g)", "quantity": 1, "unit_price": 130.0, "subtotal": 130.0 }
+      ],
+      "created_at": "2026-06-10T12:00:00+08:00",
+      "paid_at": "2026-06-10T12:06:11+08:00",
+      "processing_at": "2026-06-10T14:22:00+08:00",
+      "updated_at": "2026-06-10T14:22:00+08:00",
+      "payment_intent": {
+        "id": "pi_3OzPqA2eZvKYlo2Cdef",
+        "provider": "payme",
+        "amount": 273.0,
+        "currency": "HKD",
+        "status": "succeeded"
+      },
+      "status_logs": [
+        { "from": null,        "to": "pending",    "trigger": "POST /api/orders",        "at": "2026-06-10T12:00:00+08:00" },
+        { "from": "pending",   "to": "paid",       "trigger": "payme webhook succeeded", "at": "2026-06-10T12:06:11+08:00" },
+        { "from": "paid",      "to": "processing", "trigger": "ops accept",              "at": "2026-06-10T14:22:00+08:00" }
+      ]
+    },
+    {
+      "id": 5004,
+      "order_no": "GB-2026-0609-004",
+      "user_id": 3,
+      "status": "shipped",
+      "currency": "HKD",
+      "subtotal": 196.0,
+      "shipping_fee": 25.0,
+      "discount": 0.0,
+      "total_price": 221.0,
+      "shipping_address": {
+        "line1": "Room 1205, Mei Foo Sun Chuen",
+        "district": "Sham Shui Po",
+        "city": "Hong Kong",
+        "postal_code": "999077"
+      },
+      "items": [
+        { "id": 9301, "product_id": 1,  "product_name": "Carrot (500g)",            "quantity": 2, "unit_price": 18.0, "subtotal": 36.0 },
+        { "id": 9302, "product_id": 2,  "product_name": "Broccoli",                 "quantity": 1, "unit_price": 32.0, "subtotal": 32.0 },
+        { "id": 9303, "product_id": 8,  "product_name": "Mushroom (200g)",          "quantity": 2, "unit_price": 28.0, "subtotal": 56.0 },
+        { "id": 9304, "product_id": 14, "product_name": "Tofu (Organic, 400g)",     "quantity": 1, "unit_price": 32.0, "subtotal": 32.0 },
+        { "id": 9305, "product_id": 25, "product_name": "Free-Range Eggs (12pcs)",  "quantity": 1, "unit_price": 40.0, "subtotal": 40.0 }
+      ],
+      "created_at": "2026-06-09T08:42:00+08:00",
+      "paid_at": "2026-06-09T08:48:00+08:00",
+      "processing_at": "2026-06-09T10:11:00+08:00",
+      "shipped_at": "2026-06-09T16:00:00+08:00",
+      "updated_at": "2026-06-09T16:00:00+08:00",
+      "tracking_no": "SF1234567890HK",
+      "carrier": "SF Express",
+      "estimated_delivery": "2026-06-10T18:00:00+08:00",
+      "payment_intent": {
+        "id": "pi_3OzMnL2eZvKYlo2Cghi",
+        "provider": "stripe",
+        "amount": 221.0,
+        "currency": "HKD",
+        "status": "succeeded"
+      },
+      "status_logs": [
+        { "from": null,        "to": "pending",    "trigger": "POST /api/orders",         "at": "2026-06-09T08:42:00+08:00" },
+        { "from": "pending",   "to": "paid",       "trigger": "stripe webhook succeeded", "at": "2026-06-09T08:48:00+08:00" },
+        { "from": "paid",      "to": "processing", "trigger": "ops accept",               "at": "2026-06-09T10:11:00+08:00" },
+        { "from": "processing","to": "shipped",    "trigger": "carrier pickup",           "at": "2026-06-09T16:00:00+08:00" }
+      ]
+    },
+    {
+      "id": 5005,
+      "order_no": "GB-2026-0605-005",
+      "user_id": 2,
+      "status": "delivered",
+      "currency": "HKD",
+      "subtotal": 540.0,
+      "shipping_fee": 0.0,
+      "discount": 40.0,
+      "total_price": 500.0,
+      "coupon_code": "WELCOME40",
+      "user_subscription_id": 7002,
+      "shipping_address": {
+        "line1": "Tower 3, 28/F, The Belcher's",
+        "district": "Kennedy Town",
+        "city": "Hong Kong",
+        "postal_code": "999077"
+      },
+      "items": [
+        { "id": 9401, "product_id": 50, "product_name": "Family Box (Weekly)",     "quantity": 1, "unit_price": 480.0, "subtotal": 480.0 },
+        { "id": 9402, "product_id": 41, "product_name": "Hong Kong Honey (250g)", "quantity": 1, "unit_price": 60.0,  "subtotal": 60.0 }
+      ],
+      "created_at": "2026-06-05T07:00:00+08:00",
+      "paid_at": "2026-06-05T07:05:00+08:00",
+      "processing_at": "2026-06-05T09:00:00+08:00",
+      "shipped_at": "2026-06-05T14:30:00+08:00",
+      "delivered_at": "2026-06-06T11:42:00+08:00",
+      "updated_at": "2026-06-06T11:42:00+08:00",
+      "tracking_no": "SF9876543210HK",
+      "carrier": "SF Express",
+      "payment_intent": {
+        "id": "pi_3OzJ2K2eZvKYlo2Cjkl",
+        "provider": "stripe",
+        "amount": 500.0,
+        "currency": "HKD",
+        "status": "succeeded"
+      },
+      "carbon_saved_kg": 12.4,
+      "status_logs": [
+        { "from": null,        "to": "pending",    "trigger": "POST /api/orders",         "at": "2026-06-05T07:00:00+08:00" },
+        { "from": "pending",   "to": "paid",       "trigger": "stripe webhook succeeded", "at": "2026-06-05T07:05:00+08:00" },
+        { "from": "paid",      "to": "processing", "trigger": "ops accept",               "at": "2026-06-05T09:00:00+08:00" },
+        { "from": "processing","to": "shipped",    "trigger": "carrier pickup",           "at": "2026-06-05T14:30:00+08:00" },
+        { "from": "shipped",   "to": "delivered",  "trigger": "carrier delivered event",  "at": "2026-06-06T11:42:00+08:00" }
+      ]
+    }
+  ],
+
+  "subscriptions": [
+    {
+      "id": 7001,
+      "user_id": 1,
+      "subscription_plan_id": 1,
+      "plan_name": "Individual Box (Weekly)",
+      "plan_code": "individual_weekly",
+      "status": "active",
+      "currency": "HKD",
+      "price_hkd": 280.0,
+      "interval": "weekly",
+      "start_date": "2026-06-01",
+      "end_date": null,
+      "next_fulfillment_at": "2026-06-15T08:00:00+08:00",
+      "last_fulfilled_at": "2026-06-08T11:30:00+08:00",
+      "fulfillment_count": 2,
+      "auto_renew": true,
+      "carbon_saving_kg_total": 8.6,
+      "created_at": "2026-06-01T10:00:00+08:00",
+      "updated_at": "2026-06-08T11:30:00+08:00",
+      "payment_method": {
+        "provider": "stripe",
+        "last4": "4242",
+        "exp_month": 12,
+        "exp_year": 2028
+      }
+    },
+    {
+      "id": 7002,
+      "user_id": 2,
+      "subscription_plan_id": 3,
+      "plan_name": "Family Box (Weekly)",
+      "plan_code": "family_weekly",
+      "status": "active",
+      "currency": "HKD",
+      "price_hkd": 480.0,
+      "interval": "weekly",
+      "start_date": "2026-05-25",
+      "end_date": null,
+      "next_fulfillment_at": "2026-06-13T08:00:00+08:00",
+      "last_fulfilled_at": "2026-06-06T11:42:00+08:00",
+      "fulfillment_count": 3,
+      "auto_renew": true,
+      "carbon_saving_kg_total": 18.2,
+      "created_at": "2026-05-25T09:15:00+08:00",
+      "updated_at": "2026-06-06T11:42:00+08:00",
+      "payment_method": {
+        "provider": "stripe",
+        "last4": "0005",
+        "exp_month": 9,
+        "exp_year": 2027
+      },
+      "upcoming_orders": [
+        { "scheduled_for": "2026-06-13T08:00:00+08:00", "order_no": null, "status": "scheduled" },
+        { "scheduled_for": "2026-06-20T08:00:00+08:00", "order_no": null, "status": "scheduled" }
+      ]
+    }
+  ]
+}
