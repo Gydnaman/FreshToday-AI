@@ -82,7 +82,7 @@
                     All products sourced from HK & GBA organic farms
                 </div>
 
-                <a id="checkout-btn" href="{{ url('/checkout') }}"
+                <a id="checkout-btn" href="{{ url('/login?return=/checkout') }}"
                     class="block w-full text-center bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-base hover:from-green-600 hover:to-emerald-700 transition shadow-lg shadow-green-500/30">
                     Proceed to Checkout →
                 </a>
@@ -111,18 +111,44 @@
 $(document).ready(function() {
     const DELIVERY_FEE     = 30;
     const FREE_DELIVERY_AT = 200;
+    const token = localStorage.getItem('gb_token');
+    const isLoggedIn = !!token;
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-    function getCart() {
+    // 兜底：guest 用 localStorage；登录后从 /api/cart 拉真实数据
+    function localCart() {
         return JSON.parse(localStorage.getItem('greenbite_cart') || '[]');
     }
-    function saveCart(cart) {
+    function saveLocalCart(cart) {
         localStorage.setItem('greenbite_cart', JSON.stringify(cart));
-        $('#cart-count').text(cart.length); // update navbar badge
+        $('#cart-count').text(cart.length);
     }
 
-    // Aggregate: merge duplicate items into { name, price, qty }
-    function aggregate(cart) {
+    // 当前购物车数据模型：
+    // 统一为 [{ id, name, price, qty, image, product_id }]
+    let items = [];
+
+    // 拉取数据
+    function fetchData() {
+        if (isLoggedIn) {
+            return gbFetch('/api/cart').then(r => r.json()).then(d => {
+                items = (d.items || []).map(it => ({
+                    id: it.id,                 // cart_item id
+                    product_id: it.product_id,
+                    name: it.product.name,
+                    price: parseFloat(it.product.price),
+                    qty: it.quantity,
+                    image: it.product.image,
+                }));
+                $('#cart-count').text(d.item_count || 0);
+            });
+        }
+        // guest: 保留旧 localStorage 逻辑（按 name 聚合）
+        const agg = aggregateLocal(localCart());
+        items = agg.map((a, i) => ({ id: 'local-' + i, name: a.name, price: a.price, qty: a.qty, image: null }));
+        return Promise.resolve();
+    }
+
+    function aggregateLocal(cart) {
         const map = {};
         cart.forEach(item => {
             const key = item.name;
@@ -132,66 +158,46 @@ $(document).ready(function() {
         return Object.values(map);
     }
 
-    // Flatten aggregated back to raw cart array
-    function flatten(agg) {
-        const raw = [];
-        agg.forEach(item => {
-            for (let i = 0; i < item.qty; i++) {
-                raw.push({ name: item.name, price: item.price });
-            }
-        });
-        return raw;
-    }
-
-    // Icon mapping for products
-        function productIcon(name) {
-            const n = name.toLowerCase();
-        if (n.includes('kale') || n.includes('spinach')) return 'salad';
-        if (n.includes('egg')) return 'egg';
-        if (n.includes('tomato')) return 'cherry';
-        if (n.includes('fruit')) return 'apple';
-        if (n.includes('tofu')) return 'box';
-        if (n.includes('rice')) return 'wheat';
-        return 'package';
-    }
-
     // ── Render ────────────────────────────────────────────────────────────────
     function render() {
-        const raw  = getCart();
-        const agg  = aggregate(raw);
         const list = $('#cart-items-list');
         list.empty();
 
-        if (agg.length === 0) {
+        if (items.length === 0) {
             $('#empty-state').removeClass('hidden');
             $('#cart-content').addClass('hidden');
+            updateSummary();
             return;
         }
 
         $('#empty-state').addClass('hidden');
         $('#cart-content').removeClass('hidden');
 
-        agg.forEach((item, idx) => {
+        items.forEach((item) => {
             const lineTotal = (item.price * item.qty).toFixed(2);
-            list.append(`
-            <div class="cart-item bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4" data-name="${item.name}">
-                <div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+            // 缩略图：登录态用真实 product.image；guest 走 lucide icon
+            const thumb = item.image
+                ? `<img src="${item.image}" alt="${escapeHtml(item.name)}" class="w-14 h-14 rounded-xl object-cover flex-shrink-0" onerror="this.outerHTML='<div class=\\'w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0\\'><i data-lucide=\\'package\\' class=\\'w-7 h-7 text-green-500\\'></i></div>'; lucide.createIcons();">`
+                : `<div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <i data-lucide="${productIcon(item.name)}" class="w-7 h-7 text-green-500"></i>
-                </div>
+                   </div>`;
+            list.append(`
+            <div class="cart-item bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4" data-id="${item.id}">
+                ${thumb}
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-gray-900 truncate">${item.name}</h3>
+                    <h3 class="font-semibold text-gray-900 truncate">${escapeHtml(item.name)}</h3>
                     <p class="text-sm text-gray-400 mt-0.5">HK$${item.price.toFixed(2)} each</p>
                     <div class="flex items-center gap-3 mt-2">
                         <div class="inline-flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                            <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50" onclick="changeQty('${item.name}', -1)">
+                            <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50" onclick="window.changeQty('${item.id}', -1)">
                                 <i data-lucide="minus" class="w-3.5 h-3.5"></i>
                             </button>
                             <span class="w-8 text-center font-semibold text-sm text-gray-800">${item.qty}</span>
-                            <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50" onclick="changeQty('${item.name}', 1)">
+                            <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50" onclick="window.changeQty('${item.id}', 1)">
                                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
-                        <button class="text-red-400 hover:text-red-600 transition text-xs font-medium flex items-center gap-1" onclick="removeItem('${item.name}')">
+                        <button class="text-red-400 hover:text-red-600 transition text-xs font-medium flex items-center gap-1" onclick="window.removeItem('${item.id}')">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove
                         </button>
                     </div>
@@ -203,12 +209,12 @@ $(document).ready(function() {
         });
 
         lucide.createIcons();
-        updateSummary(agg);
+        updateSummary();
     }
 
-    function updateSummary(agg) {
-        const subtotal   = agg.reduce((s, i) => s + i.price * i.qty, 0);
-        const itemCount  = agg.reduce((s, i) => s + i.qty, 0);
+    function updateSummary() {
+        const subtotal   = items.reduce((s, i) => s + i.price * i.qty, 0);
+        const itemCount  = items.reduce((s, i) => s + i.qty, 0);
         const delivery   = subtotal >= FREE_DELIVERY_AT ? 0 : DELIVERY_FEE;
         const total      = subtotal + delivery;
         const remaining  = Math.max(0, FREE_DELIVERY_AT - subtotal);
@@ -226,31 +232,100 @@ $(document).ready(function() {
             $('#free-delivery-msg').html(`Add <strong>HK$${remaining.toFixed(2)}</strong> more for free delivery!`);
         }
 
-        // Pass total to checkout link via query param
-        $('#checkout-btn').attr('href', `/checkout?total=${total.toFixed(2)}&items=${itemCount}`);
+        // 已登录：结账跳 /checkout；未登录：跳 /login?return=/checkout
+        const checkoutHref = isLoggedIn ? '/checkout' : '/login?return=/checkout';
+        $('#checkout-btn').attr('href', checkoutHref);
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // 兜底 icon（guest 用）
+    function productIcon(name) {
+        const n = String(name).toLowerCase();
+        if (n.includes('kale') || n.includes('spinach')) return 'salad';
+        if (n.includes('egg')) return 'egg';
+        if (n.includes('tomato')) return 'cherry';
+        if (n.includes('fruit')) return 'apple';
+        if (n.includes('tofu')) return 'box';
+        if (n.includes('rice')) return 'wheat';
+        return 'package';
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
-    window.changeQty = function(name, delta) {
-        const agg = aggregate(getCart());
-        const item = agg.find(i => i.name === name);
+    window.changeQty = function(id, delta) {
+        const item = items.find(i => String(i.id) === String(id));
         if (!item) return;
-        item.qty = Math.max(0, item.qty + delta);
-        if (item.qty === 0) {
-            agg.splice(agg.indexOf(item), 1);
+        const newQty = Math.max(0, item.qty + delta);
+        if (newQty === 0) {
+            return window.removeItem(id);
         }
-        saveCart(flatten(agg));
-        render();
+
+        if (isLoggedIn && typeof id === 'number') {
+            gbFetch(`/api/cart/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: newQty }),
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.error) { alert('更新失败：' + (d.error.message || '未知')); return; }
+                item.qty = newQty;
+                render();
+            });
+        } else {
+            // guest: 通过 localCart 增减
+            const cart = localCart();
+            const it = items.find(i => i.id === id);
+            if (!it) return;
+            const diff = newQty - it.qty;
+            it.qty = newQty;
+            if (diff > 0) {
+                for (let k = 0; k < diff; k++) cart.push({ name: it.name, price: it.price });
+            } else {
+                let toRemove = -diff;
+                for (let k = cart.length - 1; k >= 0 && toRemove > 0; k--) {
+                    if (cart[k].name === it.name) { cart.splice(k, 1); toRemove--; }
+                }
+            }
+            saveLocalCart(cart);
+            render();
+        }
     };
 
-    window.removeItem = function(name) {
-        const agg = aggregate(getCart()).filter(i => i.name !== name);
-        saveCart(flatten(agg));
-        render();
+    window.removeItem = function(id) {
+        const item = items.find(i => String(i.id) === String(id));
+        if (!item) return;
+
+        if (isLoggedIn && typeof id === 'number') {
+            if (!confirm('確定要刪除這項嗎？')) return;
+            gbFetch(`/api/cart/${id}`, { method: 'DELETE' })
+                .then(r => {
+                    if (!r.ok) throw new Error('刪除失敗');
+                    items = items.filter(i => i.id !== id);
+                    render();
+                });
+        } else {
+            // guest
+            let cart = localCart();
+            cart = cart.filter(x => x.name !== item.name);
+            saveLocalCart(cart);
+            items = items.filter(i => i.id !== id);
+            render();
+        }
     };
 
-    // Initial render
-    render();
+    // ── Initial load ─────────────────────────────────────────────────────────
+    fetchData().then(render).catch(err => {
+        if (err.message !== 'UNAUTHORIZED') {
+            console.error('cart load error', err);
+            // 失败时退化到 localStorage
+            const agg = aggregateLocal(localCart());
+            items = agg.map((a, i) => ({ id: 'local-' + i, name: a.name, price: a.price, qty: a.qty, image: null }));
+            render();
+        }
+    });
 });
 </script>
 @endsection

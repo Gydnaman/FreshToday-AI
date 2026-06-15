@@ -18,6 +18,7 @@
 | [ADR-0004](./0004-webhook-idempotency-and-signature.md) | Webhook 幂等与签名校验 | 已接受 | 2026-06-12 | `REVIEW-REPORT §3.1 NEW-P1-03`、`api-contract §2.8` |
 | [ADR-0005](./0005-order-state-machine.md) | 订单状态机实现（7 态 SSOT） | 已接受 | 2026-06-12 | `REVIEW-REPORT §9.3 NEW-P1-01`、`order-state-machine.md` 附录 A |
 | [ADR-0006](./0006-ai-menu-cache-and-fallback.md) | AI 菜单缓存、降级与限流 | 已接受 | 2026-06-12 | `REVIEW-REPORT §3.1 NEW-P1-03`、`AiMenuService.php` |
+| [ADR-0007](./0007-web-checkout-flow.md) | Web 端下单与支付链路打通（双轨制数据流） | 已提议 | 2026-06-15 | `DAY5-GAP-REPORT §3`、`api-contract §2.1/§2.4/§2.5` |
 
 ## Sprint 0 之前（历史背景）
 
