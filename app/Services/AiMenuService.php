@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\GuardCode;
 use App\Exceptions\GuardFailedException;
 use App\Models\DailyMenu;
 use App\Models\Product;
@@ -44,7 +45,7 @@ class AiMenuService
     {
         $preferences = $overridePreferences ?? $this->resolvePreferences($user);
         if (empty($preferences)) {
-            throw new GuardFailedException('GUARD-AI', '用户未填写问卷偏好，无法生成菜单', [
+            throw new GuardFailedException(GuardCode::Ai, '用户未填写问卷偏好，无法生成菜单', [
                 'user_id' => $user->id,
             ]);
         }
@@ -97,7 +98,7 @@ class AiMenuService
             Cache::put($regenKey, 1, self::CACHE_TTL_SECONDS);
         }
         if ($count > self::DAILY_REGEN_LIMIT) {
-            throw new GuardFailedException('GUARD-AI-RATE', '每日最多重新生成 3 次', [
+            throw new GuardFailedException(GuardCode::AiRate, '每日最多重新生成 3 次', [
                 'limit' => self::DAILY_REGEN_LIMIT,
             ]);
         }

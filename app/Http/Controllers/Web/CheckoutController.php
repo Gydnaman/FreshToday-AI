@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\Currency;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Client\Response;
@@ -113,7 +114,7 @@ class CheckoutController extends Controller
             'district' => $data['shipping_address']['district'],
             'date' => $data['shipping_address']['date'] ?? null,
             'notes' => $data['shipping_address']['notes'] ?? null,
-            'currency' => 'HKD',
+            'currency' => Currency::HKD->value,
         ];
 
         // ── 4. 调 /api/orders（创建订单，OrderService 内部事务 + 库存预占） ──

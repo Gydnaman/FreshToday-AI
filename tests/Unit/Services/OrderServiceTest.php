@@ -5,58 +5,21 @@ namespace Tests\Unit\Services;
 use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
 use App\Exceptions\InvalidTransitionException;
-use App\Models\Order;
 use App\Models\OrderStatusLog;
-use App\Models\Payment;
-use App\Models\Product;
 use App\Models\User;
 use App\Services\OrderService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\Concerns\CreatesPaidOrder;
+use Tests\TestCases\OrderServiceTestCase;
 
 /**
  * OrderService 状态机主测试
  * 覆盖 docs/bmad/order-state-machine.md 附录 A 的 7 状态 × happy path
+ *
+ * P1-1：setUp + makeOrderWithPayment 已上提至 OrderServiceTestCase / CreatesPaidOrder
  */
-class OrderServiceTest extends TestCase
+class OrderServiceTest extends OrderServiceTestCase
 {
-    use RefreshDatabase;
-
-    private OrderService $service;
-
-    private User $user;
-
-    private Product $product;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->service = app(OrderService::class);
-        $this->user = User::factory()->create();
-        $this->product = Product::factory()->create(['stock' => 100, 'price' => 50]);
-    }
-
-    /** 创建一个已支付成功的 pending 订单（含匹配支付单） */
-    private function makeOrderWithPayment(string $trigger = 'admin'): Order
-    {
-        $order = $this->service->createOrder(
-            user: $this->user,
-            items: [['product_id' => $this->product->id, 'quantity' => 2]],
-            shippingAddress: ['name' => 'Tester', 'currency' => 'HKD'],
-        );
-        // 注入一笔 succeeded 支付单，金额匹配
-        Payment::create([
-            'order_id' => $order->id,
-            'provider' => 'stripe',
-            'provider_txn_id' => 'pi_test_'.$order->id,
-            'amount' => $order->total_price,
-            'currency' => 'HKD',
-            'status' => 'succeeded',
-            'paid_at' => now(),
-        ]);
-
-        return $order->fresh();
-    }
+    use CreatesPaidOrder;
 
     /** 测试 pending → paid 的 happy path（含 GUARD-P1 支付守卫） */
     public function test_pending_to_paid_succeeds_with_valid_payment(): void

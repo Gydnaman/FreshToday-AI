@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\Currency;
+use App\Enums\GuardCode;
 use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
 use App\Exceptions\InvalidTransitionException;
@@ -18,12 +20,12 @@ use Illuminate\Support\Facades\DB;
  * 订单状态机服务（Day 1-2 核心）
  *
  * 单一入口：transition()
- * - 守卫校验（GUARD-G0/G1/G2/P1/P3/I1/I2/I3）
- * - 状态转移（事务内）
+ * - 守卫校验（GUARD-G0/G1/P1/P3/I1/I2/I3 → GuardCode enum 收口）
+ * - 状态转移（事务内 + lockForUpdate 防并发双写）
  * - 审计日志
  * - 副作用：库存预占/释放、支付绑定、退款触发
  *
- * 详见 docs/bmad/order-state-machine.md §6
+ * 详见 docs/bmad/order-state-machine.md §6 + ADR-007 P0-1
  */
 class OrderService
 {
@@ -41,6 +43,35 @@ class OrderService
         'refunded' => [],
     ];
 
+    /**
+     * 业务自带 G0 守卫（SSOT，唯一真值源）
+     *
+     * 契约：
+     * - $actor === null ⇒ 系统调用（webhook / 队列 / scheduler），放行
+     * - $actor 是 owner ⇒ 放行
+     * - $actor 是 admin ⇒ 放行
+     * - 其他 ⇒ GuardFailedException(G0)
+     *
+     * Controller 入口层加 OrderPolicy 做 HTTP 边界拦截（403），但业务层
+     * 仍走本静态方法形成双层防护（防 Policy 漏配 / 中间件顺序错位）。
+     */
+    public static function assertOwnerOrAdmin(?User $actor, Order $order): void
+    {
+        if ($actor === null) {
+            return; // 系统调用合法路径
+        }
+        if ($order->user_id === $actor->id) {
+            return;
+        }
+        if ($actor->is_admin ?? false) {
+            return;
+        }
+        throw new GuardFailedException(GuardCode::G0, null, [
+            'order_user_id' => $order->user_id,
+            'actor_user_id' => $actor->id,
+        ]);
+    }
+
     public function transition(
         Order $order,
         OrderStatus $to,
@@ -48,8 +79,10 @@ class OrderService
         array $context = [],
         ?User $actor = null,
     ): Order {
+        // P0-1 修复：行锁 + 显式 RuntimeException 双保险
+        // 必须在事务前 lockForUpdate，否则多个 transition 同时读 status 都通过 G1 校验
+        $order = Order::lockForUpdate()->findOrFail($order->id);
         $from = $order->status;
-        $order->refresh();
 
         // GUARD-G1 状态合法性
         $allowedTo = self::TRANSITIONS[$from->value] ?? [];
@@ -57,13 +90,8 @@ class OrderService
             throw new InvalidTransitionException($order, $from, $to, $trigger);
         }
 
-        // GUARD-G0 订单归属
-        if ($actor !== null && $order->user_id !== $actor->id && ! ($actor->is_admin ?? false)) {
-            throw new GuardFailedException('GUARD-G0', '无权操作此订单', [
-                'order_user_id' => $order->user_id,
-                'actor_user_id' => $actor->id,
-            ]);
-        }
+        // GUARD-G0 订单归属（委托 SSOT 静态方法，详见 P1-5）
+        self::assertOwnerOrAdmin($actor, $order);
 
         // 终态不变量 #3
         if ($from->isTerminal() && ! ($from === OrderStatus::Delivered && $to === OrderStatus::Refunded)) {
@@ -157,10 +185,10 @@ class OrderService
                 $product = Product::lockForUpdate()->findOrFail($item['product_id']);
                 $qty = (int) $item['quantity'];
                 if ($qty <= 0) {
-                    throw new GuardFailedException('GUARD-I1', '数量必须为正', ['product_id' => $product->id]);
+                    throw new GuardFailedException(GuardCode::I1, '数量必须为正', ['product_id' => $product->id]);
                 }
                 if (! $product->hasStock($qty)) {
-                    throw new GuardFailedException('GUARD-I1', '库存不足', [
+                    throw new GuardFailedException(GuardCode::I1, '库存不足', [
                         'product_id' => $product->id,
                         'requested' => $qty,
                         'available' => $product->stock,
@@ -178,18 +206,21 @@ class OrderService
                 $coupon = Coupon::where('code', $couponCode)
                     ->where('is_active', 1)->first();
                 if (! $coupon) {
-                    throw new GuardFailedException('GUARD-COUPON', '优惠券无效', ['code' => $couponCode]);
+                    throw new GuardFailedException(GuardCode::Coupon, '优惠券无效', ['code' => $couponCode]);
                 }
                 if (! $coupon->isValidForAmount($total)) {
-                    throw new GuardFailedException('GUARD-COUPON', '优惠券不满足最低金额', [
+                    throw new GuardFailedException(GuardCode::Coupon, '优惠券不满足最低金额', [
                         'min_order_amount' => $coupon->min_order_amount,
                     ]);
                 }
                 $discount = $coupon->discountAmount($total);
                 $total -= $discount;
-                $userCoupon = UserCoupon::where('user_id', $user->id)
+                $userCoupon = UserCoupon::lockForUpdate()
+                    ->where('user_id', $user->id)
                     ->where('coupon_id', $coupon->id)
-                    ->where('status', 'claimed')->first();
+                    ->where('status', 'claimed')
+                    ->whereNull('order_id') // P1-3 兜底：只取未占用的
+                    ->first();
             }
 
             $order = Order::create([
@@ -220,25 +251,30 @@ class OrderService
             ->latest()->first();
 
         if (! $payment) {
-            throw new GuardFailedException('GUARD-P1', '订单未找到匹配的成功支付单', [
+            throw new GuardFailedException(GuardCode::P1, '订单未找到匹配的成功支付单', [
                 'order_id' => $order->id,
             ]);
         }
         if ((float) $payment->amount !== (float) $order->total_price) {
-            throw new GuardFailedException('GUARD-P1', '支付金额与订单金额不一致', [
+            throw new GuardFailedException(GuardCode::P1, '支付金额与订单金额不一致', [
                 'payment_amount' => $payment->amount,
                 'order_total' => $order->total_price,
             ]);
         }
-        if ($payment->currency !== 'HKD' || ($order->shipping_address['currency'] ?? 'HKD') !== 'HKD') {
-            throw new GuardFailedException('GUARD-P3', '币种不一致（仅支持 HKD）');
+        if ($payment->currency !== Currency::HKD->value
+            || ($order->shipping_address['currency'] ?? Currency::HKD->value) !== Currency::HKD->value) {
+            throw new GuardFailedException(GuardCode::P3, '币种不一致（仅支持 HKD）');
         }
     }
 
     private function releaseStock(Order $order): void
     {
         foreach ($order->products as $product) {
-            $product->increment('stock', $product->pivot->quantity);
+            // P0-1 配套：释放库存也要行锁，避免与 createOrder 的 decrement 互踩
+            $locked = Product::lockForUpdate()->find($product->id);
+            if ($locked) {
+                $locked->increment('stock', $product->pivot->quantity);
+            }
         }
     }
 

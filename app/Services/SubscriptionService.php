@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\GuardCode;
 use App\Exceptions\GuardFailedException;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
@@ -25,7 +26,7 @@ class SubscriptionService
             ->where('status', 'active')
             ->first();
         if ($existing) {
-            throw new GuardFailedException('GUARD-SUB', '已有活跃订阅', [
+            throw new GuardFailedException(GuardCode::Sub, '已有活跃订阅', [
                 'existing_id' => $existing->id,
             ]);
         }
@@ -46,7 +47,7 @@ class SubscriptionService
     public function cancel(UserSubscription $sub, string $reason): UserSubscription
     {
         if ($sub->status === 'cancelled') {
-            throw new GuardFailedException('GUARD-SUB', '订阅已取消', ['id' => $sub->id]);
+            throw new GuardFailedException(GuardCode::Sub, '订阅已取消', ['id' => $sub->id]);
         }
         $sub->update([
             'status' => 'cancelled',

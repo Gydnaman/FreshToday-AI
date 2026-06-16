@@ -20,10 +20,15 @@ use Tests\TestCase;
  * 100 次连续请求会触发默认 throttle:api 60/min 限流，但 webhook 路由配置了
  * throttle:10000,1 不应触发 429。本测试套用 WithoutMiddleware 是双保险：
  * 100 次是为了验证「webhook 业务级幂等」而不是「限流器是否生效」。
+ *
+ * ADR-007 P0-2 修复：用真实 HMAC 签名（CI 注入 STRIPE_WEBHOOK_SECRET），
+ * 不再走 testing 短路放行。
  */
 class WebhookFlowTest extends TestCase
 {
     use RefreshDatabase, WithoutMiddleware;
+
+    private const TEST_WEBHOOK_SECRET = 'whsec_test_for_p0_2_fix';
 
     private OrderService $orderService;
 
@@ -38,6 +43,12 @@ class WebhookFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // P0-2: testing 环境允许空 secret（AppServiceProvider::assertStripeWebhookSecretConfigured），
+        // 但 verifySignature 内部仍 fail-closed 要求 secret 非空 → 测试期显式注入。
+        config(['services.stripe.webhook_secret' => self::TEST_WEBHOOK_SECRET]);
+        putenv('STRIPE_WEBHOOK_SECRET='.self::TEST_WEBHOOK_SECRET);
+
         $this->orderService = app(OrderService::class);
         $this->user = User::factory()->create();
         $product = Product::factory()->create(['stock' => 100, 'price' => 80]);
@@ -66,7 +77,7 @@ class WebhookFlowTest extends TestCase
         $payload = $this->buildPayload();
 
         $this->postJson('/api/stripe/webhook', $payload, [
-            'Stripe-Signature' => 'sig_test',
+            'Stripe-Signature' => $this->sign($payload),
         ])->assertOk()->assertJson(['received' => true]);
 
         $this->order->refresh();
@@ -82,10 +93,11 @@ class WebhookFlowTest extends TestCase
     public function test_repeated_webhook_only_processes_once(): void
     {
         $payload = $this->buildPayload();
+        $signature = $this->sign($payload);
 
         for ($i = 0; $i < 100; $i++) {
             $this->postJson('/api/stripe/webhook', $payload, [
-                'Stripe-Signature' => 'sig_test',
+                'Stripe-Signature' => $signature,
             ])->assertOk();
         }
 
@@ -114,8 +126,9 @@ class WebhookFlowTest extends TestCase
             ],
         ];
 
-        $this->postJson('/api/stripe/webhook', $payload, ['Stripe-Signature' => 'sig_test'])
-            ->assertOk();
+        $this->postJson('/api/stripe/webhook', $payload, [
+            'Stripe-Signature' => $this->sign($payload),
+        ])->assertOk();
 
         $payment = Payment::where('provider_txn_id', $this->txnId)->first();
         $this->assertEquals('failed', $payment->status);
@@ -135,5 +148,15 @@ class WebhookFlowTest extends TestCase
                 ],
             ],
         ];
+    }
+
+    /**
+     * P0-2：按 StripeWebhookController::verifySignature 的算法生成真实 HMAC
+     */
+    private function sign(array $payload): string
+    {
+        $signedPayload = $payload['id'].'.'.json_encode($payload);
+
+        return hash_hmac('sha256', $signedPayload, self::TEST_WEBHOOK_SECRET);
     }
 }

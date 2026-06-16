@@ -36,5 +36,34 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('webhook', function (Request $request) {
             return Limit::perMinute(10000);
         });
+
+        // P0-2 启动断言：Stripe webhook secret 必须在所有非 local 环境配置
+        // 防止 StripeWebhookController 静默放行（fail-closed）
+        $this->assertStripeWebhookSecretConfigured();
+    }
+
+    /**
+     * 启动期断言 Stripe webhook secret 已配置
+     *
+     * - local 环境允许空（开发者本地测试）
+     * - testing 环境允许空（CI 跑测试用，签名已 mock）
+     * - 其他所有环境（staging/production）必须配置，否则启动即崩
+     */
+    private function assertStripeWebhookSecretConfigured(): void
+    {
+        $appEnv = $this->app->environment();
+
+        if (in_array($appEnv, ['local', 'testing'], true)) {
+            return;
+        }
+
+        $secret = config('services.stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET');
+        if (! $secret) {
+            throw new \RuntimeException(
+                "Stripe webhook secret is not configured for environment [{$appEnv}]. "
+                .'Set STRIPE_WEBHOOK_SECRET in your .env file. '
+                .'Refusing to start to prevent insecure webhook handling (fail-closed).'
+            );
+        }
     }
 }
