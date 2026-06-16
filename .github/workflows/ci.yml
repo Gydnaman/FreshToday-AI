@@ -3,7 +3,7 @@
 # 文档引用: docs/bmad/ci-cd-pipeline.md §3 Pipeline 1 (PR Check) — 落地版
 # 关联任务: REVIEW-REPORT v1.0 §5 P0-1 (CI 工作流未交付)
 # 框架: fdd-bmad-custom (BMAD Ops Domain)
-# Laravel: 12.x | PHP: 8.2 | Node: 20 | MySQL: 8.0 | Redis: 7
+# Laravel: 12.x | PHP: 8.2 | Node: 20 | SQLite (in-memory) | array cache
 # ---------------------------------------------------------------------------
 name: CI
 
@@ -60,7 +60,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, dom, fileinfo, mysql, redis, bcmath, intl
+          extensions: mbstring, dom, fileinfo, sqlite, bcmath, intl
           coverage: none
           tools: composer:v2, phpstan
 
@@ -95,60 +95,29 @@ jobs:
           fi
 
   # ============================================================
-  # JOB 2: Test — PHPUnit + MySQL 8 + Redis 7 service container
+  # JOB 2: Test — PHPUnit + SQLite in-memory (与本地开发一致)
   # ============================================================
   test:
-    name: Test (PHPUnit + MySQL 8 + Redis 7)
+    name: Test (PHPUnit + SQLite in-memory)
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     needs: lint
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: greenbite_test
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
 
     env:
       APP_ENV: testing
       APP_KEY: base64:${{ secrets.APP_KEY_TEST || 'base64:K6yJU0Xt5TpbkFBLjvLqUEBLpZJLlAKjVc2rJM0YpNY=' }}
       APP_DEBUG: 'true'
-      DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: greenbite_test
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      CACHE_STORE: redis
-      QUEUE_CONNECTION: redis
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
       MAIL_MAILER: array
-      REDIS_CLIENT: phpredis
-      REDIS_HOST: 127.0.0.1
-      REDIS_PORT: 6379
+      BC_CRYPT_ROUNDS: 4
+      LOG_CHANNEL: stack
       GEMINI_API_KEY: dummy-test-key
       STRIPE_SECRET: sk_test_dummy
       STRIPE_WEBHOOK_SECRET: whsec_test_dummy
-      BC_CRYPT_ROUNDS: 4
-      LOG_CHANNEL: stack
 
     steps:
       - name: Checkout
@@ -158,7 +127,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, dom, fileinfo, mysql, redis, bcmath, gd, intl, zip
+          extensions: mbstring, dom, fileinfo, sqlite, bcmath, gd, intl, zip
           coverage: xdebug
           tools: composer:v2
 
@@ -177,30 +146,6 @@ jobs:
 
       - name: Generate APP_KEY
         run: php artisan key:generate
-
-      - name: Wait for MySQL health
-        run: |
-          echo "Waiting for MySQL..."
-          for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent; then
-              echo "MySQL is up"
-              break
-            fi
-            echo "Attempt $i: MySQL not ready, sleeping..."
-            sleep 2
-          done
-
-      - name: Wait for Redis health
-        run: |
-          echo "Waiting for Redis..."
-          for i in {1..30}; do
-            if redis-cli -h 127.0.0.1 ping | grep -q PONG; then
-              echo "Redis is up"
-              break
-            fi
-            echo "Attempt $i: Redis not ready, sleeping..."
-            sleep 2
-          done
 
       - name: Run Migrations
         run: php artisan migrate --env=testing --force
@@ -231,46 +176,16 @@ jobs:
     timeout-minutes: 20
     needs: lint
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: greenbite_e2e
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     env:
       APP_ENV: testing
       APP_KEY: base64:K6yJU0Xt5TpbkFBLjvLqUEBLpZJLlAKjVc2rJM0YpNY=
       APP_URL: http://127.0.0.1:8000
-      DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: greenbite_e2e
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      CACHE_STORE: redis
-      QUEUE_CONNECTION: redis
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/e2e.sqlite
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
       MAIL_MAILER: array
-      REDIS_HOST: 127.0.0.1
-      REDIS_PORT: 6379
 
     steps:
       - name: Checkout
@@ -280,7 +195,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, dom, fileinfo, mysql, redis, bcmath, gd, intl, zip
+          extensions: mbstring, dom, fileinfo, bcmath, gd, intl, zip, sqlite
           tools: composer:v2
 
       - name: Setup Node ${{ env.NODE_VERSION }}
@@ -311,19 +226,8 @@ jobs:
       - name: Generate APP_KEY
         run: php artisan key:generate
 
-      - name: Wait for MySQL health
-        run: |
-          for i in {1..30}; do
-            mysqladmin ping -h 127.0.0.1 -uroot -proot --silent && break
-            sleep 2
-          done
-
-      - name: Wait for Redis health
-        run: |
-          for i in {1..30}; do
-            redis-cli -h 127.0.0.1 ping | grep -q PONG && break
-            sleep 2
-          done
+      - name: Create SQLite database file
+        run: mkdir -p database && touch database/e2e.sqlite
 
       - name: Migrate E2E Database
         run: php artisan migrate --env=testing --force
