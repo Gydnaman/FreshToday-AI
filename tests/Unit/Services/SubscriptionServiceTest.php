@@ -2,13 +2,10 @@
 
 namespace Tests\Unit\Services;
 
-use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
-use App\Models\Order;
 use App\Models\Product;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
-use App\Models\UserSubscription;
 use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +16,9 @@ class SubscriptionServiceTest extends TestCase
     use RefreshDatabase;
 
     private SubscriptionService $service;
+
     private User $user;
+
     private SubscriptionPlan $plan;
 
     protected function setUp(): void
@@ -30,8 +29,8 @@ class SubscriptionServiceTest extends TestCase
         $product = Product::factory()->create(['stock' => 100, 'price' => 50]);
         $this->plan = SubscriptionPlan::factory()->create([
             'duration' => 30,
-            'cycle'    => 'weekly',
-            'is_active'=> true,
+            'cycle' => 'weekly',
+            'is_active' => true,
         ]);
         $this->plan->products()->attach($product->id, ['quantity' => 2, 'price' => 50]);
         $this->plan->refresh();

@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * Sprint 1: 新建 categories / cart_items 表
  * 详见 docs/bmad/er-diagram.md §2.2 / §2.11
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {

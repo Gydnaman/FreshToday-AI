@@ -18,8 +18,8 @@ class CartController extends Controller
         $total = $items->sum(fn ($i) => $i->subtotal());
 
         return response()->json([
-            'items'      => $items,
-            'total'      => $total,
+            'items' => $items,
+            'total' => $total,
             'item_count' => $items->sum('quantity'),
         ]);
     }
@@ -28,7 +28,7 @@ class CartController extends Controller
     {
         $data = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
-            'quantity'   => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1',
         ]);
         $product = Product::findOrFail($data['product_id']);
         if (! $product->hasStock($data['quantity'])) {
@@ -38,7 +38,7 @@ class CartController extends Controller
         }
 
         $item = CartItem::firstOrNew([
-            'user_id'    => $request->user()->id,
+            'user_id' => $request->user()->id,
             'product_id' => $data['product_id'],
         ]);
         $item->quantity = ($item->exists ? $item->quantity : 0) + $data['quantity'];
@@ -51,8 +51,11 @@ class CartController extends Controller
     {
         $this->authorizeOwner($request, $item);
         $data = $request->validate(['quantity' => 'required|integer|min:0']);
-        if ($data['quantity'] === 0) return $this->destroy($request, $item);
+        if ($data['quantity'] === 0) {
+            return $this->destroy($request, $item);
+        }
         $item->update(['quantity' => $data['quantity']]);
+
         return response()->json(['item' => $item->fresh('product')]);
     }
 
@@ -60,6 +63,7 @@ class CartController extends Controller
     {
         $this->authorizeOwner($request, $item);
         $item->delete();
+
         return response()->json(null, 204);
     }
 

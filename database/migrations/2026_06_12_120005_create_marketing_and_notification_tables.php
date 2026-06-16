@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * Sprint 3: coupons / user_coupons / points_transactions / notification_preferences
  * 详见 docs/bmad/er-diagram.md §2.13-§2.16
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('coupons', function (Blueprint $table) {

@@ -10,16 +10,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Payment extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'order_id', 'provider', 'provider_txn_id', 'amount',
         'currency', 'status', 'raw_response', 'paid_at', 'refunded_at',
     ];
 
     protected $casts = [
-        'amount'       => 'decimal:2',
+        'amount' => 'decimal:2',
         'raw_response' => 'array',
-        'paid_at'      => 'datetime',
-        'refunded_at'  => 'datetime',
+        'paid_at' => 'datetime',
+        'refunded_at' => 'datetime',
     ];
 
     public function order(): BelongsTo

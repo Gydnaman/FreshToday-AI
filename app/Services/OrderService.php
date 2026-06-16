@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
 use App\Exceptions\InvalidTransitionException;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderStatusLog;
 use App\Models\Payment;
@@ -31,13 +32,13 @@ class OrderService
      * 与附录 A 跨文档状态对照表一致
      */
     private const TRANSITIONS = [
-        'pending'    => ['paid', 'cancelled'],
-        'paid'       => ['processing', 'refunded'],
+        'pending' => ['paid', 'cancelled'],
+        'paid' => ['processing', 'refunded'],
         'processing' => ['shipped', 'refunded'],
-        'shipped'    => ['delivered', 'refunded'],
-        'delivered'  => ['refunded'],
-        'cancelled'  => [],
-        'refunded'   => [],
+        'shipped' => ['delivered', 'refunded'],
+        'delivered' => ['refunded'],
+        'cancelled' => [],
+        'refunded' => [],
     ];
 
     public function transition(
@@ -110,14 +111,14 @@ class OrderService
 
             // 审计日志（不变量 #2）
             OrderStatusLog::create([
-                'order_id'      => $order->id,
-                'from_status'   => $from->value,
-                'to_status'     => $to->value,
-                'trigger'       => $trigger,
+                'order_id' => $order->id,
+                'from_status' => $from->value,
+                'to_status' => $to->value,
+                'trigger' => $trigger,
                 'actor_user_id' => $actor?->id,
-                'actor_type'    => $context['actor_type'] ?? 'system',
-                'context'       => $context,
-                'created_at'    => now(),
+                'actor_type' => $context['actor_type'] ?? 'system',
+                'context' => $context,
+                'created_at' => now(),
             ]);
 
             return $order->fresh();
@@ -127,6 +128,7 @@ class OrderService
     public function canTransition(Order $order, OrderStatus $to, string $trigger): bool
     {
         $allowed = self::TRANSITIONS[$order->status->value] ?? [];
+
         return in_array($to->value, $allowed, true) && ! $order->status->isTerminal();
     }
 
@@ -137,6 +139,7 @@ class OrderService
 
     /**
      * 创建订单（含库存预占 GUARD-I1）
+     *
      * @throws GuardFailedException
      */
     public function createOrder(
@@ -159,8 +162,8 @@ class OrderService
                 if (! $product->hasStock($qty)) {
                     throw new GuardFailedException('GUARD-I1', '库存不足', [
                         'product_id' => $product->id,
-                        'requested'  => $qty,
-                        'available'  => $product->stock,
+                        'requested' => $qty,
+                        'available' => $product->stock,
                     ]);
                 }
                 $product->decrement('stock', $qty);
@@ -172,7 +175,7 @@ class OrderService
             $discount = 0;
             $userCoupon = null;
             if ($couponCode) {
-                $coupon = \App\Models\Coupon::where('code', $couponCode)
+                $coupon = Coupon::where('code', $couponCode)
                     ->where('is_active', 1)->first();
                 if (! $coupon) {
                     throw new GuardFailedException('GUARD-COUPON', '优惠券无效', ['code' => $couponCode]);
@@ -190,14 +193,14 @@ class OrderService
             }
 
             $order = Order::create([
-                'user_id'             => $user->id,
-                'order_no'            => $this->generateOrderNo(),
-                'status'              => OrderStatus::Pending,
-                'total_price'         => $total,
-                'discount_amount'     => $discount,
-                'shipping_address'    => $shippingAddress,
-                'user_subscription_id'=> $userSubscriptionId,
-                'placed_at'           => now(),
+                'user_id' => $user->id,
+                'order_no' => $this->generateOrderNo(),
+                'status' => OrderStatus::Pending,
+                'total_price' => $total,
+                'discount_amount' => $discount,
+                'shipping_address' => $shippingAddress,
+                'user_subscription_id' => $userSubscriptionId,
+                'placed_at' => now(),
             ]);
             $order->products()->sync($orderProducts);
 
@@ -224,7 +227,7 @@ class OrderService
         if ((float) $payment->amount !== (float) $order->total_price) {
             throw new GuardFailedException('GUARD-P1', '支付金额与订单金额不一致', [
                 'payment_amount' => $payment->amount,
-                'order_total'    => $order->total_price,
+                'order_total' => $order->total_price,
             ]);
         }
         if ($payment->currency !== 'HKD' || ($order->shipping_address['currency'] ?? 'HKD') !== 'HKD') {
@@ -241,6 +244,6 @@ class OrderService
 
     private function generateOrderNo(): string
     {
-        return 'GB' . now()->format('Ymd') . str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        return 'GB'.now()->format('Ymd').str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
     }
 }

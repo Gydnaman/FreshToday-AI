@@ -11,7 +11,7 @@ return [
     ],
 
     'ses' => [
-        'key'    => env('AWS_ACCESS_KEY_ID'),
+        'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
@@ -19,7 +19,7 @@ return [
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel'              => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
 
@@ -29,22 +29,22 @@ return [
     |--------------------------------------------------------------------------
     */
     'gemini' => [
-        'api_key'  => env('GEMINI_API_KEY'),
+        'api_key' => env('GEMINI_API_KEY'),
         'base_url' => 'https://generativelanguage.googleapis.com/v1beta',
-        'model'    => env('GEMINI_MODEL', 'gemini-2.5-flash'),
-        'timeout'  => 8,
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'timeout' => 8,
     ],
 
     'stripe' => [
-        'secret_key'      => env('STRIPE_SECRET_KEY'),
+        'secret_key' => env('STRIPE_SECRET_KEY'),
         'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
-        'webhook_secret'  => env('STRIPE_WEBHOOK_SECRET'),
-        'api_version'     => '2024-06-20',
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'api_version' => '2024-06-20',
     ],
 
     'payme' => [
-        'merchant_id'    => env('PAYME_MERCHANT_ID'),
-        'api_key'        => env('PAYME_API_KEY'),
+        'merchant_id' => env('PAYME_MERCHANT_ID'),
+        'api_key' => env('PAYME_API_KEY'),
         'webhook_secret' => env('PAYME_WEBHOOK_SECRET'),
     ],
 ];

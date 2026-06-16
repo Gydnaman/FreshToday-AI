@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * Sprint 1: 补全 orders 表字段 + CHECK 约束
  * 详见 docs/bmad/er-diagram.md §2.6 与 order-state-machine.md §A.1
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
@@ -34,8 +35,8 @@ return new class extends Migration {
 
         // 状态机 SSOT 在应用层 (OrderService::canTransition)，见 ADR-0005
         // MySQL 8.0.16+ 额外加 DB 层 CHECK 作为双保险；SQLite 跳过
-        if (\DB::getDriverName() === 'mysql') {
-            \DB::statement("
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("
                 ALTER TABLE orders
                 ADD CONSTRAINT chk_orders_status
                 CHECK (status IN ('pending','paid','processing','shipped','delivered','cancelled','refunded'))
@@ -45,8 +46,8 @@ return new class extends Migration {
 
     public function down(): void
     {
-        if (\DB::getDriverName() === 'mysql') {
-            \DB::statement('ALTER TABLE orders DROP CONSTRAINT chk_orders_status');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE orders DROP CONSTRAINT chk_orders_status');
         }
 
         Schema::table('orders', function (Blueprint $table) {

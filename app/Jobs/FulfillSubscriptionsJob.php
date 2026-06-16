@@ -10,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 class FulfillSubscriptionsJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public function handle(SubscriptionService $service): int
     {

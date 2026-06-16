@@ -20,12 +20,13 @@ class MenuController extends Controller
                 'error' => ['code' => 'NO_PREFERENCES', 'message' => '请先完成问卷'],
             ], 404);
         }
+
         return response()->json([
             'data' => [
-                'date'    => $menu->date->toDateString(),
+                'date' => $menu->date->toDateString(),
                 'content' => $menu->menu_content,
-                'source'  => $menu->source ?? 'gemini',
-                'cached'  => true,
+                'source' => $menu->source ?? 'gemini',
+                'cached' => true,
             ],
         ]);
     }
@@ -37,16 +38,18 @@ class MenuController extends Controller
         ]);
         try {
             $menu = $this->aiService->regenerate($request->user(), $data['override_preferences'] ?? null);
+
             return response()->json([
                 'data' => [
-                    'date'        => $menu->date->toDateString(),
-                    'content'     => $menu->menu_content,
-                    'source'      => $menu->source ?? 'gemini',
+                    'date' => $menu->date->toDateString(),
+                    'content' => $menu->menu_content,
+                    'source' => $menu->source ?? 'gemini',
                     'tokens_used' => $menu->tokens_used ?? 0,
                 ],
             ]);
         } catch (GuardFailedException $e) {
             $payload = $e->toApiPayload();
+
             return response()->json(['error' => $payload], $payload['http']);
         }
     }

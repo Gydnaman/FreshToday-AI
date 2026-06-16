@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use App\Enums\OrderStatus;
 use RuntimeException;
 
 /**
@@ -21,18 +20,18 @@ class GuardFailedException extends RuntimeException
     public function toApiPayload(): array
     {
         $http = match ($this->guardCode) {
-            'GUARD-G0'     => 403,
-            'GUARD-P1'     => 409,
-            'GUARD-P3'     => 409,
+            'GUARD-G0' => 403,
+            'GUARD-P1' => 409,
+            'GUARD-P3' => 409,
             'GUARD-I1',
             'GUARD-I2',
-            'GUARD-I3'     => 409,
-            default        => 422,
+            'GUARD-I3' => 409,
+            default => 422,
         };
 
         return [
-            'http'  => $http,
-            'code'  => $this->guardCode,
+            'http' => $http,
+            'code' => $this->guardCode,
             'message' => $this->userMessage,
             'details' => $this->context,
         ];

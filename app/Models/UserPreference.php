@@ -16,8 +16,8 @@ class UserPreference extends Model
     ];
 
     protected $casts = [
-        'allergies'      => 'array',
-        'budget_hkd'     => 'decimal:2',
+        'allergies' => 'array',
+        'budget_hkd' => 'decimal:2',
         'household_size' => 'integer',
     ];
 

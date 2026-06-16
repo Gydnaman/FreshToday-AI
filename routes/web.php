@@ -37,5 +37,6 @@ Route::post('/survey', [SurveyController::class, 'store']);
 
 Route::get('/dashboard', function () {
     $aiMenu = session('daily_ai_menu', 'No menu generated yet. Please complete your profile survey!');
+
     return view('dashboard', compact('aiMenu'));
 });

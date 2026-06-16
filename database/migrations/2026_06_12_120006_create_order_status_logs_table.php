@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 订单状态变更日志（审计追溯用，order-state-machine.md 不变量 #2 要求）
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('order_status_logs', function (Blueprint $table) {

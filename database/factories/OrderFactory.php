@@ -17,17 +17,17 @@ class OrderFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'      => User::factory(),
-            'order_no'     => 'GB' . now()->format('Ymd') . str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT),
-            'status'       => OrderStatus::Pending->value,
-            'total_price'  => fake()->randomFloat(2, 50, 500),
-            'placed_at'    => now(),
+            'user_id' => User::factory(),
+            'order_no' => 'GB'.now()->format('Ymd').str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT),
+            'status' => OrderStatus::Pending->value,
+            'total_price' => fake()->randomFloat(2, 50, 500),
+            'placed_at' => now(),
             'shipping_address' => [
-                'name'       => fake()->name(),
-                'phone'      => '+852' . fake()->numerify('########'),
-                'address'    => fake()->streetAddress(),
-                'district'   => fake()->randomElement(['HK', 'KL', 'NT', 'Lantau']),
-                'currency'   => 'HKD',
+                'name' => fake()->name(),
+                'phone' => '+852'.fake()->numerify('########'),
+                'address' => fake()->streetAddress(),
+                'district' => fake()->randomElement(['HK', 'KL', 'NT', 'Lantau']),
+                'currency' => 'HKD',
             ],
         ];
     }
@@ -39,7 +39,7 @@ class OrderFactory extends Factory
 
     public function shipped(): static
     {
-        return $this->state(fn () => ['status' => OrderStatus::Shipped->value, 'paid_at' => now(), 'tracking_no' => 'SF' . random_int(100000, 999999)]);
+        return $this->state(fn () => ['status' => OrderStatus::Shipped->value, 'paid_at' => now(), 'tracking_no' => 'SF'.random_int(100000, 999999)]);
     }
 
     public function cancelled(): static

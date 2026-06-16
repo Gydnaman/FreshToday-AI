@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
  */
 class CancelExpiredOrdersJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
 
@@ -43,6 +43,7 @@ class CancelExpiredOrdersJob implements ShouldQueue
                     }
                 }
             });
+
         return $count;
     }
 }

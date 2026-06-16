@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -21,7 +22,9 @@ class PaymentServiceTest extends TestCase
     use RefreshDatabase;
 
     private PaymentService $service;
+
     private User $user;
+
     private Order $order;
 
     protected function setUp(): void
@@ -53,16 +56,16 @@ class PaymentServiceTest extends TestCase
     public function test_payment_succeeded_updates_payment_record(): void
     {
         $payment = Payment::create([
-            'order_id'        => $this->order->id,
-            'provider'        => 'stripe',
+            'order_id' => $this->order->id,
+            'provider' => 'stripe',
             'provider_txn_id' => 'pi_paid_1',
-            'amount'          => $this->order->total_price,
-            'currency'        => 'HKD',
-            'status'          => 'pending',
+            'amount' => $this->order->total_price,
+            'currency' => 'HKD',
+            'status' => 'pending',
         ]);
 
         $payload = [
-            'id'   => 'evt_paid_1',
+            'id' => 'evt_paid_1',
             'type' => 'payment_intent.succeeded',
             'data' => ['object' => ['id' => 'pi_paid_1']],
         ];
@@ -76,19 +79,19 @@ class PaymentServiceTest extends TestCase
     public function test_refund_transitions_order_to_refunded(): void
     {
         $payment = Payment::create([
-            'order_id'        => $this->order->id,
-            'provider'        => 'stripe',
+            'order_id' => $this->order->id,
+            'provider' => 'stripe',
             'provider_txn_id' => 'pi_refund_1',
-            'amount'          => $this->order->total_price,
-            'currency'        => 'HKD',
-            'status'          => 'succeeded',
-            'paid_at'         => now(),
+            'amount' => $this->order->total_price,
+            'currency' => 'HKD',
+            'status' => 'succeeded',
+            'paid_at' => now(),
         ]);
 
         // 推进订单到 paid（refund 业务前置条件）
         $this->order = app(OrderService::class)->transition(
             $this->order->fresh(),
-            \App\Enums\OrderStatus::Paid,
+            OrderStatus::Paid,
             'payment_succeeded',
             ['payment' => $payment, 'actor_type' => 'webhook'],
         );
@@ -96,6 +99,6 @@ class PaymentServiceTest extends TestCase
         $this->service->refund($payment, (int) $payment->amount, 'customer_refund');
 
         $this->assertEquals('refunded', $payment->fresh()->status);
-        $this->assertEquals(\App\Enums\OrderStatus::Refunded, $this->order->fresh()->status);
+        $this->assertEquals(OrderStatus::Refunded, $this->order->fresh()->status);
     }
 }

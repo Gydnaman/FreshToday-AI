@@ -11,24 +11,24 @@ namespace App\Enums;
  */
 enum OrderStatus: string
 {
-    case Pending    = 'pending';
-    case Paid       = 'paid';
+    case Pending = 'pending';
+    case Paid = 'paid';
     case Processing = 'processing';
-    case Shipped    = 'shipped';
-    case Delivered  = 'delivered';
-    case Cancelled  = 'cancelled';
-    case Refunded   = 'refunded';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+    case Cancelled = 'cancelled';
+    case Refunded = 'refunded';
 
     public function label(): string
     {
         return match ($this) {
-            self::Pending    => '待支付',
-            self::Paid       => '已支付',
+            self::Pending => '待支付',
+            self::Paid => '已支付',
             self::Processing => '处理中',
-            self::Shipped    => '已发货',
-            self::Delivered  => '已签收',
-            self::Cancelled  => '已取消',
-            self::Refunded   => '已退款',
+            self::Shipped => '已发货',
+            self::Delivered => '已签收',
+            self::Cancelled => '已取消',
+            self::Refunded => '已退款',
         };
     }
 

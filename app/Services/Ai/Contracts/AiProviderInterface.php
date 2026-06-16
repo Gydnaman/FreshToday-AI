@@ -32,8 +32,8 @@ interface AiProviderInterface
      * 生成个性化菜单文本
      *
      * @param  array<string,mixed>  $preferences  来自 UserPreference 的偏好
-     * @param  array<int,string>    $products     可售商品名称列表
-     * @return array{0:string,1:int}              [content, tokens_used]
+     * @param  array<int,string>  $products  可售商品名称列表
+     * @return array{0:string,1:int} [content, tokens_used]
      */
     public function generate(array $preferences, array $products): array;
 }

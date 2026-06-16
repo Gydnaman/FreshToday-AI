@@ -15,12 +15,12 @@ class SubscriptionPlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'        => fake()->words(2, true) . ' Plan',
+            'name' => fake()->words(2, true).' Plan',
             'description' => fake()->sentence(),
-            'price'       => fake()->randomFloat(2, 100, 1000),
-            'duration'    => fake()->randomElement([7, 14, 30]),
-            'cycle'       => fake()->randomElement(['weekly', 'biweekly', 'monthly']),
-            'is_active'   => true,
+            'price' => fake()->randomFloat(2, 100, 1000),
+            'duration' => fake()->randomElement([7, 14, 30]),
+            'cycle' => fake()->randomElement(['weekly', 'biweekly', 'monthly']),
+            'is_active' => true,
         ];
     }
 }

@@ -17,10 +17,10 @@ class NotificationPreference extends Model
 
     protected $casts = [
         'email_order' => 'boolean',
-        'email_menu'  => 'boolean',
+        'email_menu' => 'boolean',
         'email_promo' => 'boolean',
-        'sms_order'   => 'boolean',
-        'push_enabled'=> 'boolean',
+        'sms_order' => 'boolean',
+        'push_enabled' => 'boolean',
     ];
 
     public function user(): BelongsTo

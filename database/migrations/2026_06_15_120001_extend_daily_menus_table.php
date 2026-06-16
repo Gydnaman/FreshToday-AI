@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * - 详见 app/Models/DailyMenu.php $fillable 与 app/Services/AiMenuService.php::upsertMenu
  * - 见 ADR-0006 AI 菜单缓存与降级（三层降级标记来源）
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('daily_menus', function (Blueprint $table) {

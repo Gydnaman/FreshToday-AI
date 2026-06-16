@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
@@ -33,13 +32,13 @@ class SubscriptionService
 
         return DB::transaction(function () use ($user, $plan, $startDate, $autoRenew) {
             return UserSubscription::create([
-                'user_id'             => $user->id,
-                'subscription_plan_id'=> $plan->id,
-                'start_date'          => $startDate->toDateString(),
-                'end_date'            => $startDate->copy()->addDays($plan->duration)->toDateString(),
+                'user_id' => $user->id,
+                'subscription_plan_id' => $plan->id,
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $startDate->copy()->addDays($plan->duration)->toDateString(),
                 'next_fulfillment_at' => $startDate->toDateString(),
-                'status'              => 'active',
-                'auto_renew'          => $autoRenew,
+                'status' => 'active',
+                'auto_renew' => $autoRenew,
             ]);
         });
     }
@@ -50,8 +49,8 @@ class SubscriptionService
             throw new GuardFailedException('GUARD-SUB', '订阅已取消', ['id' => $sub->id]);
         }
         $sub->update([
-            'status'        => 'cancelled',
-            'end_date'      => $sub->next_fulfillment_at ?? $sub->end_date,
+            'status' => 'cancelled',
+            'end_date' => $sub->next_fulfillment_at ?? $sub->end_date,
             'cancel_reason' => $reason,
         ]);
 
@@ -64,6 +63,7 @@ class SubscriptionService
 
     /**
      * 队列任务入口：为到期订阅生成履约订单
+     *
      * @see docs/bmad/architecture.md ADR-005
      */
     public function fulfillDueSubscriptions(): int
@@ -84,6 +84,7 @@ class SubscriptionService
                     }
                 }
             });
+
         return $count;
     }
 
@@ -108,10 +109,10 @@ class SubscriptionService
 
         // 滚动 next_fulfillment_at
         $cycleDays = match ($plan->cycle ?? 'weekly') {
-            'weekly'    => 7,
-            'biweekly'  => 14,
-            'monthly'   => 30,
-            default     => $plan->duration,
+            'weekly' => 7,
+            'biweekly' => 14,
+            'monthly' => 30,
+            default => $plan->duration,
         };
         $sub->update([
             'next_fulfillment_at' => Carbon::parse($sub->next_fulfillment_at)->addDays($cycleDays)->toDateString(),

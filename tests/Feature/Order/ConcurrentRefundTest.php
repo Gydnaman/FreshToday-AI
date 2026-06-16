@@ -35,9 +35,13 @@ class ConcurrentRefundTest extends TestCase
     use RefreshDatabase;
 
     private OrderService $orderService;
+
     private PaymentService $paymentService;
+
     private User $user;
+
     private Product $product;
+
     private Product $expensiveProduct;
 
     protected function setUp(): void
@@ -63,6 +67,7 @@ class ConcurrentRefundTest extends TestCase
         );
         // 预占后库存下降
         $this->assertEquals($initialStock - $quantity, Product::find($p->id)->stock, 'createOrder 应预占库存');
+
         return $order;
     }
 
@@ -71,14 +76,15 @@ class ConcurrentRefundTest extends TestCase
     {
         $order = $this->makePendingOrder($quantity);
         Payment::create([
-            'order_id'        => $order->id,
-            'provider'        => 'stripe',
-            'provider_txn_id' => 'pi_concurrent_' . uniqid(),
-            'amount'          => $order->total_price,
-            'currency'        => 'HKD',
-            'status'          => 'succeeded',
-            'paid_at'         => now(),
+            'order_id' => $order->id,
+            'provider' => 'stripe',
+            'provider_txn_id' => 'pi_concurrent_'.uniqid(),
+            'amount' => $order->total_price,
+            'currency' => 'HKD',
+            'status' => 'succeeded',
+            'paid_at' => now(),
         ]);
+
         return $order->fresh();
     }
 
@@ -174,6 +180,7 @@ class ConcurrentRefundTest extends TestCase
                     'user_cancel',
                     ['reason' => 'racer_A', 'actor_type' => 'user'],
                 );
+
                 return 'cancelled';
             } catch (InvalidTransitionException) {
                 return 'cancel_rejected';
@@ -188,6 +195,7 @@ class ConcurrentRefundTest extends TestCase
                     'admin_refund',
                     ['reason' => 'racer_B', 'actor_type' => 'admin'],
                 );
+
                 return 'refunded';
             } catch (InvalidTransitionException) {
                 return 'refund_rejected';

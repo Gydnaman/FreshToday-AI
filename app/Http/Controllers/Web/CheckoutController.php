@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\CartItem;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Web 端结算页控制器（Sprint 1）
@@ -72,14 +71,14 @@ class CheckoutController extends Controller
 
         // ── 2. 校验表单 ───────────────────────────────────────────────
         $data = $request->validate([
-            'shipping_address.name'    => 'required|string|max:120',
-            'shipping_address.phone'   => 'required|string|max:32',
+            'shipping_address.name' => 'required|string|max:120',
+            'shipping_address.phone' => 'required|string|max:32',
             'shipping_address.address' => 'required|string|max:255',
-            'shipping_address.district'=> 'required|string|max:64',
-            'shipping_address.date'    => 'nullable|date',
-            'shipping_address.notes'   => 'nullable|string|max:255',
-            'items'                    => 'required|json',
-            'coupon_code'              => 'nullable|string|max:32',
+            'shipping_address.district' => 'required|string|max:64',
+            'shipping_address.date' => 'nullable|date',
+            'shipping_address.notes' => 'nullable|string|max:255',
+            'items' => 'required|json',
+            'coupon_code' => 'nullable|string|max:32',
         ]);
 
         // ── 3. 解析 cart items ────────────────────────────────────────
@@ -91,12 +90,16 @@ class CheckoutController extends Controller
         // 标准化 items：[{product_id, quantity}]
         $normalized = [];
         foreach ($items as $row) {
-            if (! isset($row['product_id'], $row['quantity'])) continue;
+            if (! isset($row['product_id'], $row['quantity'])) {
+                continue;
+            }
             $qty = (int) $row['quantity'];
-            if ($qty <= 0) continue;
+            if ($qty <= 0) {
+                continue;
+            }
             $normalized[] = [
                 'product_id' => (int) $row['product_id'],
-                'quantity'   => $qty,
+                'quantity' => $qty,
             ];
         }
         if (count($normalized) === 0) {
@@ -104,12 +107,12 @@ class CheckoutController extends Controller
         }
 
         $shippingAddress = [
-            'name'     => $data['shipping_address']['name'],
-            'phone'    => $data['shipping_address']['phone'],
-            'address'  => $data['shipping_address']['address'],
+            'name' => $data['shipping_address']['name'],
+            'phone' => $data['shipping_address']['phone'],
+            'address' => $data['shipping_address']['address'],
             'district' => $data['shipping_address']['district'],
-            'date'     => $data['shipping_address']['date'] ?? null,
-            'notes'    => $data['shipping_address']['notes'] ?? null,
+            'date' => $data['shipping_address']['date'] ?? null,
+            'notes' => $data['shipping_address']['notes'] ?? null,
             'currency' => 'HKD',
         ];
 
@@ -117,14 +120,15 @@ class CheckoutController extends Controller
         $apiBase = rtrim(config('app.url') ?: $request->getSchemeAndHttpHost(), '/');
         $orderResp = Http::withToken($token)
             ->acceptJson()
-            ->post($apiBase . '/api/orders', [
-                'items'            => $normalized,
+            ->post($apiBase.'/api/orders', [
+                'items' => $normalized,
                 'shipping_address' => $shippingAddress,
-                'coupon_code'      => $data['coupon_code'] ?? null,
+                'coupon_code' => $data['coupon_code'] ?? null,
             ]);
 
         if (! $orderResp->successful()) {
             $msg = $this->extractError($orderResp, '订单创建失败');
+
             return $this->errorRedirect($msg, '/cart');
         }
         $orderId = (int) ($orderResp->json('order.id') ?? 0);
@@ -133,21 +137,23 @@ class CheckoutController extends Controller
         }
 
         // ── 5. 调 /api/orders/{id}/pay（创建支付意图） ──────────────────
-        $returnUrl = $apiBase . '/orders';
+        $returnUrl = $apiBase.'/orders';
         $payResp = Http::withToken($token)
             ->acceptJson()
-            ->post($apiBase . "/api/orders/{$orderId}/pay", [
-                'provider'   => 'stripe',
+            ->post($apiBase."/api/orders/{$orderId}/pay", [
+                'provider' => 'stripe',
                 'return_url' => $returnUrl,
             ]);
 
         if (! $payResp->successful()) {
             $msg = $this->extractError($payResp, '支付意图创建失败');
-            return $this->errorRedirect("订单 #{$orderId} 已创建，但 " . $msg, '/orders');
+
+            return $this->errorRedirect("订单 #{$orderId} 已创建，但 ".$msg, '/orders');
         }
 
         // ── 6. 302 到支付网关（或沙箱 mock URL） ───────────────────────
         $redirect = (string) ($payResp->json('redirect_url') ?? $returnUrl);
+
         return redirect()->away($redirect);
     }
 
@@ -157,18 +163,20 @@ class CheckoutController extends Controller
     private function errorRedirect(string $message, string $to): RedirectResponse
     {
         session()->flash('checkout_error', $message);
+
         return redirect()->to($to);
     }
 
     /**
      * 从 API 响应中提取 error.message
      */
-    private function extractError(\Illuminate\Http\Client\Response $resp, string $fallback): string
+    private function extractError(Response $resp, string $fallback): string
     {
         $err = $resp->json('error');
         if (is_array($err)) {
             return (string) ($err['message'] ?? $fallback);
         }
-        return $fallback . '（HTTP ' . $resp->status() . '）';
+
+        return $fallback.'（HTTP '.$resp->status().'）';
     }
 }

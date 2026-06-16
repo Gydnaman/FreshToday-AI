@@ -17,10 +17,10 @@ class UserSubscription extends Model
     ];
 
     protected $casts = [
-        'start_date'          => 'date',
-        'end_date'            => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
         'next_fulfillment_at' => 'date',
-        'auto_renew'          => 'boolean',
+        'auto_renew' => 'boolean',
     ];
 
     public function user(): BelongsTo

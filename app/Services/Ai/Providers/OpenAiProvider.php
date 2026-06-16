@@ -36,15 +36,15 @@ class OpenAiProvider implements AiProviderInterface
         }
 
         $userPrompt = "Create a ~100-word personalized daily menu.\n"
-            . "Purpose: " . ($preferences['purpose'] ?? 'Healthy eating') . "\n"
-            . "Dietary: " . ($preferences['dietary_habits'] ?? 'No restriction') . "\n"
-            . "Goals: " . ($preferences['goals'] ?? 'Wellness') . "\n"
-            . "Skill: " . ($preferences['cooking_skill'] ?? 'Beginner') . "\n"
-            . "Budget HKD/wk: " . ($preferences['budget_habits'] ?? 'flexible') . "\n"
-            . "Available products: " . implode(', ', $products) . "\n"
-            . "Encourage low-carbon, healthy meals.";
+            .'Purpose: '.($preferences['purpose'] ?? 'Healthy eating')."\n"
+            .'Dietary: '.($preferences['dietary_habits'] ?? 'No restriction')."\n"
+            .'Goals: '.($preferences['goals'] ?? 'Wellness')."\n"
+            .'Skill: '.($preferences['cooking_skill'] ?? 'Beginner')."\n"
+            .'Budget HKD/wk: '.($preferences['budget_habits'] ?? 'flexible')."\n"
+            .'Available products: '.implode(', ', $products)."\n"
+            .'Encourage low-carbon, healthy meals.';
 
-        $url = rtrim($this->config['base_url'], '/') . '/chat/completions';
+        $url = rtrim($this->config['base_url'], '/').'/chat/completions';
 
         try {
             $response = Http::timeout($this->config['timeout'] ?? 15)
@@ -52,19 +52,19 @@ class OpenAiProvider implements AiProviderInterface
                 ->acceptJson()
                 ->asJson()
                 ->post($url, [
-                    'model'    => $this->config['model'],
+                    'model' => $this->config['model'],
                     'messages' => [
                         [
-                            'role'    => 'system',
+                            'role' => 'system',
                             'content' => 'You are a professional nutritionist who writes concise, friendly meal suggestions focused on low-carbon and healthy eating.',
                         ],
                         [
-                            'role'    => 'user',
+                            'role' => 'user',
                             'content' => $userPrompt,
                         ],
                     ],
                     'temperature' => 0.7,
-                    'max_tokens'  => 300,
+                    'max_tokens' => 300,
                 ]);
 
             if ($response->successful()) {
@@ -77,12 +77,13 @@ class OpenAiProvider implements AiProviderInterface
                 Log::warning('OpenAiProvider: empty choices in response', [
                     'model' => $this->config['model'],
                 ]);
+
                 return ['', 0];
             }
 
             Log::warning('OpenAiProvider: non-2xx response', [
                 'status' => $response->status(),
-                'body'   => substr($response->body(), 0, 200),
+                'body' => substr($response->body(), 0, 200),
             ]);
         } catch (\Throwable $e) {
             Log::warning('OpenAiProvider: request exception', [

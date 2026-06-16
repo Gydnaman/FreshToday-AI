@@ -2,13 +2,15 @@
 
 namespace Tests\Unit\Services;
 
-use App\Exceptions\GuardFailedException;
 use App\Models\DailyMenu;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\UserPreference;
+use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\Providers\NullProvider;
 use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -34,6 +36,7 @@ class AiMenuServiceFallbackTest extends TestCase
     use RefreshDatabase;
 
     private AiMenuService $service;
+
     private User $user;
 
     protected function setUp(): void
@@ -47,16 +50,16 @@ class AiMenuServiceFallbackTest extends TestCase
         putenv('DEEPSEEK_API_KEY');
         config(['ai.providers.openai.key' => null]);
         config(['ai.providers.deepseek.key' => null]);
-        $this->app->forgetInstance(\App\Services\Ai\Contracts\AiProviderInterface::class);
-        $this->app->forgetInstance(\App\Services\AiMenuService::class);
+        $this->app->forgetInstance(AiProviderInterface::class);
+        $this->app->forgetInstance(AiMenuService::class);
         $this->service = app(AiMenuService::class);
         $this->user = User::factory()->create();
         UserPreference::factory()->for($this->user)->create([
-            'usage_purpose'  => 'Reduce Carbon Footprint',
+            'usage_purpose' => 'Reduce Carbon Footprint',
             'dietary_habits' => 'Vegetarian/Vegan',
-            'goals'          => 'Eat greener',
-            'cooking_skill'  => 'Intermediate',
-            'budget_hkd'     => 800,
+            'goals' => 'Eat greener',
+            'cooking_skill' => 'Intermediate',
+            'budget_hkd' => 800,
         ]);
         Product::factory()->count(5)->create();
         // 注入测试用 key（Http::fake 不受 env 限制）
@@ -164,11 +167,11 @@ class AiMenuServiceFallbackTest extends TestCase
     {
         // Sprint 2：本测试核心是"无 key 时 AiMenuService 不发任何 HTTP"
         // 直接 bind 一个 NullProvider 进容器，绕开 Factory 探测（避免与 .env 真实 KEY 冲突）
-        $this->app->forgetInstance(\App\Services\Ai\Contracts\AiProviderInterface::class);
-        $this->app->forgetInstance(\App\Services\AiMenuService::class);
+        $this->app->forgetInstance(AiProviderInterface::class);
+        $this->app->forgetInstance(AiMenuService::class);
         $this->app->instance(
-            \App\Services\Ai\Contracts\AiProviderInterface::class,
-            new \App\Services\Ai\Providers\NullProvider()
+            AiProviderInterface::class,
+            new NullProvider
         );
         $this->service = app(AiMenuService::class);
         Http::fake(); // 若代码不调用，recorded 数组应为空
@@ -232,7 +235,7 @@ class AiMenuServiceFallbackTest extends TestCase
     public function test_network_exception_falls_back(): void
     {
         Http::fake(function () {
-            throw new \Illuminate\Http\Client\ConnectionException('Network unreachable');
+            throw new ConnectionException('Network unreachable');
         });
 
         $menu = $this->service->generateDailyMenuForUser($this->user);
@@ -292,11 +295,11 @@ class AiMenuServiceFallbackTest extends TestCase
 
         $content = $this->service->generateDailyMenu(
             preferences: [
-                'purpose'        => 'Eat Healthier',
+                'purpose' => 'Eat Healthier',
                 'dietary_habits' => 'Keto/Low Carb',
-                'goals'          => 'Lose weight',
-                'cooking_skill'  => 'Beginner',
-                'budget_hkd'     => 500,
+                'goals' => 'Lose weight',
+                'cooking_skill' => 'Beginner',
+                'budget_hkd' => 500,
             ],
             availableProducts: ['Tomato', 'Spinach'],
         );
