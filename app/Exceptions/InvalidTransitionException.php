@@ -31,10 +31,10 @@ class InvalidTransitionException extends RuntimeException
     public function toApiPayload(): array
     {
         return [
-            'code'    => 'BUSINESS_RULE',
+            'code' => 'BUSINESS_RULE',
             'message' => '订单状态不允许此操作',
             'details' => [
-                'current'      => $this->from->value,
+                'current' => $this->from->value,
                 'attempted_to' => $this->to->value,
                 'allowed_from' => $this->allowedFromStates(),
             ],
@@ -45,12 +45,12 @@ class InvalidTransitionException extends RuntimeException
     private function allowedFromStates(): array
     {
         return match ($this->to) {
-            OrderStatus::Paid       => [OrderStatus::Pending->value],
-            OrderStatus::Cancelled  => [OrderStatus::Pending->value],
+            OrderStatus::Paid => [OrderStatus::Pending->value],
+            OrderStatus::Cancelled => [OrderStatus::Pending->value],
             OrderStatus::Processing => [OrderStatus::Paid->value],
-            OrderStatus::Shipped    => [OrderStatus::Processing->value],
-            OrderStatus::Delivered  => [OrderStatus::Shipped->value],
-            OrderStatus::Refunded   => [
+            OrderStatus::Shipped => [OrderStatus::Processing->value],
+            OrderStatus::Delivered => [OrderStatus::Shipped->value],
+            OrderStatus::Refunded => [
                 OrderStatus::Paid->value,
                 OrderStatus::Processing->value,
                 OrderStatus::Shipped->value,

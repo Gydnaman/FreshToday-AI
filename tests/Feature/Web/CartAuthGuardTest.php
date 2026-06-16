@@ -25,7 +25,9 @@ class CartAuthGuardTest extends TestCase
     use RefreshDatabase;
 
     private User $alice;
+
     private User $bob;
+
     private Product $product;
 
     protected function setUp(): void
@@ -45,7 +47,7 @@ class CartAuthGuardTest extends TestCase
     {
         $response = $this->postJson('/api/cart', [
             'product_id' => $this->product->id,
-            'quantity'   => 1,
+            'quantity' => 1,
         ]);
 
         $response->assertStatus(401)
@@ -90,7 +92,7 @@ class CartAuthGuardTest extends TestCase
         $response2 = $this->withHeader('Authorization', 'Bearer invalid.token.value')
             ->postJson('/api/cart', [
                 'product_id' => $this->product->id,
-                'quantity'   => 1,
+                'quantity' => 1,
             ]);
 
         $response2->assertStatus(401)
@@ -107,7 +109,7 @@ class CartAuthGuardTest extends TestCase
         Sanctum::actingAs($this->alice);
         $this->postJson('/api/cart', [
             'product_id' => $this->product->id,
-            'quantity'   => 3,
+            'quantity' => 3,
         ])->assertCreated();
 
         $aliceCart = $this->getJson('/api/cart')->assertOk();
@@ -128,7 +130,7 @@ class CartAuthGuardTest extends TestCase
         ]);
         $this->postJson('/api/cart', [
             'product_id' => $spinach->id,
-            'quantity'   => 1,
+            'quantity' => 1,
         ])->assertCreated();
 
         $bobCart2 = $this->getJson('/api/cart')->assertOk();

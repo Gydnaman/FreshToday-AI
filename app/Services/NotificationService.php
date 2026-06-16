@@ -20,10 +20,12 @@ class NotificationService
         $prefs = $this->getPrefs($order->user);
         if (! $prefs?->email_order) {
             Log::info('Order email skipped by user preference', ['order_id' => $order->id]);
+
             return;
         }
         if ($this->isQuietHours($prefs)) {
             Log::info('Order email deferred: quiet hours', ['order_id' => $order->id]);
+
             return;
         }
 
@@ -36,7 +38,9 @@ class NotificationService
     public function sendMenuReminder(User $user, DailyMenu $menu): void
     {
         $prefs = $this->getPrefs($user);
-        if (! $prefs?->email_menu) return;
+        if (! $prefs?->email_menu) {
+            return;
+        }
 
         Log::info('[Notification] daily menu', ['user_id' => $user->id, 'menu_id' => $menu->id]);
     }
@@ -56,8 +60,11 @@ class NotificationService
 
     private function isQuietHours(NotificationPreference $prefs): bool
     {
-        if (! $prefs->quiet_hours_start || ! $prefs->quiet_hours_end) return false;
+        if (! $prefs->quiet_hours_start || ! $prefs->quiet_hours_end) {
+            return false;
+        }
         $now = now()->format('H:i:s');
+
         return $now >= $prefs->quiet_hours_start && $now <= $prefs->quiet_hours_end;
     }
 }

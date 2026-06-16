@@ -35,17 +35,17 @@ class GeminiProvider implements AiProviderInterface
         }
 
         $prompt = "You are a professional nutritionist. Create a ~100-word personalized daily menu.\n"
-            . "Purpose: " . ($preferences['purpose'] ?? 'Healthy eating') . "\n"
-            . "Dietary: " . ($preferences['dietary_habits'] ?? 'No restriction') . "\n"
-            . "Goals: " . ($preferences['goals'] ?? 'Wellness') . "\n"
-            . "Skill: " . ($preferences['cooking_skill'] ?? 'Beginner') . "\n"
-            . "Budget HKD/wk: " . ($preferences['budget_hkd'] ?? 'flexible') . "\n"
-            . "Available: " . implode(', ', $products) . "\n"
-            . "Encourage low-carbon, healthy meals.";
+            .'Purpose: '.($preferences['purpose'] ?? 'Healthy eating')."\n"
+            .'Dietary: '.($preferences['dietary_habits'] ?? 'No restriction')."\n"
+            .'Goals: '.($preferences['goals'] ?? 'Wellness')."\n"
+            .'Skill: '.($preferences['cooking_skill'] ?? 'Beginner')."\n"
+            .'Budget HKD/wk: '.($preferences['budget_hkd'] ?? 'flexible')."\n"
+            .'Available: '.implode(', ', $products)."\n"
+            .'Encourage low-carbon, healthy meals.';
 
         $url = rtrim($this->config['base_url'], '/')
-            . '/models/' . $this->config['model']
-            . ':generateContent?key=' . $this->config['key'];
+            .'/models/'.$this->config['model']
+            .':generateContent?key='.$this->config['key'];
 
         try {
             $response = Http::timeout($this->config['timeout'] ?? 8)->post($url, [
@@ -62,12 +62,13 @@ class GeminiProvider implements AiProviderInterface
                 Log::warning('GeminiProvider: empty candidates in response', [
                     'model' => $this->config['model'],
                 ]);
+
                 return ['', 0];
             }
 
             Log::warning('GeminiProvider: non-2xx response', [
                 'status' => $response->status(),
-                'body'   => substr($response->body(), 0, 200),
+                'body' => substr($response->body(), 0, 200),
             ]);
         } catch (\Throwable $e) {
             Log::warning('GeminiProvider: request exception', [

@@ -10,15 +10,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SubscriptionPlan extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name', 'description', 'price', 'duration',
         'cycle', 'is_active', 'image', 'features',
     ];
 
     protected $casts = [
-        'price'     => 'decimal:2',
+        'price' => 'decimal:2',
         'is_active' => 'boolean',
-        'features'  => 'array',
+        'features' => 'array',
     ];
 
     public function products(): BelongsToMany

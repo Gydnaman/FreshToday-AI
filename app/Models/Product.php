@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Product extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name',
         'description',
@@ -23,9 +24,9 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'price'            => 'decimal:2',
+        'price' => 'decimal:2',
         'carbon_footprint' => 'decimal:3',
-        'is_organic'       => 'boolean',
+        'is_organic' => 'boolean',
     ];
 
     public function category(): BelongsTo

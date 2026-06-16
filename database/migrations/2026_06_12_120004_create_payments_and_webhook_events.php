@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * 详见 docs/bmad/er-diagram.md §2.12 / §2.17
  * 详见 docs/bmad/api-contract.md §2.8 Webhook
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
@@ -38,7 +39,7 @@ return new class extends Migration {
             $table->timestamp('received_at');
             $table->timestamp('processed_at')->nullable();
             $table->enum('status', ['received', 'processing', 'processed', 'failed', 'ignored'])
-                  ->default('received');
+                ->default('received');
             $table->unsignedTinyInteger('attempts')->default(0);
             $table->text('last_error')->nullable();
             $table->foreignId('related_payment_id')->nullable()->constrained('payments')->nullOnDelete();

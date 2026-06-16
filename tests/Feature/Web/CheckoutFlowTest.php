@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -26,14 +27,17 @@ class CheckoutFlowTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private User $stranger;
+
     private Product $product;
+
     private Product $outOfStock;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user     = User::factory()->create();
+        $this->user = User::factory()->create();
         $this->stranger = User::factory()->create();
         $this->product = Product::factory()->create([
             'price' => 50, 'stock' => 20,
@@ -51,7 +55,7 @@ class CheckoutFlowTest extends TestCase
         Sanctum::actingAs($this->user);
 
         $response = $this->postJson('/api/orders', [
-            'items'            => [],
+            'items' => [],
             'shipping_address' => $this->shippingAddress(),
         ]);
 
@@ -92,14 +96,14 @@ class CheckoutFlowTest extends TestCase
             'category_id' => Category::factory(),
         ]);
         CartItem::create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'product_id' => $this->product->id,
-            'quantity'   => 2,
+            'quantity' => 2,
         ]);
         CartItem::create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'product_id' => $spinach->id,
-            'quantity'   => 1,
+            'quantity' => 1,
         ]);
 
         $this->assertEquals(2, CartItem::where('user_id', $this->user->id)->count());
@@ -124,7 +128,7 @@ class CheckoutFlowTest extends TestCase
         $order = $this->placeOrderFor($this->user, $this->product, 1);
 
         $response = $this->postJson("/api/orders/{$order->id}/pay", [
-            'provider'   => 'bogus_gateway',
+            'provider' => 'bogus_gateway',
             'return_url' => 'https://shop.example.com/done',
         ]);
 
@@ -145,7 +149,7 @@ class CheckoutFlowTest extends TestCase
         Sanctum::actingAs($this->stranger);
 
         $response = $this->postJson("/api/orders/{$aliceOrder->id}/pay", [
-            'provider'   => 'stripe',
+            'provider' => 'stripe',
             'return_url' => 'https://shop.example.com/done',
         ]);
 
@@ -161,7 +165,7 @@ class CheckoutFlowTest extends TestCase
     /** 提单 helper：直接调 service，跳过 cart 路径以便测试聚焦 */
     private function placeOrderFor(User $user, Product $product, int $qty): Order
     {
-        return app(\App\Services\OrderService::class)->createOrder(
+        return app(OrderService::class)->createOrder(
             user: $user,
             items: [['product_id' => $product->id, 'quantity' => $qty]],
             shippingAddress: $this->shippingAddress(),
@@ -171,9 +175,9 @@ class CheckoutFlowTest extends TestCase
     private function shippingAddress(): array
     {
         return [
-            'name'     => 'Tester',
-            'phone'    => '+85298765432',
-            'address'  => '88 Test Street',
+            'name' => 'Tester',
+            'phone' => '+85298765432',
+            'address' => '88 Test Street',
             'district' => 'NT',
             'currency' => 'HKD',
         ];

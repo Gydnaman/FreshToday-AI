@@ -16,12 +16,12 @@ class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'order_id'        => Order::factory(),
-            'provider'        => 'stripe',
-            'provider_txn_id' => 'pi_' . fake()->unique()->bothify('??##??##??##??##??##'),
-            'amount'          => fake()->randomFloat(2, 50, 500),
-            'currency'        => 'HKD',
-            'status'          => 'pending',
+            'order_id' => Order::factory(),
+            'provider' => 'stripe',
+            'provider_txn_id' => 'pi_'.fake()->unique()->bothify('??##??##??##??##??##'),
+            'amount' => fake()->randomFloat(2, 50, 500),
+            'currency' => 'HKD',
+            'status' => 'pending',
         ];
     }
 

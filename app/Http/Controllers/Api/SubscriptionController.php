@@ -24,7 +24,7 @@ class SubscriptionController extends Controller
             ->get();
 
         return response()->json([
-            'plans'              => $plans,
+            'plans' => $plans,
             'user_subscriptions' => $subs,
         ]);
     }
@@ -33,8 +33,8 @@ class SubscriptionController extends Controller
     {
         $data = $request->validate([
             'subscription_plan_id' => 'required|integer|exists:subscription_plans,id',
-            'start_date'           => 'required|date|after_or_equal:today',
-            'auto_renew'           => 'boolean',
+            'start_date' => 'required|date|after_or_equal:today',
+            'auto_renew' => 'boolean',
         ]);
 
         $plan = SubscriptionPlan::findOrFail($data['subscription_plan_id']);
@@ -45,9 +45,11 @@ class SubscriptionController extends Controller
                 startDate: Carbon::parse($data['start_date']),
                 autoRenew: $data['auto_renew'] ?? true,
             );
+
             return response()->json(['data' => $sub], 201);
         } catch (GuardFailedException $e) {
             $payload = $e->toApiPayload();
+
             return response()->json(['error' => $payload], $payload['http']);
         }
     }
@@ -60,9 +62,11 @@ class SubscriptionController extends Controller
         $data = $request->validate(['reason' => 'nullable|string|max:255']);
         try {
             $sub = $this->service->cancel($subscription, $data['reason'] ?? 'user_cancel');
+
             return response()->json(['data' => $sub]);
         } catch (GuardFailedException $e) {
             $payload = $e->toApiPayload();
+
             return response()->json(['error' => $payload], $payload['http']);
         }
     }

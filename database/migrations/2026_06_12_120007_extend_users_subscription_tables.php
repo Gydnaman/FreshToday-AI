@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * Sprint 1 收尾：补全 users / subscription_plans / user_subscriptions 字段
  * 与 er-diagram.md §2.1 / §2.7 / §2.8 一致
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // 1. users 表扩展（locale、is_admin、default_shipping_address）

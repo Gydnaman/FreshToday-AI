@@ -18,7 +18,7 @@ class OrderStatusLog extends Model
     ];
 
     protected $casts = [
-        'context'    => 'array',
+        'context' => 'array',
         'created_at' => 'datetime',
     ];
 

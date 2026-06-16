@@ -39,15 +39,15 @@ class DeepseekProvider implements AiProviderInterface
         }
 
         $userPrompt = "Create a ~100-word personalized daily menu.\n"
-            . "Purpose: " . ($preferences['purpose'] ?? 'Healthy eating') . "\n"
-            . "Dietary: " . ($preferences['dietary_habits'] ?? 'No restriction') . "\n"
-            . "Goals: " . ($preferences['goals'] ?? 'Wellness') . "\n"
-            . "Skill: " . ($preferences['cooking_skill'] ?? 'Beginner') . "\n"
-            . "Budget HKD/wk: " . ($preferences['budget_hkd'] ?? 'flexible') . "\n"
-            . "Available products: " . implode(', ', $products) . "\n"
-            . "Encourage low-carbon, healthy meals. Reply in English.";
+            .'Purpose: '.($preferences['purpose'] ?? 'Healthy eating')."\n"
+            .'Dietary: '.($preferences['dietary_habits'] ?? 'No restriction')."\n"
+            .'Goals: '.($preferences['goals'] ?? 'Wellness')."\n"
+            .'Skill: '.($preferences['cooking_skill'] ?? 'Beginner')."\n"
+            .'Budget HKD/wk: '.($preferences['budget_hkd'] ?? 'flexible')."\n"
+            .'Available products: '.implode(', ', $products)."\n"
+            .'Encourage low-carbon, healthy meals. Reply in English.';
 
-        $url = rtrim($this->config['base_url'], '/') . '/chat/completions';
+        $url = rtrim($this->config['base_url'], '/').'/chat/completions';
 
         try {
             $response = Http::timeout($this->config['timeout'] ?? 15)
@@ -55,20 +55,20 @@ class DeepseekProvider implements AiProviderInterface
                 ->acceptJson()
                 ->asJson()
                 ->post($url, [
-                    'model'       => $this->config['model'],
-                    'messages'    => [
+                    'model' => $this->config['model'],
+                    'messages' => [
                         [
-                            'role'    => 'system',
+                            'role' => 'system',
                             'content' => 'You are a professional nutritionist. Write concise, friendly, low-carbon meal suggestions.',
                         ],
                         [
-                            'role'    => 'user',
+                            'role' => 'user',
                             'content' => $userPrompt,
                         ],
                     ],
                     'temperature' => 0.7,
-                    'max_tokens'  => 300,
-                    'stream'      => false,
+                    'max_tokens' => 300,
+                    'stream' => false,
                 ]);
 
             if ($response->successful()) {
@@ -81,12 +81,13 @@ class DeepseekProvider implements AiProviderInterface
                 Log::warning('DeepseekProvider: empty choices in response', [
                     'model' => $this->config['model'],
                 ]);
+
                 return ['', 0];
             }
 
             Log::warning('DeepseekProvider: non-2xx response', [
                 'status' => $response->status(),
-                'body'   => substr($response->body(), 0, 200),
+                'body' => substr($response->body(), 0, 200),
             ]);
         } catch (\Throwable $e) {
             Log::warning('DeepseekProvider: request exception', [

@@ -7,9 +7,9 @@ use App\Models\DailyMenu;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\UserPreference;
+use App\Services\Ai\Contracts\AiProviderInterface;
 use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
 /**
@@ -21,6 +21,7 @@ class AiMenuServiceTest extends TestCase
     use RefreshDatabase;
 
     private AiMenuService $service;
+
     private User $user;
 
     protected function setUp(): void
@@ -34,8 +35,8 @@ class AiMenuServiceTest extends TestCase
         putenv('DEEPSEEK_API_KEY');
         config(['ai.providers.openai.key' => null]);
         config(['ai.providers.deepseek.key' => null]);
-        $this->app->forgetInstance(\App\Services\Ai\Contracts\AiProviderInterface::class);
-        $this->app->forgetInstance(\App\Services\AiMenuService::class);
+        $this->app->forgetInstance(AiProviderInterface::class);
+        $this->app->forgetInstance(AiMenuService::class);
         $this->service = app(AiMenuService::class);
         $this->user = User::factory()->create();
         UserPreference::factory()->for($this->user)->create();

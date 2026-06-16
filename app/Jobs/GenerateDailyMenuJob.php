@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\Log;
 
 class GenerateDailyMenuJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 30;
 
     public function __construct(public int $userId) {}
@@ -24,6 +25,7 @@ class GenerateDailyMenuJob implements ShouldQueue
         $user = User::find($this->userId);
         if (! $user) {
             Log::warning('GenerateDailyMenuJob: user not found', ['user_id' => $this->userId]);
+
             return;
         }
         try {

@@ -15,19 +15,28 @@ class Coupon extends Model
     ];
 
     protected $casts = [
-        'value'            => 'decimal:2',
+        'value' => 'decimal:2',
         'min_order_amount' => 'decimal:2',
-        'valid_from'       => 'datetime',
-        'valid_until'      => 'datetime',
-        'is_active'        => 'boolean',
+        'valid_from' => 'datetime',
+        'valid_until' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     public function isValidForAmount(float $amount): bool
     {
-        if (! $this->is_active) return false;
-        if ($this->valid_from && now()->lt($this->valid_from)) return false;
-        if ($this->valid_until && now()->gt($this->valid_until)) return false;
-        if ($this->usage_limit && $this->used_count >= $this->usage_limit) return false;
+        if (! $this->is_active) {
+            return false;
+        }
+        if ($this->valid_from && now()->lt($this->valid_from)) {
+            return false;
+        }
+        if ($this->valid_until && now()->gt($this->valid_until)) {
+            return false;
+        }
+        if ($this->usage_limit && $this->used_count >= $this->usage_limit) {
+            return false;
+        }
+
         return $amount >= (float) $this->min_order_amount;
     }
 

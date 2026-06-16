@@ -14,7 +14,7 @@ class StripeWebhookEvent extends Model
     ];
 
     protected $casts = [
-        'payload'     => 'array',
+        'payload' => 'array',
         'received_at' => 'datetime',
         'processed_at' => 'datetime',
     ];

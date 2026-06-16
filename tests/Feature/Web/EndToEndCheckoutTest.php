@@ -3,6 +3,7 @@
 namespace Tests\Feature\Web;
 
 use App\Enums\OrderStatus;
+use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
@@ -24,8 +25,11 @@ class EndToEndCheckoutTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Category $category;
+
     private Product $apple;
+
     private Product $spinach;
 
     protected function setUp(): void
@@ -35,15 +39,15 @@ class EndToEndCheckoutTest extends TestCase
         $this->user = User::factory()->create();
         $this->category = Category::factory()->create();
         $this->apple = Product::factory()->create([
-            'name'        => 'Organic Apple',
-            'price'       => 25.00,
-            'stock'       => 50,
+            'name' => 'Organic Apple',
+            'price' => 25.00,
+            'stock' => 50,
             'category_id' => $this->category->id,
         ]);
         $this->spinach = Product::factory()->create([
-            'name'        => 'Fresh Spinach',
-            'price'       => 18.50,
-            'stock'       => 30,
+            'name' => 'Fresh Spinach',
+            'price' => 18.50,
+            'stock' => 30,
             'category_id' => $this->category->id,
         ]);
     }
@@ -72,7 +76,7 @@ class EndToEndCheckoutTest extends TestCase
 
         $response = $this->postJson('/api/cart', [
             'product_id' => $this->apple->id,
-            'quantity'   => 3,
+            'quantity' => 3,
         ]);
 
         $response->assertCreated()
@@ -80,9 +84,9 @@ class EndToEndCheckoutTest extends TestCase
             ->assertJsonPath('item.quantity', 3);
 
         $this->assertDatabaseHas('cart_items', [
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'product_id' => $this->apple->id,
-            'quantity'   => 3,
+            'quantity' => 3,
         ]);
     }
 
@@ -116,7 +120,7 @@ class EndToEndCheckoutTest extends TestCase
             ->assertJsonPath('item.quantity', 5);
 
         $this->assertDatabaseHas('cart_items', [
-            'id'       => $item->id,
+            'id' => $item->id,
             'quantity' => 5,
         ]);
     }
@@ -162,18 +166,18 @@ class EndToEndCheckoutTest extends TestCase
 
         // 订单 + order_product 行
         $this->assertDatabaseHas('orders', [
-            'id'      => $orderId,
+            'id' => $orderId,
             'user_id' => $this->user->id,
         ]);
         $this->assertDatabaseHas('order_product', [
-            'order_id'   => $orderId,
+            'order_id' => $orderId,
             'product_id' => $this->apple->id,
-            'quantity'   => 2,
+            'quantity' => 2,
         ]);
         $this->assertDatabaseHas('order_product', [
-            'order_id'   => $orderId,
+            'order_id' => $orderId,
             'product_id' => $this->spinach->id,
-            'quantity'   => 1,
+            'quantity' => 1,
         ]);
     }
 
@@ -193,7 +197,7 @@ class EndToEndCheckoutTest extends TestCase
         $orderId = $orderResponse->json('order.id');
 
         $response = $this->postJson("/api/orders/{$orderId}/pay", [
-            'provider'   => 'stripe',
+            'provider' => 'stripe',
             'return_url' => 'https://shop.example.com/checkout/success',
         ]);
 
@@ -209,21 +213,21 @@ class EndToEndCheckoutTest extends TestCase
     // ── helpers ─────────────────────────────────────────────
 
     /** 加购并返回 CartItem 持久化对象 */
-    private function addItem(Product $product, int $qty): \App\Models\CartItem
+    private function addItem(Product $product, int $qty): CartItem
     {
-        return \App\Models\CartItem::create([
-            'user_id'    => $this->user->id,
+        return CartItem::create([
+            'user_id' => $this->user->id,
             'product_id' => $product->id,
-            'quantity'   => $qty,
+            'quantity' => $qty,
         ]);
     }
 
     private function shippingAddress(): array
     {
         return [
-            'name'     => 'Test User',
-            'phone'    => '+85291234567',
-            'address'  => '1 Test Road',
+            'name' => 'Test User',
+            'phone' => '+85291234567',
+            'address' => '1 Test Road',
             'district' => 'KL',
             'currency' => 'HKD',
         ];

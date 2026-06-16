@@ -3,13 +3,13 @@
 namespace Tests\Unit\Services;
 
 use App\Enums\OrderStatus;
+use App\Exceptions\InvalidTransitionException;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use Tests\TestCase;
 
 /**
@@ -21,7 +21,9 @@ class OrderServiceRefundTest extends TestCase
     use RefreshDatabase;
 
     private OrderService $service;
+
     private User $user;
+
     private Product $product;
 
     protected function setUp(): void
@@ -40,14 +42,15 @@ class OrderServiceRefundTest extends TestCase
             shippingAddress: ['name' => 'Tester', 'currency' => 'HKD'],
         );
         Payment::create([
-            'order_id'        => $order->id,
-            'provider'        => 'stripe',
-            'provider_txn_id' => 'pi_' . uniqid(),
-            'amount'          => $order->total_price,
-            'currency'        => 'HKD',
-            'status'          => 'succeeded',
-            'paid_at'         => now(),
+            'order_id' => $order->id,
+            'provider' => 'stripe',
+            'provider_txn_id' => 'pi_'.uniqid(),
+            'amount' => $order->total_price,
+            'currency' => 'HKD',
+            'status' => 'succeeded',
+            'paid_at' => now(),
         ]);
+
         return $order->fresh();
     }
 
@@ -118,7 +121,7 @@ class OrderServiceRefundTest extends TestCase
             shippingAddress: ['name' => 'Tester', 'currency' => 'HKD'],
         );
 
-        $this->expectException(\App\Exceptions\InvalidTransitionException::class);
+        $this->expectException(InvalidTransitionException::class);
         $this->service->transition($order, OrderStatus::Refunded, 'illegal_refund');
     }
 }

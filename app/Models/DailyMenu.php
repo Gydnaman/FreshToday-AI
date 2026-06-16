@@ -10,7 +10,7 @@ class DailyMenu extends Model
     protected $fillable = ['user_id', 'menu_content', 'date', 'source', 'tokens_used'];
 
     protected $casts = [
-        'date'        => 'date',
+        'date' => 'date',
         'tokens_used' => 'integer',
     ];
 

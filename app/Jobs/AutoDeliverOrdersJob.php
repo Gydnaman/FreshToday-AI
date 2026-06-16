@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AutoDeliverOrdersJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public function handle(OrderService $orderService): int
     {
@@ -40,6 +40,7 @@ class AutoDeliverOrdersJob implements ShouldQueue
                     }
                 }
             });
+
         return $count;
     }
 }

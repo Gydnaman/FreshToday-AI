@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * 2026-06-15 补：subscription_plan_product pivot 表加 price + quantity
  * - 详见 app/Models/SubscriptionPlan.php::products() 关系（withPivot('price','quantity')）
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('subscription_plan_product', function (Blueprint $table) {

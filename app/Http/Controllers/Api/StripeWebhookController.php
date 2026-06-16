@@ -45,11 +45,14 @@ class StripeWebhookController extends Controller
             // 开发环境：未配置 secret 时放行
             return app()->environment(['local', 'testing']);
         }
-        if (! $signature) return false;
+        if (! $signature) {
+            return false;
+        }
 
         // 简化 HMAC-SHA256 校验（生产建议用 \Stripe\Webhook::constructEvent）
-        $signedPayload = $payload['id'] . '.' . json_encode($payload);
+        $signedPayload = $payload['id'].'.'.json_encode($payload);
         $expected = hash_hmac('sha256', $signedPayload, $secret);
+
         return hash_equals($expected, $signature);
     }
 }

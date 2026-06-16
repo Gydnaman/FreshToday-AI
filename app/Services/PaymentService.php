@@ -6,7 +6,7 @@ use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\User;
+use App\Models\StripeWebhookEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -30,12 +30,12 @@ class PaymentService
 
         return DB::transaction(function () use ($order, $provider, $returnUrl) {
             $payment = Payment::create([
-                'order_id'        => $order->id,
-                'provider'        => $provider,
-                'provider_txn_id' => 'pending_' . $order->order_no, // 网关回调时回填
-                'amount'          => $order->total_price,
-                'currency'        => 'HKD',
-                'status'          => 'pending',
+                'order_id' => $order->id,
+                'provider' => $provider,
+                'provider_txn_id' => 'pending_'.$order->order_no, // 网关回调时回填
+                'amount' => $order->total_price,
+                'currency' => 'HKD',
+                'status' => 'pending',
             ]);
 
             // 调用网关（mock/stripe/payme 统一入口）
@@ -48,6 +48,7 @@ class PaymentService
 
     /**
      * Webhook 入口（不依赖 auth，靠签名校验 + 去重表）
+     *
      * @see docs/bmad/api-contract.md §2.8
      */
     public function handleWebhook(string $provider, array $payload, ?string $signature = null): void
@@ -56,25 +57,27 @@ class PaymentService
         $eventId = $payload['id'] ?? $payload['event_id'] ?? null;
         if (! $eventId) {
             Log::warning('Webhook missing event id', ['provider' => $provider]);
+
             return;
         }
 
         // 2. 落库去重（StripeWebhookEvent.provider_event_id UQ）
-        $event = \App\Models\StripeWebhookEvent::firstOrCreate(
+        $event = StripeWebhookEvent::firstOrCreate(
             ['provider_event_id' => $eventId],
             [
-                'provider'    => $provider,
-                'event_type'  => $payload['type'] ?? 'unknown',
-                'payload'     => $payload,
-                'signature'   => $signature,
+                'provider' => $provider,
+                'event_type' => $payload['type'] ?? 'unknown',
+                'payload' => $payload,
+                'signature' => $signature,
                 'received_at' => now(),
-                'status'      => 'received',
+                'status' => 'received',
             ],
         );
 
         // 幂等：已存在则直接返回
         if (! $event->wasRecentlyCreated && in_array($event->status, ['processed', 'ignored'], true)) {
             Log::info('Webhook already processed', ['event_id' => $eventId]);
+
             return;
         }
 
@@ -85,7 +88,7 @@ class PaymentService
             $event->update(['status' => 'processed', 'processed_at' => now()]);
         } catch (\Throwable $e) {
             $event->update([
-                'status'     => 'failed',
+                'status' => 'failed',
                 'last_error' => $e->getMessage(),
             ]);
             Log::error('Webhook processing failed', [
@@ -108,8 +111,8 @@ class PaymentService
         // 1. 调网关退款（mock：直接成功）
         // 2. 写 payment status=refunded
         $payment->update([
-            'status'       => 'refunded',
-            'refunded_at'  => now(),
+            'status' => 'refunded',
+            'refunded_at' => now(),
         ]);
 
         // 3. 触发状态机
@@ -123,7 +126,7 @@ class PaymentService
         return true;
     }
 
-    private function routeEvent(\App\Models\StripeWebhookEvent $event): void
+    private function routeEvent(StripeWebhookEvent $event): void
     {
         $payload = $event->payload;
         $orderService = app(OrderService::class);
@@ -136,32 +139,34 @@ class PaymentService
         };
     }
 
-    private function onPaymentSucceeded(\App\Models\StripeWebhookEvent $event, array $payload): void
+    private function onPaymentSucceeded(StripeWebhookEvent $event, array $payload): void
     {
         $txnId = $payload['data']['object']['id'] ?? null;
         $payment = Payment::where('provider_txn_id', $txnId)->first();
         if (! $payment) {
             Log::warning('Webhook: payment not found', ['txn_id' => $txnId]);
+
             return;
         }
 
         // 业务级幂等：Payment 已 succeeded 表示之前成功处理过此事件
-        //（Stripe 等网关会在我们的 API 超时时重发 webhook 多次，event_id 可能不同）
+        // （Stripe 等网关会在我们的 API 超时时重发 webhook 多次，event_id 可能不同）
         if ($payment->status === 'succeeded') {
             Log::info('Webhook idempotent skip: payment already succeeded', [
                 'payment_id' => $payment->id, 'txn_id' => $txnId,
             ]);
             $event->update([
                 'related_payment_id' => $payment->id,
-                'related_order_id'   => $payment->order_id,
-                'status'             => 'ignored',
+                'related_order_id' => $payment->order_id,
+                'status' => 'ignored',
             ]);
+
             return;
         }
 
         $payment->update([
-            'status'     => 'succeeded',
-            'paid_at'    => now(),
+            'status' => 'succeeded',
+            'paid_at' => now(),
             'raw_response' => $payload,
         ]);
         $event->update(['related_payment_id' => $payment->id, 'related_order_id' => $payment->order_id]);
@@ -175,7 +180,7 @@ class PaymentService
         );
     }
 
-    private function onPaymentFailed(\App\Models\StripeWebhookEvent $event, array $payload): void
+    private function onPaymentFailed(StripeWebhookEvent $event, array $payload): void
     {
         $txnId = $payload['data']['object']['id'] ?? null;
         $payment = Payment::where('provider_txn_id', $txnId)->first();
@@ -184,11 +189,13 @@ class PaymentService
         }
     }
 
-    private function onChargeRefunded(\App\Models\StripeWebhookEvent $event, array $payload): void
+    private function onChargeRefunded(StripeWebhookEvent $event, array $payload): void
     {
         $txnId = $payload['data']['object']['payment_intent'] ?? null;
         $payment = Payment::where('provider_txn_id', $txnId)->first();
-        if (! $payment) return;
+        if (! $payment) {
+            return;
+        }
         $event->update(['related_payment_id' => $payment->id, 'related_order_id' => $payment->order_id]);
         // OrderService 已在 PaymentService::refund 中转移
     }
@@ -196,7 +203,7 @@ class PaymentService
     private function callGatewayCreate(string $provider, Payment $payment, string $returnUrl): string
     {
         // Sprint 1 占位：返回 mock URL
-        return $returnUrl . '?payment_id=' . $payment->id;
+        return $returnUrl.'?payment_id='.$payment->id;
     }
 
     private function extractTxnId(string $provider, string $redirectUrl): ?string

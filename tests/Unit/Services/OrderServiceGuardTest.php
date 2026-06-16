@@ -4,7 +4,6 @@ namespace Tests\Unit\Services;
 
 use App\Enums\OrderStatus;
 use App\Exceptions\GuardFailedException;
-use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
@@ -21,6 +20,7 @@ class OrderServiceGuardTest extends TestCase
     use RefreshDatabase;
 
     private OrderService $service;
+
     private User $user;
 
     protected function setUp(): void
@@ -70,13 +70,13 @@ class OrderServiceGuardTest extends TestCase
 
         // 故意造一笔金额不一致的支付单
         Payment::create([
-            'order_id'        => $order->id,
-            'provider'        => 'stripe',
+            'order_id' => $order->id,
+            'provider' => 'stripe',
             'provider_txn_id' => 'pi_wrong_amt',
-            'amount'          => $order->total_price - 1,
-            'currency'        => 'HKD',
-            'status'          => 'succeeded',
-            'paid_at'         => now(),
+            'amount' => $order->total_price - 1,
+            'currency' => 'HKD',
+            'status' => 'succeeded',
+            'paid_at' => now(),
         ]);
 
         $this->expectException(GuardFailedException::class);

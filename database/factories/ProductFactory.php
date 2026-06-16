@@ -18,18 +18,18 @@ class ProductFactory extends Factory
         $organicPrefixes = ['Organic', 'Fresh', 'Local', 'Free-range', 'Wild-caught', 'Hand-picked', 'Sun-ripened'];
         $items = ['Tomato', 'Carrot', 'Spinach', 'Apple', 'Pear', 'Salmon', 'Chicken', 'Egg', 'Mushroom', 'Kale', 'Beetroot', 'Pumpkin', 'Lettuce', 'Strawberry', 'Blueberry'];
 
-        $name = fake()->randomElement($organicPrefixes) . ' ' . fake()->randomElement($items);
+        $name = fake()->randomElement($organicPrefixes).' '.fake()->randomElement($items);
 
         return [
-            'name'              => $name,
-            'description'       => fake()->sentence(10),
-            'price'             => fake()->randomFloat(2, 10, 300),
-            'image'             => 'https://placehold.co/600x400/4ade80/ffffff?text=' . urlencode($name),
-            'carbon_footprint'  => fake()->randomFloat(3, 0.1, 5.0),
-            'stock'             => fake()->numberBetween(0, 200),
-            'category_id'       => Category::factory(),
-            'is_organic'        => fake()->boolean(80),
-            'origin'            => 'HK ' . fake()->randomElement(['New Territories', 'Lantau Island', 'Sai Kung', 'Yuen Long']),
+            'name' => $name,
+            'description' => fake()->sentence(10),
+            'price' => fake()->randomFloat(2, 10, 300),
+            'image' => 'https://placehold.co/600x400/4ade80/ffffff?text='.urlencode($name),
+            'carbon_footprint' => fake()->randomFloat(3, 0.1, 5.0),
+            'stock' => fake()->numberBetween(0, 200),
+            'category_id' => Category::factory(),
+            'is_organic' => fake()->boolean(80),
+            'origin' => 'HK '.fake()->randomElement(['New Territories', 'Lantau Island', 'Sai Kung', 'Yuen Long']),
         ];
     }
 

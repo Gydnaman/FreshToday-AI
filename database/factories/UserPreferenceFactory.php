@@ -16,14 +16,14 @@ class UserPreferenceFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'         => User::factory(),
-            'usage_purpose'   => fake()->randomElement(['Eat Healthier', 'Support Local Farms', 'Reduce Carbon Footprint']),
-            'dietary_habits'  => fake()->randomElement(['No Restrictions', 'Vegetarian/Vegan', 'Keto/Low Carb', 'High Protein']),
-            'goals'           => fake()->randomElement(['Lose weight', 'Gain muscle', 'More energy', 'Eat greener']),
-            'allergies'       => [],
-            'household_size'  => fake()->numberBetween(1, 6),
-            'cooking_skill'   => fake()->randomElement(['Beginner', 'Intermediate', 'Advanced']),
-            'budget_hkd'      => fake()->randomFloat(2, 200, 1500),
+            'user_id' => User::factory(),
+            'usage_purpose' => fake()->randomElement(['Eat Healthier', 'Support Local Farms', 'Reduce Carbon Footprint']),
+            'dietary_habits' => fake()->randomElement(['No Restrictions', 'Vegetarian/Vegan', 'Keto/Low Carb', 'High Protein']),
+            'goals' => fake()->randomElement(['Lose weight', 'Gain muscle', 'More energy', 'Eat greener']),
+            'allergies' => [],
+            'household_size' => fake()->numberBetween(1, 6),
+            'cooking_skill' => fake()->randomElement(['Beginner', 'Intermediate', 'Advanced']),
+            'budget_hkd' => fake()->randomFloat(2, 200, 1500),
         ];
     }
 }

@@ -43,25 +43,25 @@ return [
     'providers' => [
 
         'gemini' => [
-            'key'      => env('GEMINI_API_KEY'),
+            'key' => env('GEMINI_API_KEY'),
             'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
-            'model'    => env('AI_GEMINI_MODEL', env('GEMINI_MODEL', 'gemini-2.5-flash')),
-            'timeout'  => (int) env('AI_TIMEOUT', 8),
+            'model' => env('AI_GEMINI_MODEL', env('GEMINI_MODEL', 'gemini-2.5-flash')),
+            'timeout' => (int) env('AI_TIMEOUT', 8),
         ],
 
         'openai' => [
-            'key'      => env('OPENAI_API_KEY'),
+            'key' => env('OPENAI_API_KEY'),
             'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
-            'model'    => env('AI_OPENAI_MODEL', 'gpt-4o-mini'),
-            'timeout'  => (int) env('AI_TIMEOUT', 15),
+            'model' => env('AI_OPENAI_MODEL', 'gpt-4o-mini'),
+            'timeout' => (int) env('AI_TIMEOUT', 15),
         ],
 
         'deepseek' => [
-            'key'      => env('DEEPSEEK_API_KEY'),
+            'key' => env('DEEPSEEK_API_KEY'),
             // DeepSeek 提供 OpenAI 兼容协议
             'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
-            'model'    => env('AI_DEEPSEEK_MODEL', 'deepseek-chat'),
-            'timeout'  => (int) env('AI_TIMEOUT', 15),
+            'model' => env('AI_DEEPSEEK_MODEL', 'deepseek-chat'),
+            'timeout' => (int) env('AI_TIMEOUT', 15),
         ],
     ],
 

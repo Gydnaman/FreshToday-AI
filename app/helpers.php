@@ -18,7 +18,6 @@
  * Laravel 内建 JSON 翻译只支持扁平 key（dot 不解析），所以提供
  * 兼容：i18n() 函数支持嵌套 key。
  */
-
 if (! function_exists('i18n')) {
     /**
      * 取嵌套 key 的翻译值，未命中时回退到 key 自身（方便排查）。
@@ -30,7 +29,7 @@ if (! function_exists('i18n')) {
     function i18n(string $key, array $replace = [], ?string $locale = null): string
     {
         $locale = $locale ?? app()->getLocale();
-        $path = resource_path('lang/' . $locale . '.json');
+        $path = resource_path('lang/'.$locale.'.json');
 
         $value = null;
         if (is_file($path)) {
@@ -52,8 +51,8 @@ if (! function_exists('i18n')) {
         }
 
         foreach ($replace as $k => $v) {
-            $value = str_replace(':' . $k, (string) $v, $value);
-            $value = str_replace('{' . $k . '}', (string) $v, $value);
+            $value = str_replace(':'.$k, (string) $v, $value);
+            $value = str_replace('{'.$k.'}', (string) $v, $value);
         }
 
         return (string) $value;

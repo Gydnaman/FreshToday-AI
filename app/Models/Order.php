@@ -32,15 +32,15 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'status'           => OrderStatus::class,
+        'status' => OrderStatus::class,
         'shipping_address' => 'array',
-        'total_price'      => 'decimal:2',
-        'discount_amount'  => 'decimal:2',
-        'placed_at'        => 'datetime',
-        'paid_at'          => 'datetime',
-        'cancelled_at'     => 'datetime',
-        'delivered_at'     => 'datetime',
-        'refunded_at'      => 'datetime',
+        'total_price' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'placed_at' => 'datetime',
+        'paid_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'refunded_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

@@ -20,7 +20,8 @@ use Illuminate\Support\Facades\Schema;
  *   - app/Services/OrderService.php   transition(Refunded) 分支
  *   - tests/Unit/Services/OrderServiceRefundTest.php
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {

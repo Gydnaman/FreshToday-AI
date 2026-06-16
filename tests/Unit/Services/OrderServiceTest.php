@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Enums\OrderStatus;
+use App\Exceptions\GuardFailedException;
 use App\Exceptions\InvalidTransitionException;
 use App\Models\Order;
 use App\Models\OrderStatusLog;
@@ -22,7 +23,9 @@ class OrderServiceTest extends TestCase
     use RefreshDatabase;
 
     private OrderService $service;
+
     private User $user;
+
     private Product $product;
 
     protected function setUp(): void
@@ -43,14 +46,15 @@ class OrderServiceTest extends TestCase
         );
         // 注入一笔 succeeded 支付单，金额匹配
         Payment::create([
-            'order_id'        => $order->id,
-            'provider'        => 'stripe',
-            'provider_txn_id' => 'pi_test_' . $order->id,
-            'amount'          => $order->total_price,
-            'currency'        => 'HKD',
-            'status'          => 'succeeded',
-            'paid_at'         => now(),
+            'order_id' => $order->id,
+            'provider' => 'stripe',
+            'provider_txn_id' => 'pi_test_'.$order->id,
+            'amount' => $order->total_price,
+            'currency' => 'HKD',
+            'status' => 'succeeded',
+            'paid_at' => now(),
         ]);
+
         return $order->fresh();
     }
 
@@ -85,7 +89,7 @@ class OrderServiceTest extends TestCase
         $order = $this->service->transition($order, OrderStatus::Processing, 'admin_pick');
 
         $shipped = $this->service->transition($order, OrderStatus::Shipped, 'warehouse_ship', [
-            'tracking_no' => 'SF' . random_int(100000, 999999),
+            'tracking_no' => 'SF'.random_int(100000, 999999),
         ]);
 
         $this->assertEquals(OrderStatus::Shipped, $shipped->status);
@@ -172,7 +176,7 @@ class OrderServiceTest extends TestCase
         $order = $this->makeOrderWithPayment();
         $other = User::factory()->create();
 
-        $this->expectException(\App\Exceptions\GuardFailedException::class);
+        $this->expectException(GuardFailedException::class);
         $this->service->transition($order, OrderStatus::Cancelled, 'user_cancel', [
             'reason' => 'not_owner', 'actor_type' => 'user',
         ], actor: $other);

@@ -26,9 +26,13 @@ class WebhookFlowTest extends TestCase
     use RefreshDatabase, WithoutMiddleware;
 
     private OrderService $orderService;
+
     private User $user;
+
     private Order $order;
+
     private string $eventId;
+
     private string $txnId;
 
     protected function setUp(): void
@@ -43,16 +47,16 @@ class WebhookFlowTest extends TestCase
             items: [['product_id' => $product->id, 'quantity' => 1]],
             shippingAddress: ['name' => 'Webhook Tester', 'currency' => 'HKD'],
         );
-        $this->eventId = 'evt_test_' . uniqid();
-        $this->txnId = 'pi_test_' . uniqid();
+        $this->eventId = 'evt_test_'.uniqid();
+        $this->txnId = 'pi_test_'.uniqid();
 
         Payment::create([
-            'order_id'        => $this->order->id,
-            'provider'        => 'stripe',
+            'order_id' => $this->order->id,
+            'provider' => 'stripe',
             'provider_txn_id' => $this->txnId,
-            'amount'          => $this->order->total_price,
-            'currency'        => 'HKD',
-            'status'          => 'pending',
+            'amount' => $this->order->total_price,
+            'currency' => 'HKD',
+            'status' => 'pending',
         ]);
     }
 
@@ -101,7 +105,7 @@ class WebhookFlowTest extends TestCase
     public function test_payment_failed_event_marks_payment_as_failed(): void
     {
         $payload = [
-            'id'   => 'evt_failed_' . uniqid(),
+            'id' => 'evt_failed_'.uniqid(),
             'type' => 'payment_intent.payment_failed',
             'data' => [
                 'object' => [
@@ -121,11 +125,11 @@ class WebhookFlowTest extends TestCase
     private function buildPayload(): array
     {
         return [
-            'id'   => $this->eventId,
+            'id' => $this->eventId,
             'type' => 'payment_intent.succeeded',
             'data' => [
                 'object' => [
-                    'id'     => $this->txnId,
+                    'id' => $this->txnId,
                     'amount' => (int) ($this->order->total_price * 100),
                     'currency' => 'hkd',
                 ],
