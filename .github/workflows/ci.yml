@@ -312,13 +312,24 @@ jobs:
 
   # ============================================================
   # JOB 5: Docker — docker buildx + tag (仅 main 分支触发)
+  # 当前状态: SKIPPED — Dockerfile 引用了未提交的 docker/ 配置目录
+  # (php.ini, www.conf, supervisord.conf, queue-worker.conf,
+  #  scheduler.conf, nginx.conf, default.conf, entrypoint.sh)
+  # 计划: 在部署 Sprint 补全 docker/ 目录后启用
+  # 跟踪: docs/bmad/DAY5-GAP-REPORT-2026-06-15.md §P0-1
   # ============================================================
   docker:
-    name: Docker Buildx (main only)
+    name: Docker Buildx (main only) [DISABLED - TODO]
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 1
     needs: [lint, test, build]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'push'
+    if: false  # 显式禁用，等 docker/ 配置目录补全后改为: github.ref == 'refs/heads/main'
+    steps:
+      - name: Docker build placeholder
+        run: |
+          echo "Docker job is currently disabled."
+          echo "Reason: Dockerfile references docker/ directory files that are not yet committed."
+          echo "Re-enable after: docs/bmad/deployment.md §3 配置文件落地"
 
     steps:
       - name: Checkout
