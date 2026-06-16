@@ -313,8 +313,6 @@ jobs:
   # ============================================================
   # JOB 5: Docker — docker buildx + tag (仅 main 分支触发)
   # 当前状态: SKIPPED — Dockerfile 引用了未提交的 docker/ 配置目录
-  # (php.ini, www.conf, supervisord.conf, queue-worker.conf,
-  #  scheduler.conf, nginx.conf, default.conf, entrypoint.sh)
   # 计划: 在部署 Sprint 补全 docker/ 目录后启用
   # 跟踪: docs/bmad/DAY5-GAP-REPORT-2026-06-15.md §P0-1
   # ============================================================
@@ -327,50 +325,6 @@ jobs:
     steps:
       - name: Docker build placeholder
         run: |
-          echo "Docker job is currently disabled."
+          echo "Docker job is currently disabled (if: false)."
           echo "Reason: Dockerfile references docker/ directory files that are not yet committed."
           echo "Re-enable after: docs/bmad/deployment.md §3 配置文件落地"
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        if: env.GITHUB_TOKEN != ''
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/greenbite
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: false
-
-      - name: Verify Image Built (PR only)
-        if: github.event_name != 'push'
-        run: |
-          echo "PR build verified locally (not pushed to registry)"
-          echo "Image: ghcr.io/${{ github.repository_owner }}/greenbite:${{ github.sha }}"
