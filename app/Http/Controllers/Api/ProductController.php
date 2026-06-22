@@ -23,7 +23,8 @@ class ProductController extends Controller
 
         $cacheKey = 'products:list:'.md5(json_encode($validated));
         $products = Cache::remember($cacheKey, 300, function () use ($validated) {
-            $q = Product::with('category:id,name,slug');
+            $q = Product::with('category:id,name,slug')
+                ->where('status', Product::STATUS_PUBLISHED); // admin draft / archived 不可见
             if (! empty($validated['category_id'])) {
                 $q->where('category_id', $validated['category_id']);
             }

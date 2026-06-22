@@ -21,13 +21,22 @@ class Product extends Model
         'category_id',
         'is_organic',
         'origin',
+        'status',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'carbon_footprint' => 'decimal:3',
         'is_organic' => 'boolean',
+        'stock' => 'integer',
     ];
+
+    /** 公开 /api/products 可见的产品状态 */
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_ARCHIVED = 'archived';
 
     public function category(): BelongsTo
     {

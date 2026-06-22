@@ -2,6 +2,7 @@
 
 use App\Exceptions\GuardFailedException;
 use App\Exceptions\InvalidTransitionException;
+use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -24,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleApi();
         // i18n：解析 ?lang= / cookie / Accept-Language，写入 app()->setLocale
         $middleware->append(SetLocale::class);
+        // admin 别名（IsAdmin 中间件）
+        $middleware->alias([
+            'admin' => IsAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // API 鉴权失败：返 401 JSON，不重定向到 login 路由
