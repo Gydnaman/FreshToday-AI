@@ -16,9 +16,9 @@ Route::get('/login', function () {
     return view('auth');
 });
 
-// Admin 登录入口（占位：复用前端 /auth 视图 + return URL 跳转）
+// Admin 登录入口（独立视图，校验 is_admin 后才放行）
 Route::get('/admin/login', function () {
-    return view('auth');
+    return view('admin.login');
 })->name('admin.login');
 
 Route::get('/subscriptions', function () {
