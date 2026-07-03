@@ -20,8 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // API 仅做 token 鉴权（auth:sanctum）+ 限流（throttle:api）
-        // 不启用 statefulApi() —— 本项目 token 鉴权，不需要 session/cookie 中间件链
+        // Sanctum SPA cookie 模式：启用 stateful API（session + csrf 中间件链）
+        $middleware->statefulApi();
         $middleware->throttleApi();
         // i18n：解析 ?lang= / cookie / Accept-Language，写入 app()->setLocale
         $middleware->append(SetLocale::class);
@@ -33,7 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // API 鉴权失败：返 401 JSON，不重定向到 login 路由
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if ($request->is('api/*')) {
+            if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json(['error' => ['code' => 'UNAUTHENTICATED', 'message' => '未登录或令牌无效']], 401);
             }
         });
