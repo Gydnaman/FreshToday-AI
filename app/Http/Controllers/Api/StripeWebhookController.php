@@ -25,10 +25,11 @@ class StripeWebhookController extends Controller
 
     public function handle(Request $request): JsonResponse
     {
-        $payload = $request->all();
+        $rawBody = $request->getContent();
+        $payload = json_decode($rawBody, true) ?? $request->all();
         $signature = $request->header('Stripe-Signature');
 
-        $verifyResult = $this->verifySignature($payload, $signature);
+        $verifyResult = $this->verifySignature($rawBody, $signature);
         if ($verifyResult !== true) {
             return response()->json([
                 'error' => ['code' => $verifyResult, 'message' => '签名校验失败'],
@@ -46,12 +47,13 @@ class StripeWebhookController extends Controller
     }
 
     /**
-     * HMAC 验签（fail-closed）
+     * HMAC 验签（fail-closed）— 使用 Stripe 官方 SDK
      *
-     * @param  array<string, mixed>  $payload
+     * @param  string  $rawBody  原始请求体（供 constructEvent 验签）
+     * @param  string|null  $signature  Stripe-Signature header（格式：t=<ts>,v1=<hex>）
      * @return true|string true 表示通过；字符串为错误 code
      */
-    private function verifySignature(array $payload, ?string $signature): true|string
+    private function verifySignature(string $rawBody, ?string $signature): true|string
     {
         $secret = config('services.stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET');
 
@@ -67,10 +69,20 @@ class StripeWebhookController extends Controller
             return 'MISSING_SIGNATURE';
         }
 
-        // 简化 HMAC-SHA256 校验（生产建议用 \Stripe\Webhook::constructEvent）
-        $signedPayload = ($payload['id'] ?? '').'.'.json_encode($payload);
-        $expected = hash_hmac('sha256', $signedPayload, $secret);
+        // 使用 Stripe 官方 SDK 验签（Stripe-Signature 格式：t=<timestamp>,v1=<hex>）
+        // 签名内容 = "<timestamp>.<raw_body>"，HMAC-SHA256
+        try {
+            \Stripe\Webhook::constructEvent($rawBody, $signature, $secret);
 
-        return hash_equals($expected, $signature) ? true : 'INVALID_SIGNATURE';
+            return true;
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            Log::warning('Stripe signature verification failed', ['error' => $e->getMessage()]);
+
+            return 'INVALID_SIGNATURE';
+        } catch (\UnexpectedValueException $e) {
+            Log::warning('Stripe webhook invalid payload', ['error' => $e->getMessage()]);
+
+            return 'INVALID_SIGNATURE';
+        }
     }
 }

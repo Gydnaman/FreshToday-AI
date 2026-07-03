@@ -89,7 +89,7 @@ class OrderController extends Controller
             return response()->json(['error' => ['code' => 'NOT_OWNER', 'message' => '无权操作']], 403);
         }
         $data = $request->validate([
-            'provider' => 'required|in:stripe,payme,alipay_hk',
+            'provider' => 'required|in:stripe,payme',
             'return_url' => 'required|url',
         ]);
 

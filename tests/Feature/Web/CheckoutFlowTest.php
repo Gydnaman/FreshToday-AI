@@ -121,7 +121,7 @@ class CheckoutFlowTest extends TestCase
             '结算后购物车应清空');
     }
 
-    /** pay 时 provider 不是 stripe/payme/alipay_hk → 422 validation */
+    /** pay 时 provider 不是 stripe/payme → 422 validation */
     public function test_pay_with_invalid_provider_fails(): void
     {
         Sanctum::actingAs($this->user);

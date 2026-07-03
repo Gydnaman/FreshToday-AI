@@ -151,12 +151,17 @@ class WebhookFlowTest extends TestCase
     }
 
     /**
-     * P0-2：按 StripeWebhookController::verifySignature 的算法生成真实 HMAC
+     * P0-2：按 Stripe 官方签名格式生成签名
+     * 格式：t=<timestamp>,v1=<hex>
+     * 签名内容："<timestamp>.<raw_body>"
      */
     private function sign(array $payload): string
     {
-        $signedPayload = $payload['id'].'.'.json_encode($payload);
+        $timestamp = time();
+        $rawBody = json_encode($payload, 0);
+        $signedPayload = "{$timestamp}.{$rawBody}";
+        $signature = hash_hmac('sha256', $signedPayload, self::TEST_WEBHOOK_SECRET);
 
-        return hash_hmac('sha256', $signedPayload, self::TEST_WEBHOOK_SECRET);
+        return "t={$timestamp},v1={$signature}";
     }
 }
