@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -79,21 +78,19 @@ class CartAuthGuardTest extends TestCase
             ->assertJsonPath('error.code', 'UNAUTHENTICATED');
     }
 
-    /** Bearer 一个完全乱写的 token → 401（关键：不能崩 500） */
-    public function test_invalid_token_returns_401(): void
+    /** 无 session 访问 /api/cart → 401（session 模式下不测 Bearer，测无 cookie） */
+    public function test_unauthenticated_api_returns_401(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer this-is-not-a-real-token-xyz')
-            ->getJson('/api/cart');
+        $response = $this->getJson('/api/cart');
 
         $response->assertStatus(401)
             ->assertJsonPath('error.code', 'UNAUTHENTICATED');
 
-        // 同样的姿势 POST 也要 401，不是 500
-        $response2 = $this->withHeader('Authorization', 'Bearer invalid.token.value')
-            ->postJson('/api/cart', [
-                'product_id' => $this->product->id,
-                'quantity' => 1,
-            ]);
+        // POST 也要 401，不是 500
+        $response2 = $this->postJson('/api/cart', [
+            'product_id' => $this->product->id,
+            'quantity' => 1,
+        ]);
 
         $response2->assertStatus(401)
             ->assertJsonPath('error.code', 'UNAUTHENTICATED');
@@ -106,7 +103,7 @@ class CartAuthGuardTest extends TestCase
     public function test_cart_isolated_between_users(): void
     {
         // Alice 加 3 个 apple
-        Sanctum::actingAs($this->alice);
+        $this->actingAs($this->alice);
         $this->postJson('/api/cart', [
             'product_id' => $this->product->id,
             'quantity' => 3,
@@ -117,7 +114,7 @@ class CartAuthGuardTest extends TestCase
         $this->assertEquals(3, $aliceCart->json('item_count'));
 
         // Bob 登录 —— 应看到空购物车
-        Sanctum::actingAs($this->bob);
+        $this->actingAs($this->bob);
         $bobCart = $this->getJson('/api/cart')->assertOk();
         $this->assertCount(0, $bobCart->json('items'));
         $this->assertEquals(0, $bobCart->json('item_count'));

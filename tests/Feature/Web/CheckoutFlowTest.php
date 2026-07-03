@@ -9,7 +9,6 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -52,7 +51,7 @@ class CheckoutFlowTest extends TestCase
     /** items 为空 → 422 validation error */
     public function test_checkout_with_empty_cart_fails(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
 
         $response = $this->postJson('/api/orders', [
             'items' => [],
@@ -69,7 +68,7 @@ class CheckoutFlowTest extends TestCase
     /** 商品库存为 0 → GUARD-I1，409 */
     public function test_checkout_with_out_of_stock_fails(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
 
         $response = $this->postJson('/api/orders', [
             'items' => [
@@ -88,7 +87,7 @@ class CheckoutFlowTest extends TestCase
     /** 结算成功后购物车应被清空 */
     public function test_checkout_clears_cart_after_order(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
 
         // 加 2 个不同商品
         $spinach = Product::factory()->create([
@@ -124,7 +123,7 @@ class CheckoutFlowTest extends TestCase
     /** pay 时 provider 不是 stripe/payme → 422 validation */
     public function test_pay_with_invalid_provider_fails(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
         $order = $this->placeOrderFor($this->user, $this->product, 1);
 
         $response = $this->postJson("/api/orders/{$order->id}/pay", [
@@ -146,7 +145,7 @@ class CheckoutFlowTest extends TestCase
         $aliceOrder = $this->placeOrderFor($this->user, $this->product, 1);
 
         // Bob 试图支付
-        Sanctum::actingAs($this->stranger);
+        $this->actingAs($this->stranger);
 
         $response = $this->postJson("/api/orders/{$aliceOrder->id}/pay", [
             'provider' => 'stripe',

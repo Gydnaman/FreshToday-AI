@@ -8,7 +8,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -17,8 +16,7 @@ use Tests\TestCase;
  * 覆盖 PRD 关键用户旅程：
  *   浏览商品 → 加购 → 查购物车 → 改数量 → 删商品 → 结算 → 支付跳转
  *
- * 测的是 API 层（jQuery 前端不测），用 Sanctum::actingAs 模拟 SPA 已登录。
- * 业务实现可能尚未到位，本测试作为「契约锁」：Golf 完成后应全部通过。
+ * 测的是 API 层（jQuery 前端不测），用 $this->actingAs 模拟已登录用户（session 认证）。
  */
 class EndToEndCheckoutTest extends TestCase
 {
@@ -72,7 +70,7 @@ class EndToEndCheckoutTest extends TestCase
     /** 已登录用户：POST /api/cart 把商品加入购物车 */
     public function test_authenticated_user_can_add_to_cart(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
 
         $response = $this->postJson('/api/cart', [
             'product_id' => $this->apple->id,
@@ -93,7 +91,7 @@ class EndToEndCheckoutTest extends TestCase
     /** GET /api/cart 返回当前用户购物车 + total + item_count */
     public function test_authenticated_user_can_view_cart(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
         $this->addItem($this->apple, 2);   // 25 * 2 = 50
         $this->addItem($this->spinach, 1); // 18.5
 
@@ -109,7 +107,7 @@ class EndToEndCheckoutTest extends TestCase
     /** PATCH /api/cart/{item} 修改数量 */
     public function test_authenticated_user_can_update_quantity(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
         $item = $this->addItem($this->apple, 2);
 
         $response = $this->patchJson("/api/cart/{$item->id}", [
@@ -128,7 +126,7 @@ class EndToEndCheckoutTest extends TestCase
     /** DELETE /api/cart/{item} 移除商品 */
     public function test_authenticated_user_can_remove_item(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
         $item = $this->addItem($this->apple, 2);
 
         $response = $this->deleteJson("/api/cart/{$item->id}");
@@ -140,7 +138,7 @@ class EndToEndCheckoutTest extends TestCase
     /** 完整 checkout：POST /api/orders 创建订单，订单里带 cart 商品 */
     public function test_checkout_creates_order_with_cart_items(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
         $this->addItem($this->apple, 2);    // 25 * 2 = 50
         $this->addItem($this->spinach, 1);  // 18.5
 
@@ -184,7 +182,7 @@ class EndToEndCheckoutTest extends TestCase
     /** POST /api/orders/{order}/pay 返回 redirect_url 给前端跳网关 */
     public function test_checkout_pay_returns_redirect_url(): void
     {
-        Sanctum::actingAs($this->user);
+        $this->actingAs($this->user);
         $this->addItem($this->apple, 1);
 
         $orderResponse = $this->postJson('/api/orders', [
