@@ -1,13 +1,13 @@
 # GreenBite
 
-> A green lifestyle e-commerce platform built with Laravel 12, jQuery, Tailwind CSS, and MySQL/SQLite.
+> A green lifestyle e-commerce platform built with Laravel 12, Tailwind CSS, and MySQL/SQLite.
 
 ## Features
 
 - Local organic agriculture products catalog
 - AI-powered daily menu generation (Gemini)
 - Shopping cart, multi-step checkout
-- Stripe + PayMe + Alipay HK payment integration
+- Stripe + PayMe payment integration（Alipay HK 计划 Sprint 2 接入；PayMe webhook 验签待 Sprint 2）
 - Subscription plans
 - Order tracking with 7-state machine
 - Refund workflow
@@ -19,10 +19,10 @@
 |---|---|
 | Backend | Laravel 12 (PHP 8.2) |
 | Database | SQLite (dev) / MySQL 8.0 (prod) |
-| Frontend | jQuery 3.7 + Tailwind CSS 3 (Vite) |
+| Frontend | Tailwind CSS 4 (Vite)（原生 JS，无 jQuery 依赖） |
 | API Auth | Laravel Sanctum (token) |
-| Payment | Stripe + PayMe + Alipay HK |
-| AI | Google Gemini 2.5 Flash (3-layer fallback per ADR-0006) |
+| Payment | Stripe + PayMe（Alipay HK 待 Sprint 2） |
+| AI | Google Gemini 2.5 Flash（HTTP 直调，无 SDK；3-layer fallback per ADR-0006） |
 | Cache | File / Database / Redis (configurable) |
 
 ## Quick Start (5 minutes, native PHP + SQLite on Windows 10+)
@@ -45,7 +45,7 @@ winget install --id=SQLite.SQLite -e --accept-package-agreements --accept-source
 ### 2. Clone & install
 
 ```bash
-cd d:/FreshToday-AI
+cd c:\Users\Lenovo\Desktop\FreshToday-AI
 bash scripts/dev.sh install     # composer install + npm install
 ```
 
@@ -91,7 +91,7 @@ bash scripts/dev.sh stop
 | `bash scripts/dev.sh serve` | 后台启动 artisan serve + vite（PID 写到 storage/framework/dev-pids/） |
 | `bash scripts/dev.sh stop` | 停掉 serve + vite |
 | `bash scripts/dev.sh tinker` | 进 Laravel REPL |
-| `bash scripts/dev.sh test` | 跑 PHPUnit（当前 39/54 通过，详见 `docs/bmad/DAY5-GAP-REPORT-2026-06-15.md`） |
+| `bash scripts/dev.sh test` | 跑 PHPUnit（当前 71/71 通过，311 assertions，详见 `_bmad/tasks/project-review/02-test-baseline.md`） |
 | `bash scripts/dev.sh all` | install + setup + serve 一把梭 |
 
 > `dev.sh` **不依赖** `php` 在 PATH 中（用 winget 安装的绝对路径调用），Git Bash 即可运行。
@@ -109,16 +109,16 @@ app/
   Http/
     Controllers/Api/     10 REST controllers (Auth/Cart/Menu/Order/...)
     Middleware/          SetLocale
-  Models/                17 Eloquent models
+  Models/                16 Eloquent models
   Services/              5 business services
     OrderService.php           7-state machine (SSOT)
-    PaymentService.php         Stripe/PayMe/Alipay HK
+    PaymentService.php         Stripe/PayMe
     AiMenuService.php          3-layer fallback (cache → DB → Provider → template)
-    Ai/                        Provider 抽象层（AiProviderInterface + 3 个实现 + Factory）
+    Ai/                        Provider 抽象层（AiProviderInterface + 4 个实现 + Factory）
     SubscriptionService.php
     NotificationService.php
 database/
-  migrations/            17 migrations (含 Sprint 1 Day 5 extend)
+  migrations/            23 migrations (含 Sprint 1 Day 5 extend)
   factories/             7 factories (User/Product/Order/Category/...)
   seeders/               DatabaseSeeder
 docs/bmad/               Architecture docs / ADRs / Sprint reports
@@ -132,7 +132,7 @@ routes/
   api.php                26 endpoints (sanctum auth)
   web.php                8 web pages (welcome/login/catalog/...)
 scripts/                 dev.sh + Windows setup scripts
-tests/                   54 tests (39 passing, 15 known-failing — see Day 5 report)
+tests/                   74 tests (71 passed baseline + 3 Stripe signature tests, 0 failing — see `_bmad/tasks/project-review/02-test-baseline.md`)
 ```
 
 ### Key design decisions (ADRs)
@@ -210,7 +210,7 @@ curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
 | POST | `/api/subscriptions` | sanctum | 创建订阅 |
 | DELETE | `/api/subscriptions/{id}` | sanctum | 取消订阅 |
 | POST | `/api/stripe/webhook` | — | Stripe webhook（HMAC 验签） |
-| POST | `/api/payme/webhook` | — | PayMe webhook（签名验签） |
+| POST | `/api/payme/webhook` | — | PayMe webhook（**验签未实现，返回 501**） |
 | GET | `/api/test/orders/{id}` | sanctum (testing/staging) | 调试 |
 | POST | `/api/test/tick` | sanctum (testing/staging) | 调试：推进时间 |
 
@@ -273,7 +273,7 @@ curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
 - "**用 Azure OpenAI，endpoint 是 `xxx.openai.azure.com`，deployment 是 `my-gpt4`，key 是 `xxx`**" → 我接好 Azure 协议
 
 **关闭 AI**：注释掉所有 `*_API_KEY` → 走 `NullProvider` → 永远用本地模板（不报错、不影响其他功能）。
-| `PAYPEMERCHANT_ID` / `PAYPEMAPI_KEY` | ❌ | 留空则 PayMe 走 mock |
+| `PAYME_MERCHANT_ID` / `PAYME_API_KEY` | ❌ | 留空则 PayMe webhook 返回 501（fail-closed） |
 
 ---
 
@@ -283,7 +283,7 @@ curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
 bash scripts/dev.sh test
 ```
 
-**当前状态（2026-06-15）**：39/54 通过（72%），剩 15 fail 详见 `docs/bmad/DAY5-GAP-REPORT-2026-06-15.md` §5。
+**当前状态（2026-07-03）**：71/71 通过（100%，311 assertions），详见 `_bmad/tasks/project-review/02-test-baseline.md`。
 
 ---
 

@@ -36,7 +36,7 @@ services:
       APP_ENV: "${APP_ENV:-production}"
       APP_KEY: "${APP_KEY}"
       APP_DEBUG: "${APP_DEBUG:-false}"
-      APP_URL: "${APP_URL:-https://www.freshbite.hk}"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
       LOG_CHANNEL: "${LOG_CHANNEL:-stack}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
 
@@ -63,9 +63,9 @@ services:
       MAIL_MAILER: "${MAIL_MAILER:-log}"
 
       # Stripe
-      STRIPE_KEY: "${STRIPE_KEY}"
-      STRIPE_SECRET: "${STRIPE_SECRET}"
-      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
+      STRIPE_KEY: "${STRIPE_PUBLISHABLE_KEY:-}"
+      STRIPE_SECRET: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
 
       # Gemini AI
       GEMINI_API_KEY: "${GEMINI_API_KEY}"

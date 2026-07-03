@@ -1,4 +1,6 @@
-# Day 5 Gap Report — 2026-06-15
+# Day 5 Gap Report — 2026-06-15 [DEPRECATED]
+
+> ⚠️ **DEPRECATED 2026-07-03**：本文档的"2/54 通过"已过时。实际测试通过率为 71/71（2026-07-03 实跑验证）。Product::factory() 缺失问题已修复。保留本文档仅作历史记录。
 
 > **作者**：team-lead (Alpha)
 > **触发**：用户问"从 Day 2 之后该从哪里继续"，按方案 A 跑 3 个 subagent + 落地

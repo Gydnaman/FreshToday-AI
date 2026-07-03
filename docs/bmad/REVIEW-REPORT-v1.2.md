@@ -1,4 +1,6 @@
-# GreenBite Sprint 1 文档评审报告 v1.2 (REVIEW-REPORT v1.2)
+# GreenBite Sprint 1 文档评审报告 v1.2 (REVIEW-REPORT v1.2) [DEPRECATED]
+
+> ⚠️ **DEPRECATED 2026-07-03**：本文档自评 9.21/10 是在"从未跑通测试"的情况下给出的。实际测试通过率 71/71（非文档声称的 37 用例）。PayMe webhook 零验签（C-2）、Stripe 验签格式错误（C-3）、alipay_hk 死代码（C-4）均已修复。保留本文档仅作历史记录。
 
 > **文档编号**：GB-REV-002
 > **评审人**：reviewer-agent (Foxtrot · Quality Gate Keeper)
