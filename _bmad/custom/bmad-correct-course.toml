@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 纠偏工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-correct-course.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "纠偏触发条件：偏离微服务模块边界（如 BFF 层直接操作数据库）、引入不兼容技术栈、忽略多语言适配、违反认证体系设计。",
+  "纠偏需评估对六种语言适配的影响，不能只修正中文场景。",
+  "纠偏需检查是否破坏 Feign Remote 接口的向后兼容性。",
+  "纠偏记录需写入决策日志（.decision-log.md），说明偏差原因和纠正措施。",
+]

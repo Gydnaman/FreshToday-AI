@@ -1,0 +1,15 @@
+# 法大大海外签团队 — 调查工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-investigate.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "调查范围：后端微服务（global-*）的 bug 排查、签署流程异常、认证体系问题、跨站调用故障。",
+  "证据引用规范：使用 path:line 格式（如 SignTaskSignController.java:42），对应 Java 源码位置。",
+  "调查需检查常见故障点：Redis Token 过期、Feign Remote 调用超时、siteSource 校验失败、MyBatis 字段加密解密异常。",
+  "调查结论需分级：Confirmed（有日志/代码证据）、Deduced（逻辑推断）、Hypothesized（假设待验证）。",
+  "涉及线上故障的调查需评估对六种语言用户的影响范围。",
+]
+
+# 案件文件存放子目录
+case_file_subdir = "investigations"

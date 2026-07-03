@@ -1,0 +1,12 @@
+# 法大大海外签团队 — PRFAQ 工作流覆盖（Amazon Working Backwards）
+# 放置位置：{project-root}/_bmad/custom/bmad-prfaq.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "PRFAQ 采用 Amazon Working Backwards 方法，从最终客户视角倒推。",
+  "目标客户：出海中企、海外中小企业、需要跨国合同签署的跨境业务团队。",
+  "FAQ 需覆盖海外客户的常见疑虑：法律效力、数据安全、多语言支持、各国合规差异、API 集成方式。",
+  "新闻稿需突出差异化：多语言（六种）、多国合规、SaaS+API 双模式、跨境签署能力。",
+  "定价 FAQ 需与 global-bill-* 模块的计费逻辑一致：按签署量订阅。",
+]

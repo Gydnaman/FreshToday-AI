@@ -1,0 +1,13 @@
+# 法大大海外签团队 — 开发故事工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-dev-story.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "后端开发规范：Controller 继承 BaseController 只做参数校验、Service 层写业务逻辑、返回 Result<T>、异常 GlobalException+错误码枚举。",
+  "后端约束：Java 8 语法、@Slf4j 日志、Lombok @Builder、fastjson/hutool JSON、Knife4j @Api/@ApiOperation、MyBatis 字段加密、Redis 用 RedisClient。",
+  "前端开发规范：Composition API、Element Plus/Vant 组件、Pinia 状态、@/utils/request 封装、v-permission 指令、i18n.global.t()。",
+  "测试先行：后端核心业务逻辑必须有单元测试，前端关键交互组件要有测试覆盖。",
+]
+
+on_complete = "实现完成后，确认涉及的 i18n key 已添加到六种语言包，确认代码通过 ESLint（@oversea/vue3）和 Maven 编译。"

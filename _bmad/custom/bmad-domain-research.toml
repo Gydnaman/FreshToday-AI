@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 领域研究工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-domain-research.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "研究领域：海外电子签名行业，包括法律框架、技术标准、市场格局。",
+  "需研究的目标国家法规：美国(ESIGN/UETA)、欧盟(eIDAS)、印尼(Emeterai)、新加坡(ETA)、泰国(ETDA)、印度(IT Act)。",
+  "需研究的电子签名技术标准：PAdES、XAdES、CAdES、RSA 数字证书、CA 证书链。",
+  "研究需区分 SaaS 签署和法律效力的差异——不同国家对'电子签名'和'数字签名'的法律定义不同。",
+]

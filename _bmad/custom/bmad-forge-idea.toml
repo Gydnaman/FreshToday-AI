@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 想法锻造工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-forge-idea.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "产品方向约束：海外电子签 SaaS + 开放 API，对标 DocuSign/Adobe Sign，差异化在多语言、多国合规、跨境签署。",
+  "想法压力测试需验证：是否满足目标国家的电子签名法律合规、是否能支持六种语言、是否与现有微服务架构兼容。",
+  "技术可行性边界：Java 8 + Spring Boot + Vue 3，不引入新技术栈除非有充分理由。",
+  "商业模式约束：基于用量的订阅制，新功能需明确计费维度。",
+]

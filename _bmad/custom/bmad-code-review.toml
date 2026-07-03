@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 代码审查工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-code-review.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "后端审查清单：Java 8 语法限制、继承 BaseController、返回 Result<T>、异常用 GlobalException+错误码枚举、@Slf4j 日志、Lombok @Builder、fastjson/hutool JSON、Knife4j 注解、MyBatis 字段加密。",
+  "前端审查清单：Composition API（非 Options API）、Element Plus/Vant 组件、Pinia 状态、@/utils/request 封装、v-permission 指令、i18n.global.t()（无硬编码中文）、Yarn workspaces。",
+  "安全审查：JWT+AccessToken 认证完整性、@RequireAdmin/@SignApi/@SignAuth 权限注解、Redis key 命名（global_api_*）、敏感字段加密、IP 白名单校验。",
+  "审查需检查多语言：所有 UI 文案是否走 i18n，日期/货币/时区是否按 locale 格式化。",
+]

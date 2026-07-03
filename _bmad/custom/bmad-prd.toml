@@ -1,0 +1,19 @@
+# 法大大海外签团队 — PRD工作流覆盖（v6.7.0 新版，Create/Update/Validate）
+# 放置位置：{project-root}/_bmad/custom/bmad-prd.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "PRD 必须包含国际化考量章节：支持的语言（zh/cht/en/spa/ru/th）、各语言特殊处理、日期/货币/时区格式化。",
+  "PRD 需注明涉及的前端端（PC/H5/Admin/Portal）和后端微服务模块（global-*）。",
+  "涉及签署核心流程的功能需附业务流程图（mermaid 或 ASCII），标注信封/参与方/签署状态流转。",
+  "涉及计费的功能需与 global-bill-* 模块对齐，明确计费维度和扣费时机。",
+  "API 相关需求需明确请求/响应结构、认证方式（JWT+AccessToken）、错误码定义（对应 i18n 错误码枚举）。",
+  "权限设计基于三层模型：账号(Account)→成员(Member)→用户(User)，PRD 需明确操作权限要求。",
+]
+
+# 终审评审器：追加合规和多语言评审
+finalize_reviewers = [
+  "合规评审：检查 PRD 是否覆盖目标国家的电子签名法律要求（ESIGN/eIDAS/Emeterai 等），数据隐私合规（GDPR/PDPA）是否 addressed。",
+  "多语言评审：检查 PRD 中的功能设计是否在六种语言下均可行，文案长度差异是否被考虑，日期/货币/时区是否按 locale 格式化。",
+]

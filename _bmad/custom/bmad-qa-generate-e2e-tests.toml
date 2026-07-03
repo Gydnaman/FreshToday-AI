@@ -1,0 +1,12 @@
+# 法大大海外签团队 — QA生成E2E测试工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-qa-generate-e2e-tests.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "E2E 测试需覆盖核心签署流程：创建信封 → 添加参与方 → 上传文件 → 发送 → 各方签署 → 完成。",
+  "测试需覆盖六种语言（zh/cht/en/spa/ru/th）的界面切换和文案显示。",
+  "API 测试需覆盖认证流程：JWT 生成 → AccessToken 获取 → AOP 拦截校验 → 业务调用。",
+  "测试需覆盖权限模型：账号(Account)→成员(Member)→用户(User) 三层权限校验。",
+  "前端 E2E 需按端分别测试：PC（Element Plus）、H5（Vant）的签署交互。",
+]

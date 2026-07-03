@@ -1,0 +1,13 @@
+# 法大大海外签团队 — 快速开发工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-quick-dev.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "快速开发仍需遵守：Controller→Service 分层、Result<T> 返回、GlobalException 异常、@Api 注解。",
+  "前端快速开发仍需遵守：Composition API、i18n.global.t()（无硬编码中文）、@/utils/request 封装。",
+  "快速开发可省略：完整文档、非核心路径的单元测试——但核心签署逻辑和认证逻辑必须有测试。",
+  "快速开发完成后需补齐 i18n key 到六种语言包，不能只写中文。",
+]
+
+on_complete = "快速开发完成后，检查：核心逻辑有测试、i18n key 已添加、ESLint/Maven 编译通过。"

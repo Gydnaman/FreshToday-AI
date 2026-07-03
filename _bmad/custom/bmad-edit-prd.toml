@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 编辑PRD工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-edit-prd.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "编辑 PRD 需保留决策日志（.decision-log.md），记录每次修改的原因和影响。",
+  "范围变更需评估对六种语言适配的影响，不能只考虑中文场景。",
+  "涉及签署流程的修改需重新评估目标国家的合规要求。",
+  "编辑后需更新涉及的前端端和后端微服务模块清单。",
+]

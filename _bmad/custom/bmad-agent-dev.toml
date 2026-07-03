@@ -1,0 +1,64 @@
+# 法大大海外签团队 — 开发智能体覆盖（Amelia）
+# 作用范围：dev-story、quick-dev、code-review、create-story、sprint-planning、
+#           retrospective、investigate、qa-generate-e2e-tests
+# 放置位置：{project-root}/_bmad/custom/bmad-agent-dev.toml（提交到 git）
+
+[agent]
+
+# --- 后端技术栈约束 ---
+persistent_facts = [
+  # 语言与框架
+  "后端使用 Java 8（jdk 1.8），禁止使用 Java 9+ 语法（var、record、switch 表达式等）。",
+  "Spring Boot 通过公司父级 POM fadada-starter-parent 3.3.6.RELEASE 继承，不要直接指定 spring-boot-starter-parent。",
+  "使用 javax.servlet 而非 jakarta.servlet（Spring Boot 2.x 体系）。",
+  "服务间调用使用 Spring Cloud（fadada-springcloud-starter），Feign + Remote 接口模式。",
+  "ORM 使用 MyBatis，敏感字段加密用 global-mybatis-encrypt-starter。",
+  "缓存使用 Redis（com.fadada.common.redis.client.RedisClient），不要引入其他缓存方案。",
+
+  # 包结构与分层
+  "包名根路径为 com.fadada.global.*，新模块遵循此约定。",
+  "分层结构：Controller（继承 BaseController）→ Service → DAO/Remote。Controller 不写业务逻辑。",
+  "Controller 使用 @RestController 或 @Controller，继承 com.fadada.global.bff.*.common.controller.BaseController 获取用户上下文。",
+  "统一返回类型 com.fadada.common.core.model.resp.Result<T>，不要裸返回实体。",
+  "异常抛出 com.fadada.common.core.exception.GlobalException，配合国际化错误码枚举（如 SignBffSaaSExceptionEnum）。",
+  "用户上下文通过 HeaderHolder 获取（userId/accountId/memberId/lang/token），不要直接操作 HttpServletRequest。",
+
+  # 注解与工具
+  "日志使用 Lombok @Slf4j，不要手动 new Logger。",
+  "DTO/VO 使用 Lombok @Builder + @Data，构建用 XxxReq.builder().build() 模式。",
+  "JSON 处理优先用 com.alibaba.fastjson.JSON 和 cn.hutool.json.JSONUtil，不要混用 Jackson。",
+  "API 文档用 Knife4j（fadada-knife4j-starter），注解用 io.swagger.annotations.@Api / @ApiOperation（Swagger 2，非 springdoc）。",
+  "权限校验用 AOP 注解：@RequireAdmin（管理员校验）、@SignApi（签署接口校验）、@SignAuth。",
+  "配置注入用 @Value，配置项前缀 fdd.*（如 fdd.account.test.enable）。",
+
+  # 远程调用模式
+  "服务拆分为 -service 和 -service-remote 两个子模块：remote 模块提供 Feign 接口和 DTO，service 模块提供实现。",
+  "远程调用类命名：Remote*ServiceCall（如 RemoteSignCenterServiceCall），放在 common.call.* 包下。",
+  "请求/响应 DTO 命名：Remote*Req / Remote*Resp（远程）或 Bff*Req / Bff*Resp（BFF 层）。",
+
+  # --- 前端技术栈约束 ---
+  "前端使用 Vue 3.5+ Composition API，禁止使用 Options API（data/methods/computed 选项式写法）。",
+  "PC 端 UI 库为 Element Plus 2.9+，H5 端为 Vant 4.9+，Portal 用 Nuxt 3 + @nuxt/ui。不要混用组件库。",
+  "状态管理用 Pinia，不要用 Vuex。",
+  "HTTP 请求统一通过 @/utils/request 封装的 axios 实例，不要直接 import axios。",
+  "权限控制用 v-permission 指令或 hasPermission() 函数（来自 @/directives/permisstion）。",
+  "国际化用 vue-i18n，调用 i18n.global.t('key')，语言包放 src/client/i18n/locale/ 下，支持 zh/cht/en/spa/ru/th 六种语言。",
+  "包管理器用 Yarn（workspaces 模式），构建工具用公司 @oversea/cli（fdd-dev / fdd-deploy 命令）。",
+  "ESLint 规则继承 @oversea/vue3，不要自行配置 eslint 规则。",
+  "i18n 翻译通过 crowdin-sync 同步，不要手动维护多语言文件。",
+
+  # --- 业务域 ---
+  "业务域为海外电子签 SaaS（Nota Sign / 法大大），核心概念：信封(envelope)、签署任务(signTask)、参与方(party)、印章(seal)、签名(signature)、证书(CA)。",
+  "认证体系：JWT（RSA 签名）→ AccessToken（Redis 存储）→ AOP 拦截校验。第三方应用通过 AppId + 私钥换取 AccessToken。",
+  "多站点架构：主站（账户/账单服务）与子站（签署服务）分离，跨站调用需校验 siteSource。",
+]
+
+# --- 开发原则 ---
+principles = [
+  "Controller 层只做参数校验和调用 Service，业务逻辑必须在 Service 层。",
+  "所有对外接口返回 Result<T>，错误通过 GlobalException + 错误码枚举抛出。",
+  "新增 API 必须加 @Api / @ApiOperation 注解，保持 Knife4j 文档完整。",
+  "前端组件遵循单一职责，逻辑抽离到 composables，不要在 .vue 里写大段业务逻辑。",
+  "涉及多语言的文案必须走 i18n.global.t()，禁止硬编码中文字符串。",
+  "测试先行：后端核心业务逻辑必须有单元测试，前端关键交互组件要有测试覆盖。",
+]

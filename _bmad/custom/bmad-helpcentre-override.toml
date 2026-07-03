@@ -1,0 +1,69 @@
+# Help Centre Rebuild — Project-Specific BMAD Override
+# 放置位置：{project-root}/_bmad/custom/bmad-helpcentre-override.toml（提交到 git）
+# 作用范围：本项目所有 BMad workflow（dev-story、quick-dev、code-review、qa-generate-e2e-tests、spec、prd、arch、ux）
+# 优先级：高于 fdd-custom 默认覆盖（因为本项目技术栈与 fdd-backend 完全不同）
+
+[workflow]
+
+# ===== 单个任务的 4 步强制循环（2026-07-03 用户硬要求） =====
+# 每个任务的生命周期 = 方案 → BMad Review → 改 → 再 Review
+# 改前必须先有方案；方案必须先 Review；改完必须再 Review
+
+task_lifecycle = [
+  "1. 出方案（design doc / change plan / proposal）—— 写到 _bmad/tasks/<task>/00-proposal.md，包含目标/范围/依赖/影响面/风险/替代方案",
+  "2. BMad Review（bmad-review-adversarial-general 走读方案）—— 至少 10 条 finding，列高/中/低严重度",
+  "3. 改（按 review 结论修）",
+  "4. 再 Review（确认改对了，没引入新问题；如有结构性变化再走一遍）",
+]
+
+strict_rules = [
+  "严禁：不读 BMad 覆盖直接做",
+  "严禁：不写任务清单直接做",
+  "严禁：不出方案直接改（2026-07-03 用户硬要求）",
+  "严禁：跳过 review 阶段",
+  "严禁：只做不记忆（每次完成必须更新 daily log + MEMORY.md）",
+  "严禁：改完不复核（每个改动后必须再 review 一次）",
+]
+
+persistent_facts = [
+  # ===== 技术栈与本项目不同时，必须以本项目实际栈为准 =====
+  "本项目技术栈为 Nuxt 4.4.8 + Nuxt UI 4.9 + Tailwind 4.3 + @nuxt/content 3.14（前台） + Strapi 5（部署在 https://cms.uat.notasign.com/，UAT 多租户共享），**不在本地起 Strapi 工程**；不使用 Element Plus/Vant/Java 8/Spring Boot，团队默认的 fdd-backend 覆盖中关于 Java 8/Spring Boot/Element Plus 的约束在本项目中不适用。",
+
+  # ===== 角色边界（2026-07-03 用户拍板） =====
+  "alpha 主 agent = 协调者 + Phase 1/2 调度；beta-nuxt-fe = Nuxt 工程初始化 + 主题 + 16 组件 + 4 页面（mock 驱动）；gamma-strapi-be = Strapi 内容建模（含设计稿预生产 + UAT 部署 + seed 验证）；delta-visual-qa = 视觉回归（Playwright 3 断点）；epsilon-integration = E2E/smoke/API 测试；zeta-migration = VitePress→Strapi 内容迁移（Phase 5+）。",
+  "gamma **不做 Nuxt 业务页面**，不写 Vue 组件、不改 nuxt.config.ts；beta **不做 Strapi 业务**，不写 schema、不动 cms.uat.notasign.com。",
+  "P0 阶段（当前周）：gamma 产出 Strapi 设计稿静态文件（docs/help-center-spec/），beta 产出 Nuxt 工程跑通；P1 阶段（Nuxt 跑通后）：gamma 才动 UAT Strapi。",
+
+  # ===== Strapi 5 部署/查询规范 =====
+  "Strapi 5 部署在 UAT https://cms.uat.notasign.com/admin/，所有 API 走公开 REST（find 端点当前无需 token 即可读 — **安全风险**，P1 启动时由用户/运维确认是否限制 Public role 权限）。",
+  "Strapi 5 的发布过滤参数统一使用 status=published（不再使用 Strapi 4 的 publicationState=preview）。",
+  "Dynamic Zone 的 populate 必须用 Strapi 5 的 on fragment 语法（如 populate[contentBlocks][on][help.image][populate][0]=media），禁止使用 deep 通配。",
+
+  # ===== Locale 决策（2026-07-03 用户拍板前 gamma 先记录） =====
+  "UAT 现有 i18n locale = en(默认) / zh / **zh-Hant**。SPEC §2.1 写的 'zh-HK' 必须映射到 UAT 的 'zh-Hant'（技术上等价 ISO 639 旧码）；gamma 在 schema 和 seed 中统一用 zh-Hant，beta 的 Nuxt i18n.locales 也要相应改用 zh-Hant。",
+  "现有 Strapi 已有 CT：page / post / category；**没有** help-*。⚠️ 'category' 与 'help-category' 命名潜在冲突，P1 启动时确认 category 实际用途。",
+
+  # ===== Schema 落盘规则 =====
+  "所有 Content Type / Component / lifecycles / middleware / policy 定义必须写入 front-oversea-strapi GitLab 仓库的 src/api/、src/components/、src/policies/、src/middlewares/ 目录下的代码文件，**禁止只在 Strapi Content-Type Builder 手工改**。P0 阶段 gamma 在本仓库 docs/help-center-spec/ 产出静态设计稿，P1 阶段由用户/运维推到 GitLab。",
+  "Content Type 字段命名严格遵守 PRD §6.2：locale、routePath、canonicalPath、localizedGroupId、renderMode、contentBlocks、homeFeaturedChildren、searchAliases 等；documentId/locale/publishedAt/createdAt/updatedAt/localizations 是 Strapi 系统字段，**禁止重复建成自定义字段**。",
+  "测试数据必须按 zh / en / **zh-Hant** 三语全部入库并发布；缺语言时语言切换项必须隐藏（不自动 fallback），由 lifecycles 或 server util 在 API 端过滤。",
+
+  # ===== 凭证与权限（强） =====
+  "API Token 严格存服务端 env（NUXT_STRAPI_TOKEN），禁止写入前端 .env 或 vite 暴露变量；Nuxt server route 固定追加 status=published，客户端不能透传 status/populate/filters 原样。",
+  "API Token scope 严格只授权 help-article/help-category/help-redirect/help-settings 的 find/findOne + media read，禁止授权 create/update/delete/admin。",
+  "**Custom API Token 文档不放 token 明文**（按 SPEC 输出 9 要求），只放 scope 和 env var 名；实际 token 由用户在 Strapi Admin 登录后手动 Generate，存本地 .env 不进 git。",
+  "P1 阶段 gamma 需要 Admin Token 跑 seed 脚本，token **只能存 PowerShell 进程 env**（`$env:STRAPI_ADMIN_TOKEN=...`），不能写进仓库任何文件；任务完成后立即 unset。",
+
+  # ===== 业务规则（lifecycle 强约束） =====
+  "路由唯一性规则：locale + routePath 在 help-article 和 help-category 之间全局唯一，routePath 必须以 / 开头、无尾斜杠、统一小写；同 locale 重复由 beforeCreate/beforeUpdate lifecycle 阻断。",
+  "help-category.depth > 2 时保存阻断；help-category.parent 不允许形成循环（自指/祖先指向自身），由 lifecycle 阻断。",
+  "help-redirect.fromPath 不得与已发布 article/category routePath 冲突；toPath 不得形成 redirect loop（自指/A→B→A），由 lifecycle 阻断。",
+  "noIndex=true、showInSearch=false、Draft、下架内容永远不进搜索、sitemap、llms.txt、ai-index.json——此规则在搜索/导航/AI 输出 server route 端强制。",
+
+  # ===== 范围控制（强） =====
+  "不新增 Strapi Admin 角色、不新增审核状态、不新增审批流；Help Center 内容沿用现有 Strapi pages 类似的简单编辑/发布流程。",
+  "不下载远端媒体、不在 Strapi 中存储他人版权图片；正文图片保留原 URL 由前端做白名单后渲染（Phase 5 统一处理）。",
+  "不在 Strapi 中接 webhook URL、不接 purge cache 配置（Phase 3 联调时处理）。",
+]
+
+on_complete = "P0 阶段完成自检（已完成 2026-07-03）：1) docs/help-center-spec/ 下 11 个文件齐全（00-README + 01-05 + 05b + 06-09）；2) 4 CT + 12 Component schema 完整（7 正文 + 5 辅助）；3) lifecycle 伪代码列出 depth/loop/routePath 唯一性/relatedArticles 自指/homeFeaturedChildren 校验；4) seed 脚本用 fetch + status=published query；5) _bmad/tasks/phase2-strapi/00-proposal.md 方案文档已出；6) 15+8 项 review finding 已修或转 Phase 5。P1 阶段完成自检（待启动）：1) UAT Strapi 4 CT + 12 Component 在 Admin 可见；2) lifecycles 已合 GitLab 主干；3) 三语 seed 全部 published；4) curl UAT 返回 ≥1 且草稿不返回；5) PHASE2_VERIFICATION.md 含 curl 实际输出。"

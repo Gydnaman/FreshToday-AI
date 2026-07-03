@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 回顾工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-retrospective.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "回顾维度需包含：微服务模块协作效率、跨端（PC/H5/Admin/Portal）联调问题、多语言适配遗漏、合规风险发现。",
+  "回顾需评估：Feign Remote 接口变更是否导致兼容性问题、Redis/MyBatis 是否有性能瓶颈。",
+  "回顾行动项需写入 sprint-status.yaml 的 action_items 段，便于后续 sprint 跟踪。",
+  "回顾需关注海外发布风险：目标国家合规变更、多语言质量问题、跨境签署故障。",
+]

@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 创建PRD工作流覆盖（旧 shim，路由到 bmad-prd）
+# 放置位置：{project-root}/_bmad/custom/bmad-create-prd.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "PRD 必须包含国际化考量章节：支持的语言、各语言特殊处理、日期/货币/时区格式化方案。",
+  "PRD 需注明涉及的前端端（PC/H5/Admin/Portal）和后端微服务模块（global-*）。",
+  "涉及签署核心流程的功能，PRD 需附业务流程图（mermaid 或 ASCII）。",
+  "涉及计费的功能需与 global-bill-* 模块对齐，明确计费维度和扣费时机。",
+]

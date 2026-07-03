@@ -1,0 +1,11 @@
+# 法大大海外签团队 — Sprint状态工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-sprint-status.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "Sprint 状态需按微服务模块和前端端分组展示，便于各团队跟踪自己负责的模块。",
+  "状态需标记涉及 i18n 的任务进度：六种语言包的完成情况。",
+  "状态需标记涉及 Feign Remote 接口变更的任务，提醒依赖方关注兼容性。",
+  "回顾行动项（action_items）需在 Sprint 状态中展示开放项，确保跟踪闭环。",
+]

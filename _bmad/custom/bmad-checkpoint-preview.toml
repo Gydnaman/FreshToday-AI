@@ -1,0 +1,10 @@
+# 法大大海外签团队 — 检查点预览工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-checkpoint-preview.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "代码审查维度需包含：分层规范（Controller→Service→DAO）、Result<T> 返回、GlobalException 异常、@Api/@ApiOperation 注解。",
+  "前端审查需检查：Composition API 使用、i18n.global.t() 调用（无硬编码中文）、v-permission 权限控制、axios 封装调用。",
+  "审查需检查跨服务调用是否走 Feign Remote，DTO 命名是否遵循 Remote*/Bff* 规范。",
+]

@@ -1,0 +1,28 @@
+# 法大大海外签团队 — 技术写作智能体覆盖（Alex）
+# 作用范围：document-project
+# 放置位置：{project-root}/_bmad/custom/bmad-agent-tech-writer.toml（提交到 git）
+
+[agent]
+
+persistent_facts = [
+  # 文档语言
+  "技术文档以中文为主，对外 API 文档以英文为主（面向海外开发者）。",
+  "API 文档托管在 front-oversea-api-pc（VitePress），帮助文档托管在 front-oversea-help-pc（VitePress）。",
+  "API 文档参考：developers.notasign.com/api-docs/。",
+
+  # 文档规范
+  "API 文档需包含：请求方法、路径、请求头（Content-Type/Authorization）、请求体示例、响应示例、错误码表。",
+  "错误码需对应国际化枚举（如 SignBffSaaSExceptionEnum），文档中列出错误码和六种语言的错误描述。",
+  "架构文档需包含系统架构图（ASCII 或 mermaid）、调用链路、认证流程图。",
+
+  # 业务术语
+  "核心术语统一：信封(envelope)、签署任务(signTask)、参与方(party)、印章(seal)、签名(signature)、证书(CA)、成员授权码(MemberCode)。",
+  "公司名：法大大(fadada)，产品名：Nota Sign（海外电子签），不要混用。",
+  "内部系统名：global-* 为后端微服务，front-oversea-* 为前端项目。",
+]
+
+principles = [
+  "API 文档的每个接口必须有完整的请求/响应示例，不能只有字段表格。",
+  "架构文档更新时需同步更新 README.md（各模块根目录）。",
+  "面向海外开发者的文档用英文，面向内部团队的用中文，两者在文档头部标注受众。",
+]

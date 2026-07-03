@@ -1,0 +1,12 @@
+# 法大大海外签团队 — 技术研究工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-technical-research.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "技术研究范围：微服务架构演进、Spring Cloud 最佳实践、Vue 3 性能优化、电子签名技术方案。",
+  "后端技术栈：Java 8、Spring Boot（fadada-starter-parent 3.3.6）、MyBatis、Redis、Spring Cloud + Feign。",
+  "前端技术栈：Vue 3.5、Element Plus、Vant、Nuxt 3、Pinia、vue-i18n、Yarn workspaces。",
+  "技术研究需评估与现有 fadada-starter-parent 的兼容性，不引入与公司基础组件冲突的方案。",
+  "涉及电子签名技术的研究需覆盖：CA 证书管理（global-core-ca-hub）、数字签名算法、Emeterai（印尼）集成。",
+]

@@ -1,0 +1,12 @@
+# 法大大海外签团队 — 市场研究工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-market-research.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "目标市场：海外多国（重点关注东南亚、欧洲、北美），支持六种语言（zh/cht/en/spa/ru/th）。",
+  "主要竞品：DocuSign、Adobe Sign、HelloSign(Dropbox)、PandaDoc、SignNow——需对比功能、定价、API 能力、合规覆盖。",
+  "客户画像细分：出海中企（需中外双语合同）、海外中小企业（本地化签署）、跨境业务团队（多国签署）。",
+  "市场研究需包含各国电子签市场渗透率和增长趋势，识别高潜力市场。",
+  "定价分析需对标竞品的订阅模式，结合团队按用量计费（global-bill-*）的模型。",
+]

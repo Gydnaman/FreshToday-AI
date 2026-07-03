@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 规格提炼工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-spec.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "SPEC.md 产出的规格需标注涉及的微服务模块（global-* 命名），便于后续分配到对应团队。",
+  "规格中的约束（Constraints）需包含：目标国家合规要求、支持的语言列表、性能要求（签署流程响应时间）。",
+  "成功信号（Success signal）需可量化：如签署完成率、API 调用成功率、多语言覆盖率。",
+  "非目标（Non-goals）需明确排除范围，避免范围蔓延——海外签项目模块多，边界清晰至关重要。",
+]

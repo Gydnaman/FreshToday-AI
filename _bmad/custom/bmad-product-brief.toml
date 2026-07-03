@@ -1,0 +1,12 @@
+# 法大大海外签团队 — 产品摘要工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-product-brief.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "每份产品摘要必须包含字段：Owner（负责人）、Target Release（目标版本）、Security Review Status（安全评审状态）。",
+  "摘要需注明涉及的前端端（PC/H5/Admin/Portal）和后端微服务模块（global-*）。",
+  "非商业摘要（内部工具、研究项目）仍需包含用户价值章节，但可省略市场差异化分析。",
+  "摘要需评估目标国家的电子签名法律合规要求，列出适用法规。",
+]
+

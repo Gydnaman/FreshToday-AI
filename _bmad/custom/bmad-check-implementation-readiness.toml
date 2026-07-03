@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 实现就绪检查工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-check-implementation-readiness.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "实现就绪标准：PRD 已通过验证（含国际化/合规维度）、架构 spine 已确认、涉及的前端端和后端模块已明确。",
+  "检查需确认：API 接口定义是否完整（请求/响应/认证/错误码）、i18n key 是否已规划、权限模型是否定义。",
+  "检查需确认：涉及计费的功能是否与 global-bill-* 对齐、跨服务调用是否走 Feign Remote。",
+  "未通过国际化完整性检查（六语言覆盖）的功能不得进入实现阶段。",
+]

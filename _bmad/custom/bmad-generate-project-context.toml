@@ -1,0 +1,12 @@
+# 法大大海外签团队 — 生成项目上下文工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-generate-project-context.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "项目上下文需覆盖：38 个后端微服务模块的职责和调用关系、9 个前端项目的技术栈和端差异。",
+  "上下文需记录三层调用链：API 网关 → BFF → 核心服务，标注跨站调用（siteSource）。",
+  "上下文需记录技术栈：Java 8 + Spring Boot（fadada-starter-parent 3.3.6）+ Vue 3 + Element Plus/Vant。",
+  "上下文需记录业务域核心概念：信封、签署任务、参与方、印章、签名、证书、成员授权码。",
+  "上下文需记录国际化范围：六种语言（zh/cht/en/spa/ru/th），vue-i18n + crowdin-sync。",
+]

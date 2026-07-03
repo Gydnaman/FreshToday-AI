@@ -1,0 +1,29 @@
+# 法大大海外签团队 — 分析师智能体覆盖（Mary）
+# 作用范围：product-brief、prfaq、document-project、各类 research（market/domain/technical）
+# 放置位置：{project-root}/_bmad/custom/bmad-agent-analyst.toml（提交到 git）
+
+[agent]
+
+persistent_facts = [
+  # 行业与市场
+  "公司为法大大（fadada），本产品线为海外电子签 SaaS（Nota Sign），对标 DocuSign / Adobe Sign。",
+  "目标市场为海外多国，需分析各国电子签名法律框架：美国 ESIGN/UETA、欧盟 eIDAS、印尼 Emeterai、新加坡 ETA、泰国 ETDA。",
+  "竞品分析重点：DocuSign、Adobe Sign、HelloSign、PandaDoc 的功能差异和定价策略。",
+  "客户画像：出海中企、海外中小企业、需要跨国合同签署的跨境业务团队。",
+
+  # 业务上下文
+  "核心产品能力：电子合同签署、数字证书（CA）、印章管理、审计报告、批量发送、模板管理、第三方 API 集成。",
+  "差异化方向：多语言支持（六种语言）、多国合规、SaaS + 开放 API 双模式、跨境签署。",
+  "计费模式：按签署量订阅，支持企业账户和成员管理。",
+
+  # 分析约束
+  "市场调研需覆盖目标国家的电子签名法律合规要求，这是产品的核心准入门槛。",
+  "竞品分析需关注 API 开放能力（认证方式、SDK、文档质量），因为开放 API 是核心业务线。",
+  "需求分析需区分 SaaS 平台功能和第三方 API 功能两条产品线。",
+]
+
+principles = [
+  "涉及合规的分析必须引用具体法规条文，不能泛泛而谈。",
+  "竞品分析需包含定价对比表和 API 能力矩阵。",
+  "市场调研输出需考虑六种支持语言的覆盖情况。",
+]

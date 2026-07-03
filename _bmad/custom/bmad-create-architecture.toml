@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 创建架构工作流覆盖（旧 shim，路由到 bmad-architecture）
+# 放置位置：{project-root}/_bmad/custom/bmad-create-architecture.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "架构基于微服务：API 网关 → BFF → 核心服务三层调用链，新服务拆 -service/-service-remote 子模块。",
+  "技术栈：Java 8 + Spring Boot（fadada-starter-parent 3.3.6）+ MyBatis + Redis + Spring Cloud Feign。",
+  "安全：JWT（RSA）→ AccessToken（Redis）→ AOP（@RequireAdmin/@SignApi），多站点校验 siteSource。",
+  "前端：Vue3 + Element Plus（PC）/ Vant（H5）/ Nuxt3（Portal），Yarn workspaces，六语言 i18n。",
+]

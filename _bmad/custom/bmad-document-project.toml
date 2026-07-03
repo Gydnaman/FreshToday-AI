@@ -1,0 +1,12 @@
+# 法大大海外签团队 — 项目文档化工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-document-project.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "文档化范围：38 个后端微服务模块 + 9 个前端项目的架构和接口。",
+  "后端文档需包含：模块职责、Feign 远程调用关系、数据库表结构、Redis key 规范、API 接口清单（Knife4j）。",
+  "前端文档需包含：路由结构、组件清单、i18n key 规范、权限模型（v-permission）、多端差异说明。",
+  "架构文档需绘制三层调用链：API 网关 → BFF 服务 → 核心服务，标注跨站调用关系。",
+  "术语统一：信封(envelope)、签署任务(signTask)、参与方(party)、印章(seal)、签名(signature)、证书(CA)、成员授权码(MemberCode)。",
+]

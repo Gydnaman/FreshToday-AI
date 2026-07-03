@@ -1,0 +1,21 @@
+# 法大大海外签团队 — 架构工作流覆盖（v6.9.0 新版，spine-based）
+# 放置位置：{project-root}/_bmad/custom/bmad-architecture.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "架构必须基于现有微服务架构：API 网关 → BFF 服务 → 核心服务三层调用链。",
+  "新增服务必须拆分为 -service（实现）和 -service-remote（Feign 接口+DTO）两个子模块。",
+  "服务间调用必须走 Feign Remote 接口，禁止 HTTP 直连。",
+  "Maven 父级 POM 继承 fadada-starter-parent 3.3.6.RELEASE，Java 8，Tomcat 9.0.99。",
+  "数据层：MySQL + MyBatis（字段加密用 global-mybatis-encrypt-starter），缓存 Redis。",
+  "安全架构：JWT（RSA 签名）→ AccessToken（Redis）→ AOP 拦截（@RequireAdmin/@SignApi/@SignAuth）。",
+  "多站点架构：主站管理账户/账单，子站处理签署，跨站调用校验 siteSource。",
+  "前端多端独立部署：PC（Vue3+ElementPlus）、H5（Vue3+Vant）、Admin、Portal（Nuxt3+Tailwind）。",
+]
+
+# 终审评审器：追加微服务边界和合规评审
+finalize_reviewers = [
+  "微服务边界评审：检查架构决策是否与现有 global-* 模块边界一致，新服务是否遵循 -service/-service-remote 拆分规范，跨服务调用是否走 Feign Remote。",
+  "安全合规评审：检查认证体系（JWT+AccessToken+AOP）是否完整，多站点 siteSource 校验是否到位，数据加密（mybatis-encrypt）是否覆盖敏感字段，Redis key 命名是否遵循 global_api_* 规范。",
+]

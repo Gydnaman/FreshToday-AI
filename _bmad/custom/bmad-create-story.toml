@@ -1,0 +1,11 @@
+# 法大大海外签团队 — 创建故事工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-create-story.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "故事需标注涉及的后端模块（global-*）和前端端（PC/H5/Admin/Portal）。",
+  "故事验收标准需包含：签署状态流转、多方签署顺序、审计记录完整性（如涉及签署流程）。",
+  "故事需单独列出 i18n 工作项，不能合并到其他任务中。",
+  "故事需标注是否涉及 Feign Remote 接口变更，涉及则需评估向后兼容性。",
+]

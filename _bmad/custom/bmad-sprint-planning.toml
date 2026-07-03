@@ -1,0 +1,11 @@
+# 法大大海外签团队 — Sprint规划工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-sprint-planning.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "Sprint 规划需按微服务模块和前端端分配任务，避免跨模块依赖导致的阻塞。",
+  "规划需预留 i18n 工作项的时间：六种语言包的翻译和 crowdin-sync 同步。",
+  "规划需考虑跨站调用（siteSource）和 Feign Remote 接口变更的联调成本。",
+  "涉及计费的功能需与 global-bill-* 模块团队协调排期。",
+]

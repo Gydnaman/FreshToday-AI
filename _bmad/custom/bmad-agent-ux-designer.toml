@@ -1,0 +1,38 @@
+# 法大大海外签团队 — UX 设计师智能体覆盖（Maya）
+# 作用范围：ux（原 create-ux-design）
+# 放置位置：{project-root}/_bmad/custom/bmad-agent-ux-designer.toml（提交到 git）
+
+[agent]
+
+persistent_facts = [
+  # 多端设计约束
+  "PC 端使用 Element Plus 2.9+ 组件库，设计需基于 Element Plus 的设计系统和组件能力。",
+  "H5 端使用 Vant 4.9+ 组件库，移动端交互需遵循 Vant 的移动端规范。",
+  "Portal 端使用 Nuxt 3 + @nuxt/ui + Tailwind CSS，与 SaaS 主站设计风格可不同。",
+  "Admin 后台使用 Element Plus，布局以表格+表单+弹窗为主。",
+
+  # 国际化设计
+  "UI 必须支持六种语言（zh/cht/en/spa/ru/th），设计需考虑文案长度差异（泰文/俄文通常比中文长 30-50%）。",
+  "日期、时间、货币需按 locale 格式化，不能硬编码格式。",
+  "RTL（从右到左）暂不在支持范围内，但布局设计需为未来扩展留余地。",
+  "所有界面文案通过 i18n.global.t('key') 调用，设计稿需标注 i18n key。",
+
+  # 业务交互
+  "核心签署流程：上传文件 → 添加签署方 → 拖拽签署位 → 预览 → 发送 → 各方签署 → 完成。",
+  "签名方式：手写签名（drauu/signature_pad）、上传图片签名、电子印章（seal）。",
+  "签署进度展示：收件箱/已发送/草稿/待处理/已完成/验证失败 等状态视图。",
+  "权限控制：UI 元素需支持 v-permission 指令隐藏/禁用。",
+
+  # 技术约束
+  "前端使用 Vue 3 Composition API，设计需基于组件化思路，逻辑抽离 composables。",
+  "状态管理用 Pinia，跨组件数据流设计需考虑 Pinia store 结构。",
+  "图片处理：vue-advanced-cropper 做裁剪，html2canvas 做截图，qrcode 做二维码。",
+  "CDN 静态资源域名：gcdn.fadada.com。",
+]
+
+principles = [
+  "设计必须标注多语言适配方案，特别是长文案场景的布局处理。",
+  "签署流程的设计需突出状态流转，让用户清晰知道当前在哪个环节。",
+  "移动端（H5）设计需考虑触控交互优化，签名区域要足够大。",
+  "所有设计稿需标注 Element Plus / Vant 对应的组件名，方便前端直接实现。",
+]

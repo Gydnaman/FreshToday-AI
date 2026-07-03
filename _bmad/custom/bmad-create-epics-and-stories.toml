@@ -1,0 +1,12 @@
+# 法大大海外签团队 — 创建史诗和故事工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-create-epics-and-stories.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "故事拆分需对齐微服务模块边界：每个故事标注涉及的后端模块（global-*）和前端端（PC/H5/Admin/Portal）。",
+  "故事需标注是否涉及跨服务调用（Feign Remote），涉及则需评估 remote 模块 DTO 变更的向后兼容性。",
+  "涉及签署核心流程的故事需附验收标准：签署状态流转正确、多方签署顺序正确、审计记录完整。",
+  "涉及多语言的故事需单独列出 i18n 工作项，不能合并到其他故事中。",
+  "涉及计费的故事需与 global-bill-* 模块对齐，标注计费维度变更。",
+]

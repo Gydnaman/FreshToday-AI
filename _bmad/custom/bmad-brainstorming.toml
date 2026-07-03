@@ -1,0 +1,14 @@
+# 法大大海外签团队 — 头脑风暴工作流覆盖
+# 放置位置：{project-root}/_bmad/custom/bmad-brainstorming.toml（提交到 git）
+
+[workflow]
+
+persistent_facts = [
+  "头脑风暴主题聚焦于海外电子签 SaaS 业务：签署流程优化、多国合规、开放 API、跨境协作、计费模型。",
+  "涉及合规的创意必须考虑目标国家的电子签名法律框架（ESIGN/eIDAS/Emeterai/ETA/ETDA），不违反法律底线。",
+  "产品创新需兼顾 SaaS 平台和第三方 API 两条产品线，不能只考虑其中一条。",
+  "所有功能创意需评估六种语言（zh/cht/en/spa/ru/th）的适配可行性。",
+]
+
+# 团队偏好使用的头脑风暴技术
+favorite_techniques = ["SCAMPER", "First Principles", "Six Thinking Hats", "HMW", "JTBD"]
