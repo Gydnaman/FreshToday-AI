@@ -14,7 +14,7 @@ Route::get('/catalog', [ProductController::class, 'index']);
 
 Route::get('/login', function () {
     return view('auth');
-});
+})->name('login');
 
 // Admin 登录入口（独立视图，校验 is_admin 后才放行）
 Route::get('/admin/login', function () {
@@ -34,9 +34,11 @@ Route::get('/cart', function () {
     return view('cart');
 });
 
-// Checkout（前端用 localStorage token 鉴权；服务端不强校验，避免双重门）
-Route::get('/checkout', [CheckoutController::class, 'show']);
-Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('web.checkout.place');
+// Checkout（session 认证，不再用 PAT hidden field）
+Route::middleware('auth')->group(function () {
+    Route::get('/checkout', [CheckoutController::class, 'show']);
+    Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('web.checkout.place');
+});
 
 Route::get('/survey', [SurveyController::class, 'create']);
 Route::post('/survey', [SurveyController::class, 'store']);
