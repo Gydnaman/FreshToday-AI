@@ -68,15 +68,17 @@
             // ── 工具：fetch 包装，统一 401 处理 ─────────────────────────
             window.gbFetch = function(url, opts) {
                 opts = opts || {};
-                const token = localStorage.getItem('gb_token');
+                opts.credentials = 'include';  // Sanctum SPA cookie
                 opts.headers = opts.headers || {};
                 opts.headers['Accept'] = 'application/json';
-                if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+                // XSRF-TOKEN cookie 自动被 Laravel 读取；POST/PUT/DELETE 需加 X-XSRF-TOKEN header
+                const xsrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+                if (xsrf && ['POST','PUT','PATCH','DELETE'].includes((opts.method||'GET').toUpperCase())) {
+                    opts.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf[1]);
+                }
                 return fetch(url, opts).then(function(resp) {
                     if (resp.status === 401) {
-                        // 全局 401：清 token + 跳登录
-                        localStorage.removeItem('gb_token');
-                        localStorage.removeItem('gb_user');
+                        // 全局 401：跳登录
                         if (location.pathname !== '/login') {
                             location.href = '/login?return=' + encodeURIComponent(location.pathname + location.search);
                         }
@@ -88,26 +90,29 @@
 
             // ── 渲染右上角 auth 区域 ─────────────────────────────────────
             function renderAuthArea() {
-                const userJson = localStorage.getItem('gb_user');
-                const user = userJson ? JSON.parse(userJson) : null;
-                if (user && (user.id || user.email)) {
-                    $('#signin-btn').addClass('hidden');
-                    $('#user-area').removeClass('hidden').addClass('flex');
-                    $('#user-name').text(user.name || user.email);
-                } else {
-                    $('#signin-btn').removeClass('hidden');
-                    $('#user-area').addClass('hidden').removeClass('flex');
-                }
+                // session 模式：调 /api/me 判断登录态
+                fetch('/api/me', { credentials: 'include' })
+                    .then(r => { if (!r.ok) throw new Error('UNAUTHORIZED'); return r.json(); })
+                    .then(d => {
+                        const user = d.user;
+                        if (user && (user.id || user.email)) {
+                            $('#signin-btn').addClass('hidden');
+                            $('#user-area').removeClass('hidden').addClass('flex');
+                            $('#user-name').text(user.name || user.email);
+                        }
+                    })
+                    .catch(() => {
+                        $('#signin-btn').removeClass('hidden');
+                        $('#user-area').addClass('hidden').removeClass('flex');
+                    });
             }
             renderAuthArea();
 
             // ── 退出按钮 ─────────────────────────────────────────────────
             $(document).on('click', '#logout-btn', function() {
                 gbFetch('/api/logout', { method: 'POST' })
-                    .catch(function(){ /* 即使 401 也清 */ })
+                    .catch(function(){ /* 即使失败也清 */ })
                     .finally(function() {
-                        localStorage.removeItem('gb_token');
-                        localStorage.removeItem('gb_user');
                         localStorage.removeItem('greenbite_cart');
                         location.href = '/';
                     });
@@ -115,15 +120,13 @@
 
             // ── 购物车计数（guest 走 localStorage；logged-in 走 API） ───
             function updateCartCount() {
-                const token = localStorage.getItem('gb_token');
-                if (token) {
-                    gbFetch('/api/cart')
-                        .then(r => r.json())
-                        .then(d => $('#cart-count').text(d.item_count || 0))
-                        .catch(() => fallbackLocalCount());
-                } else {
-                    fallbackLocalCount();
-                }
+                fetch('/api/cart', { credentials: 'include' })
+                    .then(r => {
+                        if (!r.ok) throw new Error('UNAUTHORIZED');
+                        return r.json();
+                    })
+                    .then(d => $('#cart-count').text(d.item_count || 0))
+                    .catch(() => fallbackLocalCount());
             }
             function fallbackLocalCount() {
                 const c = JSON.parse(localStorage.getItem('greenbite_cart') || '[]');
@@ -133,44 +136,42 @@
 
             // ── addToCartAuth：登录态走 API；未登录走 localStorage ────────
             // 签名：addToCartAuth(productId, name, price, qty=1)
+            // F-3 修正：不用 gbFetch（避免 401 全局跳转），直接 fetch + 401 走 fallback
             window.addToCartAuth = function(productId, name, price, qty) {
                 qty = qty || 1;
-                const token = localStorage.getItem('gb_token');
-                if (token) {
-                    gbFetch('/api/cart', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ product_id: productId, quantity: qty }),
-                    })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d.error) {
-                            alert('加购失败：' + (d.error.message || '未知错误'));
-                            return;
-                        }
-                        // 成功：用 API 返回的 quantity 之和刷新角标
-                        return gbFetch('/api/cart').then(r2 => r2.json()).then(d2 => {
-                            $('#cart-count').text(d2.item_count || 0);
-                        });
-                    })
-                    .catch(err => {
-                        if (err.message !== 'UNAUTHORIZED') {
-                            alert('网络错误，请重试');
-                        }
-                    });
-                } else {
-                    // guest：localStorage 模式（保持向后兼容）
-                    const cart = JSON.parse(localStorage.getItem('greenbite_cart') || '[]');
-                    cart.push({ name: name, price: parseFloat(price), product_id: productId });
-                    localStorage.setItem('greenbite_cart', JSON.stringify(cart));
-                    $('#cart-count').text(cart.length);
-                }
+                fetch('/api/cart', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_id: productId, quantity: qty }),
+                }).then(r => {
+                    if (r.status === 401) {
+                        // guest：走 localStorage，不跳登录
+                        fallbackLocalAdd(productId, name, price);
+                        return null;
+                    }
+                    return r.json();
+                }).then(d => {
+                    if (d === null) return;  // 已走 fallback
+                    if (d.error) { fallbackLocalAdd(productId, name, price); return; }
+                    // 成功：刷新角标
+                    return fetch('/api/cart', { credentials: 'include' })
+                        .then(r2 => r2.json())
+                        .then(d2 => { $('#cart-count').text(d2.item_count || 0); });
+                }).catch(() => fallbackLocalAdd(productId, name, price));
                 // 角标动画
                 $('#cart-count').addClass('scale-150').delay(200).queue(function(next){
                     $(this).removeClass('scale-150');
                     next();
                 });
             };
+
+            function fallbackLocalAdd(productId, name, price) {
+                const cart = JSON.parse(localStorage.getItem('greenbite_cart') || '[]');
+                cart.push({ name: name, price: parseFloat(price), product_id: productId });
+                localStorage.setItem('greenbite_cart', JSON.stringify(cart));
+                $('#cart-count').text(cart.length);
+            }
         });
     </script>
 </body>

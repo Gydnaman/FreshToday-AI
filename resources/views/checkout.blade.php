@@ -38,7 +38,6 @@
 
     <form id="checkout-form" method="POST" action="{{ route('web.checkout.place') }}">
         @csrf
-        <input type="hidden" name="gb_token" id="gb_token_field">
         <input type="hidden" name="items" id="items-field">
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -173,19 +172,32 @@ $(document).ready(function() {
     const FREE_AT = 200, DELIVERY = 30;
     let currentStep = 1;
 
-    // ── 登录态判断 ─────────────────────────────────────────────────
-    const token = localStorage.getItem('gb_token');
-    if (!token) {
-        $('#not-logged-in').removeClass('hidden');
-        $('.auth-required').addClass('hidden');
-    } else {
-        $('#gb_token_field').val(token);
-    }
+    // ── 登录态判断（session 模式：调 /api/me）─────────────────────
+    fetch('/api/me', { credentials: 'include' })
+        .then(r => {
+            if (!r.ok) throw new Error('UNAUTHORIZED');
+            return r.json();
+        })
+        .then(() => {
+            // 已登录，拉购物车
+            return fetchItems();
+        })
+        .catch(() => {
+            $('#not-logged-in').removeClass('hidden');
+            $('.auth-required').addClass('hidden');
+            return [];
+        })
+        .then(items => {
+            $('#items-field').val(JSON.stringify(items.map(i => ({ product_id: i.product_id, quantity: i.qty }))));
+            buildSummary(items);
+            lucide.createIcons();
+        });
 
-    // ── 拉购物车数据（仅登录态用 API；guest 不应到此页） ───────────
+    // ── 拉购物车数据（session cookie 模式） ───────────────────────
     function fetchItems() {
-        if (token) {
-            return gbFetch('/api/cart').then(r => r.json()).then(d => {
+        return fetch('/api/cart', { credentials: 'include' })
+            .then(r => { if (!r.ok) throw new Error('UNAUTHORIZED'); return r.json(); })
+            .then(d => {
                 return (d.items || []).map(it => ({
                     product_id: it.product_id,
                     name: it.product.name,
@@ -193,9 +205,8 @@ $(document).ready(function() {
                     qty: it.quantity,
                     image: it.product.image,
                 }));
-            });
-        }
-        return Promise.resolve([]);
+            })
+            .catch(() => []);
     }
 
     function buildSummary(items) {
@@ -226,7 +237,7 @@ $(document).ready(function() {
 
     // ── Step navigation ──────────────────────────────────────────────
     window.goStep = function(n) {
-        if (!token) return; // 防呆
+        // session 认证由后端 auth middleware 拦截，前端不需额外检查
         if (n === 2) {
             // 校验 delivery 表单
             const form = document.getElementById('checkout-form');
@@ -289,13 +300,8 @@ $(document).ready(function() {
         `);
     }
 
-    // ── Form submit → POST /checkout/place ──────────────────────────
+    // ── Form submit → POST /checkout/place（session 认证，前端不需额外检查）──
     $('#checkout-form').on('submit', function(e) {
-        if (!token) {
-            e.preventDefault();
-            location.href = '/login?return=/checkout';
-            return;
-        }
         const btn = $('#place-order-btn');
         btn.prop('disabled', true).html('<i data-lucide="loader" class="animate-spin w-5 h-5 mr-2"></i> Processing...');
         lucide.createIcons();

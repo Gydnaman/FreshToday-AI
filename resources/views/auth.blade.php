@@ -56,11 +56,10 @@
         const params = new URLSearchParams(location.search);
         const returnTo = params.get('return') || '/catalog';
 
-        // 已登录则直接跳
-        if (localStorage.getItem('gb_token')) {
-            location.href = returnTo;
-            return;
-        }
+        // 已登录则直接跳（session 模式：调 /api/me 判断）
+        fetch('/api/me', { credentials: 'include' })
+            .then(r => { if (r.ok) location.href = returnTo; })
+            .catch(() => {});
 
         // i18n 文案（按当前 locale 给出常用 label）
         const isHK = (document.documentElement.lang || '').startsWith('zh-HK');
@@ -126,30 +125,33 @@
                     locale: (document.documentElement.lang || 'zh-HK'),
                 };
 
-            // 调 Auth API
-            fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(body),
-            })
-            .then(r => r.json().then(j => ({ status: r.status, body: j })))
-            .then(({ status, body }) => {
-                if (status === 200 || status === 201) {
-                    // 存 token + user
-                    if (body.token) localStorage.setItem('gb_token', body.token);
-                    if (body.user) localStorage.setItem('gb_user', JSON.stringify(body.user));
-                    // 同步刷新右上角
-                    if (typeof renderAuthArea === 'function') renderAuthArea();
-                    location.href = returnTo;
-                } else {
-                    // 错误
-                    const msg = (body.error && body.error.message)
-                        || (body.message)
-                        || (body.errors ? Object.values(body.errors).flat().join('; ') : null)
-                        || '请求失败';
-                    $err.removeClass('hidden').text(msg);
-                }
-            })
+            // Sanctum SPA：先拿 csrf-cookie，再登录
+            fetch('/sanctum/csrf-cookie', { credentials: 'include' })
+                .then(() => fetch(url, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-XSRF-TOKEN': decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [,''])[1]),
+                    },
+                    body: JSON.stringify(body),
+                }))
+                .then(r => r.json().then(j => ({ status: r.status, body: j })))
+                .then(({ status, body }) => {
+                    if (status === 200 || status === 201) {
+                        // session 模式：cookie 已自动设置，不需存 localStorage
+                        if (typeof renderAuthArea === 'function') renderAuthArea();
+                        location.href = returnTo;
+                    } else {
+                        // 错误
+                        const msg = (body.error && body.error.message)
+                            || (body.message)
+                            || (body.errors ? Object.values(body.errors).flat().join('; ') : null)
+                            || '请求失败';
+                        $err.removeClass('hidden').text(msg);
+                    }
+                })
             .catch(err => {
                 $err.removeClass('hidden').text('网络错误：' + (err.message || ''));
             })
