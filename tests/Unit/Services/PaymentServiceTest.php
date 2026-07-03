@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Enums\OrderStatus;
+use App\Exceptions\GuardFailedException;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -100,5 +101,42 @@ class PaymentServiceTest extends TestCase
 
         $this->assertEquals('refunded', $payment->fresh()->status);
         $this->assertEquals(OrderStatus::Refunded, $this->order->fresh()->status);
+    }
+
+    /**
+     * I-5: guard 失败时 payment 不应变 refunded
+     *
+     * 场景：refund 调用前订单已被并发请求改成 Cancelled（终态），
+     * canBeRefunded() 返回 false → GuardFailedException(P2)。
+     * 关键断言：payment.status 不应变 refunded（事务应回滚或不执行 update）。
+     *
+     * 注：transition 内部失败的回滚由 DB::transaction 语义保证，
+     * 此测试验证 guard 失败时 payment 不被触及。
+     */
+    public function test_refund_does_not_update_payment_when_guard_fails(): void
+    {
+        $payment = Payment::create([
+            'order_id' => $this->order->id,
+            'provider' => 'stripe',
+            'provider_txn_id' => 'pi_guard_fail',
+            'amount' => $this->order->total_price,
+            'currency' => 'HKD',
+            'status' => 'succeeded',
+            'paid_at' => now(),
+        ]);
+
+        // 把订单改成 Cancelled（终态，canBeRefunded 返回 false）
+        $this->order->update(['status' => OrderStatus::Cancelled]);
+        $payment->refresh(); // 重新加载 order 关系
+
+        try {
+            $this->service->refund($payment, (int) $payment->amount, 'test_guard_fail');
+            $this->fail('Expected GuardFailedException');
+        } catch (GuardFailedException $e) {
+            // 期望 guard 失败
+        }
+
+        // 关键断言：payment 不应变 refunded
+        $this->assertNotEquals('refunded', $payment->fresh()->status, 'payment should not be refunded when guard fails');
     }
 }

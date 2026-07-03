@@ -94,9 +94,9 @@ class AiMenuService
         $date = now()->toDateString();
         $regenKey = sprintf(self::CACHE_KEY_REGEN, $user->id, $date);
         $count = (int) Cache::increment($regenKey);
-        if ($count === 1) {
-            Cache::put($regenKey, 1, self::CACHE_TTL_SECONDS);
-        }
+        // I-6 修复：每次调用都刷新 TTL + 用 increment 返回值（非固定 1）
+        // 旧代码只在 count===1 时 put(1, TTL)，并发下可能被固定值重置
+        Cache::put($regenKey, $count, self::CACHE_TTL_SECONDS);
         if ($count > self::DAILY_REGEN_LIMIT) {
             throw new GuardFailedException(GuardCode::AiRate, '每日最多重新生成 3 次', [
                 'limit' => self::DAILY_REGEN_LIMIT,

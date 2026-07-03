@@ -134,22 +134,25 @@ class PaymentService
             ]);
         }
 
-        // 1. 调网关退款（mock：直接成功）
-        // 2. 写 payment status=refunded
-        $payment->update([
-            'status' => 'refunded',
-            'refunded_at' => now(),
-        ]);
+        // I-5 修复：payment update + transition 包在同一事务
+        // 如果 transition 内部失败（如 releaseStock 异常），payment 的 update 会回滚
+        return DB::transaction(function () use ($payment, $order, $amountHkd, $reason) {
+            // 1. 写 payment status=refunded（在事务内）
+            $payment->update([
+                'status' => 'refunded',
+                'refunded_at' => now(),
+            ]);
 
-        // 3. 触发状态机
-        app(OrderService::class)->transition(
-            $order,
-            OrderStatus::Refunded,
-            'payment_refunded',
-            ['reason' => $reason, 'amount' => $amountHkd, 'actor_type' => 'system'],
-        );
+            // 2. 触发状态机（同一事务内，失败则整体回滚）
+            app(OrderService::class)->transition(
+                $order,
+                OrderStatus::Refunded,
+                'payment_refunded',
+                ['reason' => $reason, 'amount' => $amountHkd, 'actor_type' => 'system'],
+            );
 
-        return true;
+            return true;
+        });
     }
 
     private function routeEvent(StripeWebhookEvent $event): void
