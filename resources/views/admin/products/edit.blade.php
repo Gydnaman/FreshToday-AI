@@ -84,7 +84,7 @@
             @endif
             <input type="file" name="image" accept="image/jpeg,image/png,image/webp"
                    class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-green-50 file:text-green-700">
-            <p class="text-xs text-gray-500 mt-1">支持 jpg / png / webp，最大 2MB。留空则保留原图。</p>
+            <p class="text-xs text-gray-500 mt-1">支持 jpg / png / webp，最大 512KB。留空则保留原图。</p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
