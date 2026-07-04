@@ -70,6 +70,48 @@ class ProductController extends Controller
             ->with('success', '产品已创建（草稿状态，需手动上架）');
     }
 
+    public function edit(Product $product): View
+    {
+        $categories = Category::orderBy('sort_order')->orderBy('name')->get();
+
+        return view('admin.products.edit', [
+            'product' => $product,
+            'categories' => $categories,
+        ]);
+    }
+
+    public function update(Request $request, Product $product): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|integer|exists:categories,id',
+            'price' => 'required|numeric|min:0|max:99999.99',
+            'stock' => 'required|integer|min:0',
+            'description' => 'nullable|string|max:5000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_organic' => 'nullable|boolean',
+            'origin' => 'nullable|string|max:64',
+            'carbon_footprint' => 'nullable|numeric|min:0|max:99.999',
+            'status' => 'nullable|in:draft,published,archived',
+        ]);
+
+        if ($request->hasFile('image')) {
+            // 删除旧图
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $this->storeImage($request->file('image'));
+        }
+
+        $data['is_organic'] = (bool) ($data['is_organic'] ?? false);
+
+        $product->update($data);
+
+        return redirect()
+            ->route('admin.products.index')
+            ->with('success', "产品「{$product->fresh()->name}」已更新");
+    }
+
     /**
      * 存图到 storage/app/public/products/{Y/m/d}/{ulid}.{ext}
      */

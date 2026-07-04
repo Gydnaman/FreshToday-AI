@@ -34,6 +34,7 @@
                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">库存</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">更新时间</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">操作</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -72,10 +73,16 @@
                             <span class="px-2 py-1 text-xs font-semibold rounded {{ $badge }}">{{ $label }}</span>
                         </td>
                         <td class="px-4 py-3 text-gray-500 text-sm">{{ $p->updated_at->format('Y-m-d H:i') }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <a href="{{ route('admin.products.edit', $p) }}"
+                               class="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition">
+                                <i data-lucide="pencil" class="w-4 h-4"></i> 编辑
+                            </a>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-12 text-center text-gray-500">
+                        <td colspan="8" class="px-4 py-12 text-center text-gray-500">
                             还没有任何产品。<a href="{{ route('admin.products.create') }}" class="text-green-600 underline">立即创建第一个 →</a>
                         </td>
                     </tr>

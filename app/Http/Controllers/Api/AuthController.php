@@ -80,6 +80,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load(['userPreferences', 'notificationPreference']);
+        $user->makeVisible('is_admin');
 
         return response()->json(['user' => $user]);
     }
