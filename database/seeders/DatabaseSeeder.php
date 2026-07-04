@@ -112,13 +112,13 @@ class DatabaseSeeder extends Seeder
 
         $products = [
             // 葉菜 / 有机
-            ['cat' => 'leafy-greens', 'name' => '本地有機菜心',     'price' => 28.00, 'stock' => 50, 'is_organic' => 1, 'origin' => '元朗八鄉農場',     'carbon' => 0.310, 'image' => 'https://images.unsplash.com/photo-1628773822988-0d2a8e3a9c7f?w=400', 'desc' => '當日採摘，水嫩清甜，香港本地有機認證。'],
-            ['cat' => 'leafy-greens', 'name' => '本地有機白菜',     'price' => 24.00, 'stock' => 60, 'is_organic' => 1, 'origin' => '元朗新田農場',     'carbon' => 0.290, 'image' => 'https://images.unsplash.com/photo-1591189824344-9e57b4a3a2b5?w=400', 'desc' => '本地當造白菜，適合清炒或滾湯。'],
+            ['cat' => 'leafy-greens', 'name' => '本地有機菜心',     'price' => 28.00, 'stock' => 50, 'is_organic' => 1, 'origin' => '元朗八鄉農場',     'carbon' => 0.310, 'image' => 'https://placehold.co/400x400/4ade80/ffffff?text='.urlencode('菜心'), 'desc' => '當日採摘，水嫩清甜，香港本地有機認證。'],
+            ['cat' => 'leafy-greens', 'name' => '本地有機白菜',     'price' => 24.00, 'stock' => 60, 'is_organic' => 1, 'origin' => '元朗新田農場',     'carbon' => 0.290, 'image' => 'https://placehold.co/400x400/4ade80/ffffff?text='.urlencode('白菜'), 'desc' => '本地當造白菜，適合清炒或滾湯。'],
             ['cat' => 'leafy-greens', 'name' => '本地西洋菜',       'price' => 22.00, 'stock' => 40, 'is_organic' => 0, 'origin' => '粉嶺鶴藪',         'carbon' => 0.250, 'image' => 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400', 'desc' => '鮮嫩西洋菜，廣東滾湯必備。'],
             // 根莖
             ['cat' => 'root-vegetables', 'name' => '本地有機紅蘿蔔',  'price' => 18.00, 'stock' => 80, 'is_organic' => 1, 'origin' => '打鼓嶺農場',       'carbon' => 0.180, 'image' => 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400', 'desc' => '帶泥土清香，適合煲湯或榨汁。'],
             ['cat' => 'root-vegetables', 'name' => '本地黃薑',        'price' => 32.00, 'stock' => 30, 'is_organic' => 0, 'origin' => '大埔林村',         'carbon' => 0.220, 'image' => 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400', 'desc' => '新鮮黃薑，辛香濃郁。'],
-            ['cat' => 'root-vegetables', 'name' => '本地紫薯',        'price' => 38.00, 'stock' => 0,  'is_organic' => 1, 'origin' => '西貢北潭涌',       'carbon' => 0.270, 'image' => 'https://images.unsplash.com/photo-1564845394324-b7f40c4b0c2f?w=400', 'desc' => '當造紫薯已售罄，下批預計下週到貨。'],
+            ['cat' => 'root-vegetables', 'name' => '本地紫薯',        'price' => 38.00, 'stock' => 0,  'is_organic' => 1, 'origin' => '西貢北潭涌',       'carbon' => 0.270, 'image' => 'https://placehold.co/400x400/a855f7/ffffff?text='.urlencode('紫薯'), 'desc' => '當造紫薯已售罄，下批預計下週到貨。'],
             // 時令水果
             ['cat' => 'seasonal',   'name' => '本地沙田柚',         'price' => 48.00, 'stock' => 25, 'is_organic' => 0, 'origin' => '沙田瀝源',         'carbon' => 0.420, 'image' => 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400', 'desc' => '果肉飽滿多汁，秋季限定。'],
             ['cat' => 'seasonal',   'name' => '本地楊桃',           'price' => 35.00, 'stock' => 20, 'is_organic' => 1, 'origin' => '大埔大埔滘',       'carbon' => 0.380, 'image' => 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400', 'desc' => '切片後星形漂亮，酸甜開胃。'],
