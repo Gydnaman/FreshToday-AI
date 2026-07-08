@@ -23,7 +23,7 @@ class OrderController extends Controller
         $data = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:1|max:999',
             'shipping_address' => 'required|array',
             'coupon_code' => 'nullable|string|max:32',
             'user_subscription_id' => 'nullable|integer|exists:user_subscriptions,id',

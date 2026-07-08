@@ -137,7 +137,7 @@ $(document).ready(function() {
                     name: it.product.name,
                     price: parseFloat(it.product.price),
                     qty: it.quantity,
-                    image: it.product.image,
+                    image: it.product.image_url,
                 }));
                 $('#cart-count').text(d.item_count || 0);
             });
@@ -175,7 +175,7 @@ $(document).ready(function() {
 
         items.forEach((item) => {
             const lineTotal = (item.price * item.qty).toFixed(2);
-            // 缩略图：登录态用真实 product.image；guest 走 lucide icon
+            // 缩略图：登录态用 image_url（含 /storage 前缀）；guest 走 lucide icon
             const thumb = item.image
                 ? `<img src="${item.image}" alt="${escapeHtml(item.name)}" class="w-14 h-14 rounded-xl object-cover flex-shrink-0" onerror="this.outerHTML='<div class=\\'w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0\\'><i data-lucide=\\'package\\' class=\\'w-7 h-7 text-green-500\\'></i></div>'; lucide.createIcons();">`
                 : `<div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">

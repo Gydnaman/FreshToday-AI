@@ -203,7 +203,7 @@ $(document).ready(function() {
                     name: it.product.name,
                     price: parseFloat(it.product.price),
                     qty: it.quantity,
-                    image: it.product.image,
+                    image: it.product.image_url,
                 }));
             })
             .catch(() => []);
@@ -277,6 +277,11 @@ $(document).ready(function() {
         lucide.createIcons();
     }
 
+    function escapeHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
     function buildConfirm() {
         const addr = {
             name: $('input[name="shipping_address[name]"]').val(),
@@ -288,10 +293,10 @@ $(document).ready(function() {
         $('#confirm-details').html(`
             <div class="bg-gray-50 rounded-xl p-4 space-y-1">
                 <p class="font-semibold text-gray-700 mb-2">📦 Delivery</p>
-                <p><span class="text-gray-400 w-24 inline-block">Name:</span>${addr.name}</p>
-                <p><span class="text-gray-400 w-24 inline-block">Phone:</span>${addr.phone}</p>
-                <p><span class="text-gray-400 w-24 inline-block">Address:</span>${addr.address}, ${addr.district}</p>
-                <p><span class="text-gray-400 w-24 inline-block">Date:</span>${addr.date}</p>
+                <p><span class="text-gray-400 w-24 inline-block">Name:</span>${escapeHtml(addr.name)}</p>
+                <p><span class="text-gray-400 w-24 inline-block">Phone:</span>${escapeHtml(addr.phone)}</p>
+                <p><span class="text-gray-400 w-24 inline-block">Address:</span>${escapeHtml(addr.address)}, ${escapeHtml(addr.district)}</p>
+                <p><span class="text-gray-400 w-24 inline-block">Date:</span>${escapeHtml(addr.date)}</p>
             </div>
             <div class="bg-green-50 rounded-xl p-4 flex justify-between items-center">
                 <span class="font-bold text-gray-800">Total Payable</span>

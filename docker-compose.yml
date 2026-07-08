@@ -173,7 +173,7 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # Prometheus (可选 — 与 ops/prometheus/ 配合)
+  # Prometheus (可选 — 与 .infra/prometheus/ 配合)
   # ---------------------------------------------------------------------------
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -184,8 +184,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./.infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./.infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -213,8 +213,8 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./ops/grafana/dashboard-greenbite.json:/var/lib/grafana/dashboards/greenbite.json:ro
-      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./.infra/grafana/dashboard-greenbite.json:/var/lib/grafana/dashboards/greenbite.json:ro
+      - ./.infra/grafana/provisioning:/etc/grafana/provisioning:ro
     profiles:
       - monitoring
 

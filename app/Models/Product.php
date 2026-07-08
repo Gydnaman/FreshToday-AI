@@ -24,6 +24,8 @@ class Product extends Model
         'status',
     ];
 
+    protected $appends = ['image_url'];
+
     protected $casts = [
         'price' => 'decimal:2',
         'carbon_footprint' => 'decimal:3',
@@ -60,5 +62,22 @@ class Product extends Model
     public function hasStock(int $qty): bool
     {
         return $this->stock >= $qty;
+    }
+
+    /**
+     * 返回可在 <img src="..."> 中直接使用的图片 URL。
+     * 外部 URL 直接返回；本地上传路径自动拼接 /storage 前缀。
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (empty($this->image)) {
+            return null;
+        }
+
+        if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
+            return $this->image;
+        }
+
+        return asset('storage/'.$this->image);
     }
 }

@@ -28,7 +28,7 @@ class CartController extends Controller
     {
         $data = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1|max:999',
         ]);
         $product = Product::findOrFail($data['product_id']);
         if (! $product->hasStock($data['quantity'])) {
@@ -50,7 +50,7 @@ class CartController extends Controller
     public function update(Request $request, CartItem $item): JsonResponse
     {
         $this->authorizeOwner($request, $item);
-        $data = $request->validate(['quantity' => 'required|integer|min:0']);
+        $data = $request->validate(['quantity' => 'required|integer|min:0|max:999']);
         if ($data['quantity'] === 0) {
             return $this->destroy($request, $item);
         }

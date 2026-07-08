@@ -20,7 +20,7 @@
 | Backend | Laravel 12 (PHP 8.2) |
 | Database | SQLite (dev) / MySQL 8.0 (prod) |
 | Frontend | Tailwind CSS 4 (Vite)（原生 JS，无 jQuery 依赖） |
-| API Auth | Laravel Sanctum (token) |
+| API Auth | Laravel Sanctum (SPA Cookie / httpOnly session) |
 | Payment | Stripe + PayMe（Alipay HK 待 Sprint 2） |
 | AI | Google Gemini 2.5 Flash（HTTP 直调，无 SDK；3-layer fallback per ADR-0006） |
 | Cache | File / Database / Redis (configurable) |
@@ -46,13 +46,13 @@ winget install --id=SQLite.SQLite -e --accept-package-agreements --accept-source
 
 ```bash
 cd c:\Users\Lenovo\Desktop\FreshToday-AI
-bash scripts/dev.sh install     # composer install + npm install
+bash scripts/unix/dev.sh install     # composer install + npm install
 ```
 
 ### 3. Configure environment & database
 
 ```bash
-bash scripts/dev.sh setup       # cp .env + key:generate + migrate --seed
+bash scripts/unix/dev.sh setup       # cp .env + key:generate + migrate --seed
 ```
 
 该命令会：
@@ -65,7 +65,7 @@ bash scripts/dev.sh setup       # cp .env + key:generate + migrate --seed
 ### 4. Start the dev server
 
 ```bash
-bash scripts/dev.sh serve       # 后台启动 php artisan serve + npm run dev
+bash scripts/unix/dev.sh serve       # 后台启动 php artisan serve + npm run dev
 ```
 
 打开 <http://127.0.0.1:8000>
@@ -76,25 +76,26 @@ bash scripts/dev.sh serve       # 后台启动 php artisan serve + npm run dev
 ### 5. Stop the server
 
 ```bash
-bash scripts/dev.sh stop
+bash scripts/unix/dev.sh stop
 ```
 
 ---
 
-## Dev script cheatsheet (`scripts/dev.sh`)
+## Dev script cheatsheet (`scripts/unix/dev.sh`)
 
 | Command | 作用 |
 |---|---|
-| `bash scripts/dev.sh doctor` | 体检（PHP 扩展 / Composer / SQLite / .env） |
-| `bash scripts/dev.sh install` | composer install + npm install |
-| `bash scripts/dev.sh setup` | 配 .env + key:generate + migrate --seed |
-| `bash scripts/dev.sh serve` | 后台启动 artisan serve + vite（PID 写到 storage/framework/dev-pids/） |
-| `bash scripts/dev.sh stop` | 停掉 serve + vite |
-| `bash scripts/dev.sh tinker` | 进 Laravel REPL |
-| `bash scripts/dev.sh test` | 跑 PHPUnit（当前 71/71 通过，311 assertions，详见 `_bmad/tasks/project-review/02-test-baseline.md`） |
-| `bash scripts/dev.sh all` | install + setup + serve 一把梭 |
+| `bash scripts/unix/dev.sh doctor` | 体检（PHP 扩展 / Composer / SQLite / .env） |
+| `bash scripts/unix/dev.sh install` | composer install + npm install |
+| `bash scripts/unix/dev.sh setup` | 配 .env + key:generate + migrate --seed |
+| `bash scripts/unix/dev.sh serve` | 后台启动 artisan serve + vite（PID 写到 storage/framework/dev-pids/） |
+| `bash scripts/unix/dev.sh stop` | 停掉 serve + vite |
+| `bash scripts/unix/dev.sh tinker` | 进 Laravel REPL |
+| `bash scripts/unix/dev.sh test` | 跑 PHPUnit（当前 79 passed / 322 assertions / 0 failing） |
+| `bash scripts/unix/dev.sh all` | install + setup + serve 一把梭 |
 
 > `dev.sh` **不依赖** `php` 在 PATH 中（用 winget 安装的绝对路径调用），Git Bash 即可运行。
+> Windows PowerShell 辅助脚本见 `scripts/windows/`。
 
 ---
 
@@ -103,36 +104,94 @@ bash scripts/dev.sh stop
 ### Directory map
 
 ```
-app/
-  Enums/                 PHP 8.1 backed enums (OrderStatus, ...)
-  Exceptions/            GuardFailedException, InvalidTransitionException
-  Http/
-    Controllers/Api/     10 REST controllers (Auth/Cart/Menu/Order/...)
-    Middleware/          SetLocale
-  Models/                16 Eloquent models
-  Services/              5 business services
-    OrderService.php           7-state machine (SSOT)
-    PaymentService.php         Stripe/PayMe
-    AiMenuService.php          3-layer fallback (cache → DB → Provider → template)
-    Ai/                        Provider 抽象层（AiProviderInterface + 4 个实现 + Factory）
-    SubscriptionService.php
-    NotificationService.php
-database/
-  migrations/            23 migrations (含 Sprint 1 Day 5 extend)
-  factories/             7 factories (User/Product/Order/Category/...)
-  seeders/               DatabaseSeeder
-docs/bmad/               Architecture docs / ADRs / Sprint reports
-  adr/                   3 ADRs (webhook idempotency / state machine / AI cache)
-  DAY5-GAP-REPORT-2026-06-15.md
-  OPENAPI-AUDIT-2026-06-15.md
-  SSOT-IMPACT-ASSESSMENT-2026-06-15.md
-public/
-  js/i18n-loader.js      Client-side i18n (zh-HK / en / zh-CN)
-routes/
-  api.php                26 endpoints (sanctum auth)
-  web.php                8 web pages (welcome/login/catalog/...)
-scripts/                 dev.sh + Windows setup scripts
-tests/                   74 tests (71 passed baseline + 3 Stripe signature tests, 0 failing — see `_bmad/tasks/project-review/02-test-baseline.md`)
+├── app/                        Laravel 应用核心
+│   ├── Enums/                    状态枚举（OrderStatus / GuardCode / Currency）
+│   ├── Exceptions/               业务异常（GuardFailedException / InvalidTransitionException）
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/              10 个 REST 控制器（Auth/Cart/Menu/Order/...）
+│   │   │   ├── Admin/            管理后台（产品 CRUD）
+│   │   │   └── Web/              Web 页面控制器（Checkout）
+│   │   │   ├── ProductController.php      公开产品目录页
+│   │   │   └── SurveyController.php       问卷入口（302→SPA）
+│   │   └── Middleware/           IsAdmin / SetLocale
+│   ├── Jobs/                     4 个定时任务（自动发货/取消/订阅配送/生成菜单）
+│   ├── Models/                   16 Eloquent 模型
+│   ├── Providers/                AppServiceProvider / DomainServiceProvider
+│   └── Services/                 5 个业务服务
+│       ├── OrderService.php       7 态订单状态机（SSOT）
+│       ├── PaymentService.php     Stripe / PayMe 支付
+│       ├── AiMenuService.php      AI 菜单生成（3 层降级）
+│       ├── Ai/                    AI Provider 抽象（Interface + 4 实现 + Factory）
+│       ├── SubscriptionService.php
+│       └── NotificationService.php
+│
+├── resources/views/             Blade 视图（按功能分目录）
+│   ├── admin/                     管理后台视图
+│   │   └── products/              产品 CRUD 表单
+│   ├── auth/                      认证页面
+│   │   └── login.blade.php        登录 / 注册
+│   ├── shop/                      商城页面（需登录）
+│   │   ├── cart.blade.php         购物车
+│   │   ├── checkout.blade.php     结账
+│   │   ├── orders.blade.php       订单历史
+│   │   ├── catalog.blade.php      产品目录
+│   │   ├── subscriptions.blade.php订阅方案
+│   │   ├── survey.blade.php       饮食问卷
+│   │   └── dashboard.blade.php    用户首页
+│   ├── pages/                     公开页面
+│   │   └── welcome.blade.php      Landing Page
+│   ├── layouts/                   布局组件（app.blade.php / admin.blade.php）
+│   └── partials/                  复用片段（nav / footer）
+│
+├── database/
+│   ├── migrations/                23 张表迁移
+│   ├── factories/                 7 个 Model Factory
+│   └── seeders/                   DatabaseSeeder
+│
+├── docs/                         项目文档
+│   ├── bmad/                      BMAD 方法论文档（ADR / 架构 / API / 复盘）
+│   │   └── adr/                   3 份架构决策记录
+│   ├── design/                    设计原型
+│   │   ├── *.html                 9 个 HTML 原型
+│   │   └── mock/                  模拟数据（JSON + CSS）
+│   └── i18n/                      多语言资源
+│
+├── routes/
+│   ├── api.php                    26 条 API 路由（Sanctum + throttle）
+│   ├── web.php                    15 条 Web 路由（含 admin 子组）
+│   └── console.php                定时任务调度
+│
+├── scripts/                      开发 / 部署脚本
+│   ├── windows/                   Windows 平台（9 ps1 + 1 cmd）
+│   ├── unix/                      macOS / Linux（3 sh，含 dev.sh）
+│   └── db-counts.php              跨平台：数据库统计
+│
+├── tests/                        PHPUnit 测试
+│   ├── Unit/                      单元测试（Product / AiMenu / OrderService）
+│   ├── Feature/                   功能测试
+│   │   ├── Order/                 订单 + 支付 webhook
+│   │   └── Web/                   购物车 / 结账 / E2E
+│   ├── TestCases/                 抽象基类（OrderServiceTestCase）
+│   ├── Concerns/                  测试 Trait
+│   └── TestCase.php               PHPUnit 基类
+│
+├── config/                       Laravel 配置（app/auth/cache/database/...）
+├── public/                       Web 入口 + 编译后前端资源
+├── storage/                      日志 / 缓存 / 编译视图 / 上传文件
+├── bootstrap/                    Laravel 引导启动
+│
+├── _bmad/                        BMAD 框架（项目管理 / Agent 配置 / 任务文件）
+├── superpowers/                  Superpowers 开发方法论
+├── .github/                      GitHub CI/CD
+├── .infra/                       基础设施配置（Prometheus + Grafana）
+│   └── prometheus/
+│
+├── artisan                       Laravel CLI 入口
+├── composer.json / package.json  依赖管理
+├── docker-compose.yml / Dockerfile 容器化
+├── vite.config.js                前端构建
+└── README.md                     你正在看这个
 ```
 
 ### Key design decisions (ADRs)
@@ -150,33 +209,25 @@ tests/                   74 tests (71 passed baseline + 3 Stripe signature tests
 
 ## API Authentication
 
-所有 `/api/*` 端点使用 **Laravel Sanctum Personal Access Token**（不是 session cookie）。
+Web 端使用 **Sanctum SPA Cookie 认证**（httpOnly session cookie），API 直调仍支持 token。
 
-### 1. Register
+### Web 端（SPA Cookie 模式）
+
+浏览器访问 `/login` → 自动走 CSRF cookie + session 认证流程，登录后前端 `gbFetch` 自动带 `credentials: 'include'`。
+
+### API 直调（Token 模式）
+
 ```bash
+# 1. 注册 / 登录
 curl -X POST http://127.0.0.1:8000/api/register \
   -H "Content-Type: application/json" -H "Accept: application/json" \
   -d '{"name":"Alice","email":"alice@x.test","password":"password","password_confirmation":"password"}'
-```
-Response: `{"user": {...}, "token": "1|abc..."}`
 
-### 2. Login
-```bash
-curl -X POST http://127.0.0.1:8000/api/login \
-  -H "Content-Type: application/json" -H "Accept: application/json" \
-  -d '{"email":"alice@x.test","password":"password"}'
-```
+# 2. 带 token 请求
+curl -H "Authorization: Bearer YOUR_TOKEN" http://127.0.0.1:8000/api/me
 
-### 3. Authenticated request
-```bash
-curl -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
-  http://127.0.0.1:8000/api/me
-```
-
-### 4. Logout
-```bash
-curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
-  http://127.0.0.1:8000/api/logout
+# 3. 登出
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" http://127.0.0.1:8000/api/logout
 ```
 
 完整 API 26 端点见 `docs/bmad/openapi.yaml`（OpenAPI 3.0.3 规范）。
@@ -218,13 +269,18 @@ curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
 
 ## Web Pages (Blade)
 
-| Path | 用途 |
+| Path | View | 用途 | 需登录 |
 |---|---|
-| `/` | 首页（hero + 特性 + CTA） |
-| `/catalog` | 产品目录 |
-| `/subscriptions` | 订阅方案 |
-| `/survey` | 用户问卷（影响 AI 菜单） |
-| `/login` | 登录页（用 SPA 模式鉴权） |
+| `/` | `pages.welcome` | 首页（hero + CTA） | — |
+| `/catalog` | `shop.catalog` | 产品目录 | — |
+| `/login` | `auth.login` | 登录 / 注册（SPA Cookie） | — |
+| `/cart` | `shop.cart` | 购物车 | — |
+| `/checkout` | `shop.checkout` | 结账 | ✅ |
+| `/dashboard` | `shop.dashboard` | 用户首页（含 AI 菜单） | — |
+| `/orders` | `shop.orders` | 订单历史 | — |
+| `/subscriptions` | `shop.subscriptions` | 订阅方案 | — |
+| `/survey` | → 302 SPA | 饮食问卷 | ✅ |
+| `/admin/products` | `admin.products.*` | 管理后台（CRUD） | ✅ admin |
 
 ---
 
@@ -280,10 +336,12 @@ curl -X POST -H "Authorization: Bearer 1|abc..." -H "Accept: application/json" \
 ## Testing
 
 ```bash
-bash scripts/dev.sh test
+bash scripts/unix/dev.sh test
+# 或直接：
+php artisan test
 ```
 
-**当前状态（2026-07-03）**：71/71 通过（100%，311 assertions），详见 `_bmad/tasks/project-review/02-test-baseline.md`。
+**当前状态（2026-07-04）**：**79 passed / 322 assertions / 0 failed**。
 
 ---
 
@@ -306,7 +364,7 @@ docker run -d -p 8080:80 --env-file .env greenbite/app:latest
 - **API**：`docs/bmad/api-contract.md` + `docs/bmad/openapi.yaml`
 - **状态机**：`docs/bmad/order-state-machine.md` + ADR-0005
 - **部署**：`docs/bmad/deployment.md` + `Dockerfile` + `docker-compose.yml`
-- **监控**：`docs/bmad/monitoring-and-runbooks.md` + `ops/prometheus/`
+- **监控**：`docs/bmad/monitoring-and-runbooks.md` + `.infra/prometheus/`
 - **Sprint 1 Day 5 复盘**：`docs/bmad/DAY5-GAP-REPORT-2026-06-15.md`
 
 ---

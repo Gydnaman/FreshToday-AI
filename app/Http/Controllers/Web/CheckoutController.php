@@ -30,7 +30,7 @@ class CheckoutController extends Controller
 
     public function show(Request $request): View
     {
-        return view('checkout');
+        return view('shop.checkout');
     }
 
     public function place(Request $request): RedirectResponse
@@ -57,7 +57,7 @@ class CheckoutController extends Controller
                 continue;
             }
             $qty = (int) $row['quantity'];
-            if ($qty <= 0) {
+            if ($qty <= 0 || $qty > 999) {
                 continue;
             }
             $normalized[] = [

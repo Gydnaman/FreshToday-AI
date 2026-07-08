@@ -22,9 +22,9 @@ use Illuminate\Support\Facades\Route;
 | 完整定义见 docs/bmad/api-contract.md §2
 */
 
-// 公开端点
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// 公开端点（限流：60/min 防暴力破解）
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:30,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1');
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
@@ -51,7 +51,7 @@ if (app()->environment('testing', 'staging')) {
 }
 
 // 鉴权端点（Sanctum token）
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 

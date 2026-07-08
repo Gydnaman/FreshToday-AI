@@ -158,7 +158,6 @@ class PaymentService
     private function routeEvent(StripeWebhookEvent $event): void
     {
         $payload = $event->payload;
-        $orderService = app(OrderService::class);
 
         match ($event->event_type) {
             'payment_intent.succeeded' => $this->onPaymentSucceeded($event, $payload),

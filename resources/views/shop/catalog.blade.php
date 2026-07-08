@@ -19,7 +19,7 @@
         @endphp
         <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group">
             <div class="relative h-48 overflow-hidden bg-gray-100">
-                <img src="{{ $product->image }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
 
                 {{-- 碳足迹徽章（左上）--}}
                 @if(!is_null($product->carbon_footprint))
@@ -54,7 +54,7 @@
                         </button>
                     @else
                         <button type="button"
-                            onclick="addToCartAuth({{ (int) $product->id }}, '{{ addslashes($product->name) }}', {{ (float) $product->price }})"
+                            onclick="addToCartAuth({{ (int) $product->id }}, {{ \Illuminate\Support\Js::from($product->name) }}, {{ (float) $product->price }})"
                             class="bg-green-100 text-green-700 p-3 rounded-xl hover:bg-green-600 hover:text-white transition group-hover:scale-110 duration-300"
                             aria-label="Add to cart">
                             <i data-lucide="plus" class="w-5 h-5 font-bold"></i>

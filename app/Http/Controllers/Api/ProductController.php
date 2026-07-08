@@ -32,7 +32,7 @@ class ProductController extends Controller
                 $q->where('is_organic', $validated['is_organic']);
             }
             if (! empty($validated['q'])) {
-                $q->where('name', 'like', '%'.$validated['q'].'%');
+                $q->where('name', 'like', '%'.addcslashes($validated['q'], '%_').'%');
             }
 
             match ($validated['sort'] ?? null) {

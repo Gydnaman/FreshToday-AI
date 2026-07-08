@@ -269,13 +269,18 @@ class OrderService
 
     private function releaseStock(Order $order): void
     {
+        $productIds = $order->products->pluck('pivot.product_id');
+        $quantities = [];
         foreach ($order->products as $product) {
-            // P0-1 配套：释放库存也要行锁，避免与 createOrder 的 decrement 互踩
-            $locked = Product::lockForUpdate()->find($product->id);
-            if ($locked) {
-                $locked->increment('stock', $product->pivot->quantity);
-            }
+            $quantities[$product->id] = $product->pivot->quantity;
         }
+
+        Product::lockForUpdate()
+            ->whereIn('id', $productIds)
+            ->get()
+            ->each(function ($p) use ($quantities) {
+                $p->increment('stock', $quantities[$p->id]);
+            });
     }
 
     private function generateOrderNo(): string

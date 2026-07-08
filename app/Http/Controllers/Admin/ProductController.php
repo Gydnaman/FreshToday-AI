@@ -8,6 +8,7 @@ use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -65,6 +66,8 @@ class ProductController extends Controller
 
         Product::create($data);
 
+        $this->invalidateProductCache();
+
         return redirect()
             ->route('admin.products.index')
             ->with('success', '产品已创建（草稿状态，需手动上架）');
@@ -107,6 +110,8 @@ class ProductController extends Controller
 
         $product->update($data);
 
+        $this->invalidateProductCache();
+
         return redirect()
             ->route('admin.products.index')
             ->with('success', "产品「{$product->fresh()->name}」已更新");
@@ -122,5 +127,13 @@ class ProductController extends Controller
         $file->storeAs($subdir, $name, 'public');
 
         return $subdir.'/'.$name;
+    }
+
+    /**
+     * 产品变更时递增缓存版本号，使所有 products:list:* 缓存失效（靠 5min TTL 兜底）
+     */
+    private function invalidateProductCache(): void
+    {
+        Cache::increment('products:cache_version');
     }
 }

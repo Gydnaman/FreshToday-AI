@@ -7,13 +7,13 @@ use App\Http\Controllers\Web\CheckoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('pages.welcome');
 });
 
 Route::get('/catalog', [ProductController::class, 'index']);
 
 Route::get('/login', function () {
-    return view('auth');
+    return view('auth.login');
 })->name('login');
 
 // Admin 登录入口（独立视图，校验 is_admin 后才放行）
@@ -22,19 +22,19 @@ Route::get('/admin/login', function () {
 })->name('admin.login');
 
 Route::get('/subscriptions', function () {
-    return view('subscriptions');
+    return view('shop.subscriptions');
 });
 
 Route::get('/orders', function () {
-    return view('orders'); // Placeholder for orders
+    return view('shop.orders');
 });
 
-// Cart（已接通：catalog/checkout 用同一份 cart.blade，guest 走 localStorage 兜底）
+// Cart
 Route::get('/cart', function () {
-    return view('cart');
+    return view('shop.cart');
 });
 
-// Checkout（session 认证，不再用 PAT hidden field）
+// Checkout（session 认证）
 Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show']);
     Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('web.checkout.place');
@@ -46,7 +46,7 @@ Route::post('/survey', [SurveyController::class, 'store']);
 Route::get('/dashboard', function () {
     $aiMenu = session('daily_ai_menu', 'No menu generated yet. Please complete your profile survey!');
 
-    return view('dashboard', compact('aiMenu'));
+    return view('shop.dashboard', compact('aiMenu'));
 });
 
 // Admin 路由组（最小版：仅产品列表 + 创建）

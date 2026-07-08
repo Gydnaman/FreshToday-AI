@@ -41,8 +41,8 @@
                 @forelse ($products as $p)
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-3">
-                            @if ($p->image)
-                                <img src="{{ asset('storage/'.$p->image) }}"
+                            @if ($p->image_url)
+                                <img src="{{ $p->image_url }}"
                                      alt="{{ $p->name }}"
                                      class="w-12 h-12 object-cover rounded border">
                             @else

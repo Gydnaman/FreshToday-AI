@@ -75,9 +75,9 @@
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">主图</label>
-            @if ($product->image)
+            @if ($product->image_url)
                 <div class="mb-2 flex items-center gap-3">
-                    <img src="{{ asset('storage/'.$product->image) }}" alt="{{ $product->name }}"
+                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
                          class="w-20 h-20 object-cover rounded border">
                     <span class="text-xs text-gray-500">当前图片（上传新图将替换）</span>
                 </div>
