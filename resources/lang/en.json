@@ -10,7 +10,8 @@
     "signIn": "Sign In",
     "signOut": "Log Out",
     "dashboard": "My Dashboard",
-    "language": "Language"
+    "language": "Language",
+    "admin": "Manage"
   },
   "common": {
     "loading": "Loading...",
@@ -24,8 +25,10 @@
     "subscribe": "Subscribe",
     "shopMore": "Shop More",
     "explore": "Explore",
+    "optional": "(Optional)",
     "viewAll": "View All",
     "viewDetails": "View Details",
+    "edit": "Edit",
     "or": "or"
   },
   "home": {
@@ -52,26 +55,42 @@
     "formTerms": "By signing up, you agree to our Terms of Service."
   },
   "catalog": {
+    "pageTitle": "Product Catalog",
     "title": "Local Farm Freshness",
     "subtitle": "Discover sustainably grown produce from Hong Kong's local farms. Every purchase reduces food miles and supports our community.",
     "addToCart": "Add to Cart",
+    "addToCartAria": "Add to cart",
+    "soldOut": "Sold Out",
+    "soldOutAria": "Sold out",
+    "organic": "Organic",
+    "carbonUnit": "kg CO2e",
     "carbonFootprint": "Carbon Footprint",
     "explorePlans": "Explore Subscription Plans"
   },
-  "cart": {
+    "cart": {
     "title": "My Cart",
     "subtitle": "Review your items before checkout",
+    "emptyTitle": "Your cart is empty",
+    "emptySubtitle": "Looks like you haven't added anything yet. Browse our fresh produce!",
+    "shopNow": "Shop Now",
     "orderSummary": "Order Summary",
     "subtotal": "Subtotal",
     "deliveryFee": "Delivery Fee",
     "carbonOffset": "Carbon Offset",
     "included": "Included",
     "total": "Total",
-    "freeDeliveryProgress": "Add HK${0} more for free delivery!",
-    "localSourcing": "All products sourced from HK & GBA organic farms",
+    "freeDeliveryProgress": "Add :remaining more for free delivery!",
+    "freeDeliveryUnlocked": "You've unlocked free delivery!",
+    "free": "Free",
+    "items": "items",
+    "each": "each",
     "checkout": "Proceed to Checkout →",
     "continueShopping": "← Continue Shopping",
     "remove": "Remove",
+    "updateFailed": "Update failed:",
+    "deleteFailed": "Delete failed",
+    "deleteConfirm": "Are you sure you want to remove this item?",
+    "localSourcing": "All products sourced from HK & GBA organic farms",
     "products": [
       { "id": "spinach", "name": "Organic Baby Spinach", "price": 38, "unit": "bunch", "carbonFootprint": "0.2 kg CO2e" },
       { "id": "tomatoes", "name": "Heritage Tomatoes", "price": 45, "unit": "box", "carbonFootprint": "0.3 kg CO2e" },
@@ -82,6 +101,22 @@
   "checkout": {
     "title": "Checkout",
     "subtitle": "Complete your order",
+    "checkoutFailed": "Checkout Failed",
+    "pleaseLogin": "Please log in first",
+    "loginRequired": "An account is required to checkout.",
+    "goToLogin": "Go to Login",
+    "selectDistrict": "Select district",
+    "fullNamePlaceholder": "Your full name",
+    "phonePlaceholder": "+852 XXXX XXXX",
+    "addressPlaceholder": "Flat, Floor, Building, Street, District",
+    "notesPlaceholder": "e.g. Leave at door, ring twice",
+    "pleaseFillDelivery": "Please fill in Name, Phone, Address and District.",
+    "sandboxNotice": "Sandbox: Clicking \"Place Order\" will create an order via <code>POST /checkout/place</code> and redirect to a mock payment page (return_url is <code>/orders</code>).",
+    "cartEmpty": "Your cart is empty",
+    "nameLabel": "Name:",
+    "phoneLabel": "Phone:",
+    "addressLabel": "Address:",
+    "dateLabel": "Date:",
     "stepDelivery": "Delivery",
     "stepPayment": "Payment",
     "stepConfirm": "Confirm",
@@ -120,12 +155,16 @@
     "totalPayable": "Total Payable",
     "processing": "Processing..."
   },
-  "auth": {
+    "auth": {
     "loginTitle": "Welcome Back!",
     "registerTitle": "Join GreenBite",
     "subtitle": "Sustainable food subscriptions for Hong Kong",
+    "displayName": "Display Name",
+    "namePlaceholder": "Your name",
     "email": "Email",
     "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter password",
     "fullName": "Full Name",
     "address": "Hong Kong Delivery Address (Optional)",
     "signIn": "Sign In",
@@ -137,7 +176,9 @@
   },
   "dashboard": {
     "welcome": "Welcome back, ",
+    "title": "My Dashboard",
     "hub": "Your FreshAI wellness hub",
+    "updatedJustNow": "Updated just now",
     "profile": "My Profile",
     "fullName": "Full Name",
     "emailAddress": "Email Address",
@@ -192,6 +233,11 @@
     "statusRefunded": "Refunded",
     "saved": "Saved",
     "empty": "You don't have any orders matching this status.",
+    "emptyTitle": "No orders yet",
+    "emptySubtitle": "Browse our fresh produce and place your first order today.",
+    "filterEmptyTitle": "No orders found",
+    "shopNow": "Shop Now",
+    "inclDelivery": "incl. delivery",
     "demoOrders": [
       { "id": "GB-2026-0612-001", "plan": "Individual Box (Weekly)", "date": "2026-06-12", "status": "delivered", "total": 280, "saved": 42 },
       { "id": "GB-2026-0615-002", "plan": "Family Box (Weekly)", "date": "2026-06-15", "status": "shipped", "total": 480, "saved": 68 }
@@ -292,6 +338,7 @@
     "tagline": "Supporting local Hong Kong farmers and reducing carbon footprints through sustainable agriculture.",
     "quickLinks": "Quick Links",
     "help": "Help",
+    "aboutUs": "About Us",
     "newsletter": "Newsletter",
     "newsletterPlaceholder": "Your email",
     "faq": "FAQ",
@@ -300,5 +347,84 @@
     "terms": "Terms of Service",
     "contact": "Contact Us",
     "copyright": "© 2026 GreenBite HK. All rights reserved."
+  },
+  "admin": {
+    "login": {
+      "title": "Admin Login",
+      "subtitle": "GreenBite Admin Panel",
+      "email": "Email",
+      "password": "Password",
+      "signIn": "Sign In",
+      "returnToStore": "Return to Store",
+      "accessOnly": "Admin access only · Accounts managed via CLI",
+      "noPermission": "This account does not have admin privileges. Please contact the system administrator.",
+      "networkError": "Network error. Please try again later.",
+      "emailPasswordRequired": "Please enter email and password."
+    },
+    "products": {
+      "index": {
+        "title": "Product Management",
+        "create": "Create Product",
+        "image": "Image",
+        "name": "Name",
+        "category": "Category",
+        "price": "Price",
+        "stock": "Stock",
+        "status": "Status",
+        "updatedAt": "Updated At",
+        "actions": "Actions",
+        "noImage": "No Image",
+        "empty": "No products yet. Create your first one →",
+        "footer": "Tip: Return to home · Public catalog only shows published products."
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft",
+        "archived": "Archived"
+      },
+      "create": {
+        "title": "Create Product",
+        "backToList": "Back to product list",
+        "draftNote": "After saving, defaults to Draft status and won't appear in the public catalog.",
+        "submitFailed": "Submit failed:",
+        "name": "Product Name",
+        "category": "Category",
+        "price": "Price (HKD)",
+        "stock": "Stock",
+        "description": "Description",
+        "image": "Main Image",
+        "imageHint": "Supports jpg / png / webp, max 512KB.",
+        "origin": "Origin",
+        "carbonFootprint": "Carbon Footprint (kg CO2e)",
+        "isOrganic": "Organic Certified",
+        "save": "Save Draft",
+        "cancel": "Cancel",
+        "pleaseSelect": "— Please select —"
+      },
+      "edit": {
+        "title": "Edit Product",
+        "backToList": "Back to product list",
+        "pleaseSelect": "— Please select —",
+        "note": "Edit product info, image or shelf status.",
+        "submitFailed": "Submit failed:",
+        "name": "Product Name",
+        "category": "Category",
+        "price": "Price (HKD)",
+        "stock": "Stock",
+        "description": "Description",
+        "image": "Main Image",
+        "currentImage": "Current image (uploading new image will replace it)",
+        "imageHint": "Supports jpg / png / webp, max 512KB. Leave empty to keep original.",
+        "origin": "Origin",
+        "carbonFootprint": "Carbon Footprint (kg CO2e)",
+        "isOrganic": "Organic Certified",
+        "status": "Shelf Status",
+        "statusDraft": "Draft (not shown on public page)",
+        "statusPublished": "Published (publicly visible)",
+        "statusArchived": "Archived (delisted)",
+        "save": "Save Changes",
+        "cancel": "Cancel"
+      }
+    }
   }
 }

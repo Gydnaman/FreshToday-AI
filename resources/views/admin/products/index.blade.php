@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', '产品管理 — GreenBite Admin')
+@section('title', i18n('admin.products.index.title') . ' — GreenBite Admin')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">📦 产品管理</h1>
+        <h1 class="text-3xl font-bold text-gray-800">{{ i18n('admin.products.index.title') }}</h1>
         <a href="{{ route('admin.products.create') }}"
            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition">
-            + 新建产品
+            + {{ i18n('admin.products.index.create') }}
         </a>
     </div>
 
@@ -27,14 +27,14 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">图片</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">名称</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">分类</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">价格</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">库存</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">更新时间</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">操作</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.image') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.name') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.category') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.price') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.stock') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.status') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.updatedAt') }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ i18n('admin.products.index.actions') }}</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -47,7 +47,7 @@
                                      class="w-12 h-12 object-cover rounded border">
                             @else
                                 <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
-                                    无图
+                                    {{ i18n('admin.products.index.noImage') }}
                                 </div>
                             @endif
                         </td>
@@ -64,9 +64,9 @@
                                     default => 'bg-gray-100 text-gray-600',
                                 };
                                 $label = match($p->status) {
-                                    'published' => '已上架',
-                                    'draft' => '草稿',
-                                    'archived' => '已归档',
+                                    'published' => i18n('admin.products.status.published'),
+                                    'draft' => i18n('admin.products.status.draft'),
+                                    'archived' => i18n('admin.products.status.archived'),
                                     default => $p->status,
                                 };
                             @endphp
@@ -76,14 +76,14 @@
                         <td class="px-4 py-3 text-center">
                             <a href="{{ route('admin.products.edit', $p) }}"
                                class="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition">
-                                <i data-lucide="pencil" class="w-4 h-4"></i> 编辑
+                                <i data-lucide="pencil" class="w-4 h-4"></i> {{ i18n('common.edit') }}
                             </a>
                         </td>
                     </tr>
                 @empty
                     <tr>
                         <td colspan="8" class="px-4 py-12 text-center text-gray-500">
-                            还没有任何产品。<a href="{{ route('admin.products.create') }}" class="text-green-600 underline">立即创建第一个 →</a>
+                            {!! i18n('admin.products.index.empty') !!}
                         </td>
                     </tr>
                 @endforelse
@@ -96,8 +96,7 @@
     </div>
 
     <p class="mt-4 text-sm text-gray-500">
-        💡 提示：<a href="{{ url('/') }}" class="text-blue-600 underline">返回首页</a> ·
-        公开产品页只显示 <code>published</code> 状态的产品（编辑/上下架功能后续 Sprint）
+        💡 {{ i18n('admin.products.index.footer') }}
     </p>
 </div>
 @endsection

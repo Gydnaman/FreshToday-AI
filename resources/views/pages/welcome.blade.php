@@ -96,7 +96,7 @@
         $('#signup-form').on('submit', function(e) {
             e.preventDefault();
             const btn = $(this).find('button');
-            btn.html('<i data-lucide="loader" class="animate-spin inline h-5 w-5 mr-2"></i> ' + @json(__('common.loading')));
+            btn.html('<i data-lucide="loader" class="animate-spin inline h-5 w-5 mr-2"></i> ' + {{ Js::from(i18n('common.loading')) }});
             lucide.createIcons();
             setTimeout(function() {
                 window.location.href = "{{ url('/catalog') }}";

@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
-@section('title', 'My Orders')
+@section('title', i18n('orders.title'))
 
 @section('content')
 <div class="container mx-auto px-4 py-12">
     <div class="max-w-4xl mx-auto animate-fade-in-up">
 
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-extrabold text-gray-900">My Orders</h1>
+            <h1 class="text-3xl font-extrabold text-gray-900">{{ i18n('orders.title') }}</h1>
             <a href="/catalog" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 transition shadow-sm flex items-center gap-2">
-                <i data-lucide="plus" class="w-4 h-4"></i> Shop More
+                <i data-lucide="plus" class="w-4 h-4"></i> {{ i18n('common.shopMore') }}
             </a>
         </div>
 
         <!-- Order Status Tabs -->
         <div class="flex gap-2 mb-8 border-b border-gray-200" id="order-tabs">
-            <button class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 transition -mb-px text-green-700 border-green-600" data-target="all">All Orders</button>
-            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition -mb-px" data-target="processing">Processing</button>
-            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition -mb-px" data-target="delivered">Delivered</button>
+            <button class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 transition -mb-px text-green-700 border-green-600" data-target="all">{{ i18n('orders.tabAll') }}</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition -mb-px" data-target="processing">{{ i18n('orders.tabProcessing') }}</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition -mb-px" data-target="delivered">{{ i18n('orders.tabDelivered') }}</button>
         </div>
 
         <!-- Order List -->
@@ -28,16 +28,16 @@
                     <div class="order-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition" data-status="{{ strtolower($order->status) }}">
                         <div class="flex items-center justify-between p-5 border-b border-gray-50">
                             <div>
-                                <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Order #{{ $order->order_number }}</span>
-                                <p class="text-sm text-gray-500 mt-0.5">Placed on {{ $order->date }}</p>
+                                <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">{{ i18n('orders.orderNo') }}{{ $order->order_number }}</span>
+                                <p class="text-sm text-gray-500 mt-0.5">{{ i18n('orders.placedOn') }} {{ $order->date }}</p>
                             </div>
                             @if(strtolower($order->status) === 'delivered')
                                 <span class="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                                    <i data-lucide="check-circle" class="w-3 h-3"></i> Delivered
+                                    <i data-lucide="check-circle" class="w-3 h-3"></i> {{ i18n('orders.statusDelivered') }}
                                 </span>
                             @else
                                 <span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
-                                    <i data-lucide="truck" class="w-3 h-3"></i> Out for Delivery
+                                    <i data-lucide="truck" class="w-3 h-3"></i> {{ i18n('orders.statusOutForDelivery') }}
                                 </span>
                             @endif
                         </div>
@@ -49,15 +49,15 @@
                                 </div>
                                 <div class="text-right">
                                     <p class="font-extrabold text-gray-900 text-lg">{{ $order->price }}</p>
-                                    <p class="text-xs text-gray-400">incl. delivery</p>
+                                    <p class="text-xs text-gray-400">{{ i18n('orders.inclDelivery') }}</p>
                                 </div>
                             </div>
                             <div class="mt-4 flex items-center justify-between">
                                 <div class="flex items-center gap-1.5 text-sm text-green-700 font-medium">
                                     <i data-lucide="leaf" class="w-4 h-4"></i>
-                                    <span>Saved {{ $order->co2_saved }} CO₂e</span>
+                                    <span>{{ i18n('orders.saved') }} {{ $order->co2_saved }} CO₂e</span>
                                 </div>
-                                <button class="text-sm text-green-600 font-semibold hover:underline">View Details</button>
+                                <button class="text-sm text-green-600 font-semibold hover:underline">{{ i18n('common.viewDetails') }}</button>
                             </div>
                         </div>
                     </div>
@@ -68,9 +68,9 @@
                     <div class="bg-green-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
                         <i data-lucide="package-open" class="w-10 h-10 text-green-400"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">No orders yet</h2>
-                    <p class="text-gray-500 mb-6">Browse our fresh produce and place your first order today.</p>
-                    <a href="/catalog" class="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow">Shop Now</a>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ i18n('orders.emptyTitle') }}</h2>
+                    <p class="text-gray-500 mb-6">{{ i18n('orders.emptySubtitle') }}</p>
+                    <a href="/catalog" class="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow">{{ i18n('orders.shopNow') }}</a>
                 </div>
             @endif
             
@@ -79,8 +79,8 @@
                 <div class="bg-gray-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
                     <i data-lucide="search" class="w-10 h-10 text-gray-400"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">No orders found</h2>
-                <p class="text-gray-500 mb-6">You don't have any orders matching this status.</p>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ i18n('orders.filterEmptyTitle') }}</h2>
+                <p class="text-gray-500 mb-6">{{ i18n('orders.empty') }}</p>
             </div>
         </div>
 

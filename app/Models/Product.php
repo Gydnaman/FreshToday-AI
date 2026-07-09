@@ -19,6 +19,7 @@ class Product extends Model
         'carbon_footprint',
         'stock',
         'category_id',
+        'user_id',
         'is_organic',
         'origin',
         'status',
@@ -43,6 +44,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function orders(): BelongsToMany

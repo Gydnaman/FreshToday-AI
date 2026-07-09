@@ -23,14 +23,16 @@ use Symfony\Component\HttpFoundation\Response;
 class SetLocale
 {
     /**
-     * 支持的语言白名单
+     * 支持的语言白名单（对应 resources/lang/{zh,en,zhhk}.json）
      */
-    private const SUPPORTED = ['zh-HK', 'en', 'zh-CN'];
+    private const SUPPORTED = ['zh', 'en', 'zhhk'];
 
     /**
      * 默认语言（白名单非法值兜底）
      */
-    private const DEFAULT = 'zh-HK';
+    private const DEFAULT = 'zh';
+
+    private const COOKIE = 'gb_locale';
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -42,10 +44,9 @@ class SetLocale
 
         // 仅在 URL 显式带 ?lang= 时回写 cookie（让切换可持久化）
         if ($request->query('lang') !== null) {
-            cookie()->queue(cookie('gb_locale', $locale, 60 * 24 * 365, '/', null, false, false));
+            cookie()->queue(cookie(self::COOKIE, $locale, 60 * 24 * 365, '/', null, false, false));
         }
 
-        // 暴露给响应头，便于 CDN / 调试
         $response->headers->set('Content-Language', $locale);
 
         return $response;
@@ -57,10 +58,10 @@ class SetLocale
     private function resolveLocale(Request $request): string
     {
         $candidates = [
-            $request->query('lang'),
-            $request->cookie('gb_locale'),
+            $this->normalizeLocale($request->query('lang')),
+            $this->normalizeLocale($request->cookie(self::COOKIE)),
             $this->parseAcceptLanguage($request->header('Accept-Language')),
-            config('app.locale'),
+            $this->normalizeLocale(config('app.locale')),
         ];
 
         foreach ($candidates as $candidate) {
@@ -73,26 +74,34 @@ class SetLocale
     }
 
     /**
-     * 解析 Accept-Language header，提取最匹配的支持语言
+     * 标准化 locale：把 zh-CN / zh-HK / zh-TW 等映射到 zh / zhhk
      */
-    private function parseAcceptLanguage(?string $header): ?string
+    private function normalizeLocale(?string $locale): ?string
     {
-        if (! $header) {
+        if (! $locale) {
             return null;
         }
 
-        $lc = strtolower($header);
+        $lc = strtolower($locale);
 
         if (str_contains($lc, 'zh-tw') || str_contains($lc, 'zh-hk') || str_contains($lc, 'zh-mo')) {
-            return 'zh-HK';
+            return 'zhhk';
         }
-        if (str_contains($lc, 'zh-cn') || str_contains($lc, 'zh-sg')) {
-            return 'zh-CN';
+        if (str_contains($lc, 'zh-cn') || str_contains($lc, 'zh-sg') || str_starts_with($lc, 'zh')) {
+            return 'zh';
         }
         if (str_starts_with($lc, 'en')) {
             return 'en';
         }
 
-        return null;
+        return in_array($lc, self::SUPPORTED, true) ? $lc : null;
+    }
+
+    /**
+     * 解析 Accept-Language header，提取最匹配的支持语言
+     */
+    private function parseAcceptLanguage(?string $header): ?string
+    {
+        return $this->normalizeLocale($header);
     }
 }

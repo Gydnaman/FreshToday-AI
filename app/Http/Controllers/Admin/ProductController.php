@@ -14,22 +14,26 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Admin 产品管理控制器（最小版：列表 + 创建 + 图片上传）
+ * Admin 产品管理控制器
  *
- * 入口：/admin/products
- * 守卫：IsAdmin middleware
- * 状态：创建时默认 draft（不在公开 /api/products 显示，避免误上架未完成品）
+ * 入口：/admin/products（auth 中间件，登录即可访问）
+ * 普通用户只能管理自己的商品，管理员可管理全部（ProductPolicy 控制）
+ * 创建时默认 draft 状态
  */
 class ProductController extends Controller
 {
     public function index(Request $request): View
     {
-        $products = Product::with('category:id,name')
-            ->orderByDesc('updated_at')
-            ->paginate(20);
+        $q = Product::with('category:id,name')
+            ->orderByDesc('updated_at');
+
+        // 普通用户只看自己的，管理员看全部
+        if (! $request->user()->is_admin) {
+            $q->where('user_id', $request->user()->id);
+        }
 
         return view('admin.products.index', [
-            'products' => $products,
+            'products' => $q->paginate(20),
         ]);
     }
 
@@ -61,8 +65,8 @@ class ProductController extends Controller
         }
 
         $data['is_organic'] = (bool) ($data['is_organic'] ?? false);
-        // 最小版：创建后默认 draft，避免误上架
         $data['status'] = 'draft';
+        $data['user_id'] = $request->user()->id;
 
         Product::create($data);
 
@@ -75,6 +79,8 @@ class ProductController extends Controller
 
     public function edit(Product $product): View
     {
+        abort_if(! $this->canManage($product), 403);
+
         $categories = Category::orderBy('sort_order')->orderBy('name')->get();
 
         return view('admin.products.edit', [
@@ -85,6 +91,8 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
+        abort_if(! $this->canManage($product), 403);
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|integer|exists:categories,id',
@@ -135,5 +143,15 @@ class ProductController extends Controller
     private function invalidateProductCache(): void
     {
         Cache::increment('products:cache_version');
+    }
+
+    /**
+     * admin 或产品所有者可以管理该产品
+     */
+    private function canManage(Product $product): bool
+    {
+        $user = request()->user();
+
+        return $user->is_admin || (int) $product->user_id === $user->id;
     }
 }

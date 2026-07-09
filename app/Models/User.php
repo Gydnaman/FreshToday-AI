@@ -71,6 +71,11 @@ class User extends Authenticatable
         return $this->hasOne(NotificationPreference::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
     public function userCoupons(): HasMany
     {
         return $this->hasMany(UserCoupon::class);

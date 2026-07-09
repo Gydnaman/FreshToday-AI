@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Sign In')
+@section('title', i18n('auth.loginTitle'))
 
 @section('content')
 <div class="container mx-auto px-4 py-16 flex justify-center items-center">
@@ -9,41 +9,41 @@
             <div class="inline-flex justify-center items-center bg-green-100 rounded-full w-16 h-16 mb-4">
                 <i data-lucide="leaf" class="h-8 w-8 text-green-600"></i>
             </div>
-            <h2 class="text-3xl font-extrabold text-gray-900" id="form-title">Welcome Back!</h2>
-            <p class="text-gray-500 mt-2">Sustainable food subscriptions for Hong Kong</p>
+            <h2 class="text-3xl font-extrabold text-gray-900" id="form-title">{{ i18n('auth.loginTitle') }}</h2>
+            <p class="text-gray-500 mt-2">{{ i18n('auth.subtitle') }}</p>
         </div>
 
         <form id="auth-form" class="space-y-5">
             <div id="name-field" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                <input id="auth-name" type="text" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="您的稱呼">
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('auth.displayName') }}</label>
+                <input id="auth-name" type="text" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="{{ i18n('auth.namePlaceholder') }}">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('auth.email') }}</label>
                 <input id="auth-email" type="email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="your@email.hk">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('auth.password') }}</label>
                 <input id="auth-password" type="password" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="••••••••">
             </div>
 
             <div id="password-confirm-field" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                <input id="auth-password-confirmation" type="password" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="再次輸入密碼">
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('auth.confirmPassword') }}</label>
+                <input id="auth-password-confirmation" type="password" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="{{ i18n('auth.confirmPasswordPlaceholder') }}">
             </div>
 
             <p id="auth-err" class="text-red-500 text-sm hidden"></p>
 
             <button type="submit" id="auth-submit" class="w-full bg-green-600 text-white py-3 px-4 rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center font-bold text-lg shadow-md mt-4">
-                <i data-lucide="log-in" class="mr-2 w-5 h-5" id="btn-icon"></i> <span id="btn-text">Sign In</span>
+                <i data-lucide="log-in" class="mr-2 w-5 h-5" id="btn-icon"></i> <span id="btn-text">{{ i18n('auth.signIn') }}</span>
             </button>
         </form>
 
         <div class="mt-8 text-center border-t border-gray-100 pt-6">
             <button id="toggle-mode" type="button" class="text-green-600 hover:text-green-800 font-medium transition-colors">
-                Don't have an account? Sign Up
+                {{ i18n('auth.toggleToRegister') }}
             </button>
         </div>
     </div>
@@ -62,8 +62,9 @@
             .catch(() => {});
 
         // i18n 文案（按当前 locale 给出常用 label）
-        const isHK = (document.documentElement.lang || '').startsWith('zh-HK');
-        const isCN = (document.documentElement.lang || '').startsWith('zh-CN');
+        const lang = (document.documentElement.lang || 'zh');
+        const isHK = lang === 'zhhk' || lang.startsWith('zh-HK') || lang.startsWith('zh-hk');
+        const isCN = lang === 'zh' || lang.startsWith('zh-CN') || lang.startsWith('zh-cn');
         const i18n = {
             signIn: isHK ? '登入' : (isCN ? '登录' : 'Sign In'),
             signUp: isHK ? '註冊' : (isCN ? '注册' : 'Sign Up'),
@@ -122,7 +123,7 @@
                     password: password,
                     password_confirmation: $('#auth-password-confirmation').val(),
                     name: $('#auth-name').val().trim() || email.split('@')[0],
-                    locale: (document.documentElement.lang || 'zh-HK'),
+                    locale: (lang || 'zh'),
                 };
 
             // Sanctum SPA：先拿 csrf-cookie，再登录

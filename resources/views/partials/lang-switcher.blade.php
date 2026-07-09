@@ -5,9 +5,9 @@
      * 数据 SSOT：docs/i18n/PLAN-i18n.md §2.2
      */
     $supported = [
-        'zh-HK' => ['name' => '繁體中文', 'flag' => '🇭🇰'],
-        'en'    => ['name' => 'English',  'flag' => '🇬🇧'],
-        'zh-CN' => ['name' => '简体中文', 'flag' => '🇨🇳'],
+        'zhhk' => ['name' => '繁體中文', 'flag' => '🇭🇰'],
+        'en'   => ['name' => 'English',  'flag' => '🇬🇧'],
+        'zh'   => ['name' => '简体中文', 'flag' => '🇨🇳'],
     ];
     $current = str_replace('_', '-', app()->getLocale());
     $currentInfo = $supported[$current] ?? $supported['zh-HK'];

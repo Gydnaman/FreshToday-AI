@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Product;
+use App\Policies\ProductPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Product Policy 注册
+        Gate::policy(Product::class, ProductPolicy::class);
+
         // 定义 'api' 限流器（Laravel 12 default throttle:api 调用）
         // 见 docs/bmad/sprint-1-backlog.md NFR §2.3 + docs/bmad/monitoring-and-runbooks.md §11
         // 默认 60 req/min/IP（生产可按 IP 维度调高到 600）

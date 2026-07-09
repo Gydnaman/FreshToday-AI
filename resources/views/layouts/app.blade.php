@@ -44,11 +44,11 @@
                     <a href="{{ url('/login') }}" id="signin-btn" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition font-medium shadow-sm">{{ i18n('nav.signIn') }}</a>
                     <div id="user-area" class="hidden flex items-center gap-3">
                         <a href="{{ url('/admin/products') }}" id="admin-link" class="hidden text-sm text-green-600 hover:text-green-800 font-medium transition items-center gap-1">
-                            <i data-lucide="settings" class="w-4 h-4"></i> <span class="hidden sm:inline">管理</span>
+                            <i data-lucide="settings" class="w-4 h-4"></i> <span class="hidden sm:inline">{{ i18n('nav.admin') }}</span>
                         </a>
                         <a href="{{ url('/orders') }}" id="user-name" class="text-sm text-gray-700 font-medium hover:text-green-600 transition"></a>
-                        <button id="logout-btn" type="button" class="text-sm text-gray-500 hover:text-red-600 transition flex items-center gap-1" title="Sign Out">
-                            <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Sign Out</span>
+                        <button id="logout-btn" type="button" class="text-sm text-gray-500 hover:text-red-600 transition flex items-center gap-1" title="{{ i18n('nav.signOut') }}">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">{{ i18n('nav.signOut') }}</span>
                         </button>
                     </div>
                 </div>
@@ -102,9 +102,7 @@
                             $('#signin-btn').addClass('hidden');
                             $('#user-area').removeClass('hidden').addClass('flex');
                             $('#user-name').text(user.name || user.email);
-                            if (user.is_admin) {
-                                $('#admin-link').removeClass('hidden').addClass('flex');
-                            }
+                            $('#admin-link').removeClass('hidden').addClass('flex');
                         }
                     })
                     .catch(() => {
@@ -124,7 +122,7 @@
                     });
             });
 
-            // ── 购物车计数（guest 走 localStorage；logged-in 走 API） ───
+            // 购物车计数（已登录走 API；未登录不显示）
             function updateCartCount() {
                 fetch('/api/cart', { credentials: 'include' })
                     .then(r => {
@@ -132,11 +130,7 @@
                         return r.json();
                     })
                     .then(d => $('#cart-count').text(d.item_count || 0))
-                    .catch(() => fallbackLocalCount());
-            }
-            function fallbackLocalCount() {
-                const c = JSON.parse(localStorage.getItem('greenbite_cart') || '[]');
-                $('#cart-count').text(c.length);
+                    .catch(() => $('#cart-count').text('0'));
             }
             updateCartCount();
 

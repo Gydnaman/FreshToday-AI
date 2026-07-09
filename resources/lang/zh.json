@@ -10,7 +10,8 @@
     "signIn": "登录",
     "signOut": "退出",
     "dashboard": "个人主页",
-    "language": "语言"
+    "language": "语言",
+    "admin": "管理"
   },
   "common": {
     "loading": "加载中...",
@@ -24,8 +25,10 @@
     "subscribe": "订阅",
     "shopMore": "继续购物",
     "explore": "浏览",
+    "optional": "（可选）",
     "viewAll": "查看全部",
     "viewDetails": "查看详情",
+    "edit": "编辑",
     "or": "或"
   },
   "home": {
@@ -52,26 +55,42 @@
     "formTerms": "注册即代表你同意我们的服务条款。"
   },
   "catalog": {
+    "pageTitle": "商品目录",
     "title": "本地农场新鲜直送",
     "subtitle": "探索由香港本地农场可持续种植的农产品。每一次购买都助减少食物里程并支持我们的社区。",
     "addToCart": "加入购物车",
+    "addToCartAria": "加入购物车",
+    "soldOut": "售罄",
+    "soldOutAria": "售罄",
+    "organic": "有机",
+    "carbonUnit": "kg CO2e",
     "carbonFootprint": "碳足迹",
     "explorePlans": "探索订阅计划"
   },
-  "cart": {
+    "cart": {
     "title": "我的购物车",
     "subtitle": "结算前查看你的商品",
+    "emptyTitle": "购物车是空的",
+    "emptySubtitle": "还没有添加任何商品，去逛逛新鲜农产品吧！",
+    "shopNow": "立即选购",
     "orderSummary": "订单摘要",
     "subtotal": "小计",
     "deliveryFee": "送货费",
     "carbonOffset": "碳补偿",
     "included": "已包含",
     "total": "总计",
-    "freeDeliveryProgress": "再买 HK${0} 即可享免费送货！",
-    "localSourcing": "所有产品来自香港及大湾区有机农场",
+    "freeDeliveryProgress": "再买 :remaining 即可享免费送货！",
+    "freeDeliveryUnlocked": "你已解锁免费送货！",
+    "free": "免费",
+    "items": "件商品",
+    "each": "每件",
     "checkout": "前往结算 →",
     "continueShopping": "← 继续购物",
     "remove": "移除",
+    "updateFailed": "更新失败：",
+    "deleteFailed": "删除失败",
+    "deleteConfirm": "确定要删除这项吗？",
+    "localSourcing": "所有产品来自香港及大湾区有机农场",
     "products": [
       { "id": "spinach", "name": "有机菠菜", "price": 38, "unit": "包", "carbonFootprint": "0.2 kg CO2e" },
       { "id": "tomatoes", "name": "传统番茄", "price": 45, "unit": "盒", "carbonFootprint": "0.3 kg CO2e" },
@@ -82,6 +101,22 @@
   "checkout": {
     "title": "结算",
     "subtitle": "完成你的订单",
+    "checkoutFailed": "结算失败",
+    "pleaseLogin": "请先登录",
+    "loginRequired": "需要登录账号才能结算。",
+    "goToLogin": "前往登录",
+    "selectDistrict": "选择区域",
+    "fullNamePlaceholder": "你的姓名",
+    "phonePlaceholder": "+852 XXXX XXXX",
+    "addressPlaceholder": "楼层、座数、街道、区域",
+    "notesPlaceholder": "例如：放在门口，按两次门铃",
+    "pleaseFillDelivery": "请填写姓名、电话、地址和区域。",
+    "sandboxNotice": "沙箱环境：点击「确认下单」会通过 <code>POST /checkout/place</code> 创建订单并跳转到 mock 支付页（return_url 为 <code>/orders</code>）。",
+    "cartEmpty": "购物车为空",
+    "nameLabel": "姓名：",
+    "phoneLabel": "电话：",
+    "addressLabel": "地址：",
+    "dateLabel": "日期：",
     "stepDelivery": "送货",
     "stepPayment": "付款",
     "stepConfirm": "确认",
@@ -120,12 +155,16 @@
     "totalPayable": "应付总额",
     "processing": "处理中..."
   },
-  "auth": {
+    "auth": {
     "loginTitle": "欢迎回来！",
     "registerTitle": "加入 GreenBite",
     "subtitle": "香港可持续食物订阅",
+    "displayName": "显示名称",
+    "namePlaceholder": "您的称呼",
     "email": "邮箱",
     "password": "密码",
+    "confirmPassword": "确认密码",
+    "confirmPasswordPlaceholder": "再次输入密码",
     "fullName": "姓名",
     "address": "香港送货地址（可选）",
     "signIn": "登录",
@@ -137,7 +176,9 @@
   },
   "dashboard": {
     "welcome": "欢迎回来，",
+    "title": "个人主页",
     "hub": "你的 FreshAI 健康中心",
+    "updatedJustNow": "刚刚更新",
     "profile": "我的资料",
     "fullName": "姓名",
     "emailAddress": "邮箱",
@@ -192,6 +233,11 @@
     "statusRefunded": "已退款",
     "saved": "已节省",
     "empty": "未有此状态的订单",
+    "emptyTitle": "还没有订单",
+    "emptySubtitle": "浏览新鲜农产品，今天下第一单吧。",
+    "filterEmptyTitle": "未找到订单",
+    "shopNow": "立即选购",
+    "inclDelivery": "含送货",
     "demoOrders": [
       { "id": "GB-2026-0612-001", "plan": "个人箱（每周）", "date": "2026-06-12", "status": "delivered", "total": 280, "saved": 42 },
       { "id": "GB-2026-0615-002", "plan": "家庭箱（每周）", "date": "2026-06-15", "status": "shipped", "total": 480, "saved": 68 }
@@ -292,6 +338,7 @@
     "tagline": "支持香港本地农民，通过可持续农业减少碳足迹。",
     "quickLinks": "快速链接",
     "help": "帮助",
+    "aboutUs": "关于我们",
     "newsletter": "电子报",
     "newsletterPlaceholder": "你的邮箱",
     "faq": "常见问题",
@@ -300,5 +347,84 @@
     "terms": "使用条款",
     "contact": "联系我们",
     "copyright": "© 2026 GreenBite HK 版权所有"
+  },
+  "admin": {
+    "login": {
+      "title": "管理员登录",
+      "subtitle": "GreenBite 后台管理",
+      "email": "邮箱",
+      "password": "密码",
+      "signIn": "登录",
+      "returnToStore": "返回商店",
+      "accessOnly": "仅管理员可访问 · 账户通过 CLI 管理",
+      "noPermission": "此账户无管理员权限，请联系系统管理员提升权限",
+      "networkError": "网络错误，请稍后重试",
+      "emailPasswordRequired": "请输入邮箱和密码"
+    },
+    "products": {
+      "index": {
+        "title": "产品管理",
+        "create": "新建产品",
+        "image": "图片",
+        "name": "名称",
+        "category": "分类",
+        "price": "价格",
+        "stock": "库存",
+        "status": "状态",
+        "updatedAt": "更新时间",
+        "actions": "操作",
+        "noImage": "无图",
+        "empty": "还没有任何产品。立即创建第一个 →",
+        "footer": "提示：返回首页 · 公开产品页只显示 published 状态的产品"
+      },
+      "status": {
+        "published": "已上架",
+        "draft": "草稿",
+        "archived": "已归档"
+      },
+      "create": {
+        "title": "新建产品",
+        "backToList": "返回产品列表",
+        "draftNote": "保存后默认草稿状态，不会在公开产品页显示。",
+        "submitFailed": "提交失败：",
+        "name": "产品名称",
+        "category": "分类",
+        "price": "价格 (HKD)",
+        "stock": "库存",
+        "description": "产品描述",
+        "image": "主图",
+        "imageHint": "支持 jpg / png / webp，最大 512KB",
+        "origin": "产地",
+        "carbonFootprint": "碳足迹 (kg CO2e)",
+        "isOrganic": "有机认证",
+        "save": "保存草稿",
+        "cancel": "取消",
+        "pleaseSelect": "— 请选择 —"
+      },
+      "edit": {
+        "title": "编辑产品",
+        "backToList": "返回产品列表",
+        "pleaseSelect": "— 请选择 —",
+        "note": "修改产品信息、图片或上下架状态。",
+        "submitFailed": "提交失败：",
+        "name": "产品名称",
+        "category": "分类",
+        "price": "价格 (HKD)",
+        "stock": "库存",
+        "description": "产品描述",
+        "image": "主图",
+        "currentImage": "当前图片（上传新图将替换）",
+        "imageHint": "支持 jpg / png / webp，最大 512KB。留空则保留原图。",
+        "origin": "产地",
+        "carbonFootprint": "碳足迹 (kg CO2e)",
+        "isOrganic": "有机认证",
+        "status": "上架状态",
+        "statusDraft": "草稿（不在公开页显示）",
+        "statusPublished": "已上架（公开可见）",
+        "statusArchived": "已归档（下架）",
+        "save": "保存修改",
+        "cancel": "取消"
+      }
+    }
   }
 }

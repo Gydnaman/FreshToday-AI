@@ -28,14 +28,14 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'locale' => ['nullable', 'string', Rule::in(['zh-HK', 'en', 'zh-CN'])],
+            'locale' => ['nullable', 'string', Rule::in(['zh', 'en', 'zhhk'])],
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'locale' => $data['locale'] ?? 'zh-HK',
+            'locale' => $data['locale'] ?? 'zh',
         ]);
 
         // Sanctum SPA cookie 模式：登录 + regenerate session

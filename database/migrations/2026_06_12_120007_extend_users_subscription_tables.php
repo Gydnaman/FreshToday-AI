@@ -14,7 +14,7 @@ return new class extends Migration
     {
         // 1. users 表扩展（locale、is_admin、default_shipping_address）
         Schema::table('users', function (Blueprint $table) {
-            $table->string('locale', 8)->default('zh-HK')->after('email_verified_at');
+            $table->string('locale', 8)->default('zh')->after('email_verified_at');
             $table->boolean('is_admin')->default(0)->after('locale');
             $table->json('default_shipping_address')->nullable()->after('is_admin');
             $table->index('locale');

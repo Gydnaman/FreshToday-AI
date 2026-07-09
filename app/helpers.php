@@ -2,21 +2,12 @@
 
 /**
  * GreenBite i18n 翻译辅助函数
- * 详见 docs/i18n/PLAN-i18n.md
  *
- * 背景：Laravel 12 的 `__()` 内建从 resources/lang/{locale}.json 加载翻译。
- * 3 份 JSON SSOT 同步在：
- *   - docs/i18n/locales/{zh-HK,en,zh-CN}.json   （前端 fetch 源）
- *   - resources/lang/{zh-HK,en,zh-CN}.json       （Laravel 服务端 __() 源）
+ * 约定：
+ *   - resources/lang/{zh,en,zhhk}.json 是 SSOT 翻译源
+ *   - locale 标识符 zh-CN / zh-HK 在内部映射为文件名 zh / zhhk
  *
- * 同步脚本（手工/或 CI）：
- *   cp docs/i18n/locales/zh-HK.json resources/lang/zh-HK.json
- *   cp docs/i18n/locales/en.json    resources/lang/en.json
- *   cp docs/i18n/locales/zh-CN.json resources/lang/zh-CN.json
- *
- * 嵌套 key 用点号表示：`__('home.title')` 解析为 dict.home.title
- * Laravel 内建 JSON 翻译只支持扁平 key（dot 不解析），所以提供
- * 兼容：i18n() 函数支持嵌套 key。
+ * 嵌套 key 用点号表示：i18n('home.title') 解析为 dict.home.title
  */
 if (! function_exists('i18n')) {
     /**
@@ -29,6 +20,11 @@ if (! function_exists('i18n')) {
     function i18n(string $key, array $replace = [], ?string $locale = null): string
     {
         $locale = $locale ?? app()->getLocale();
+        $locale = match ($locale) {
+            'zh-CN', 'zh-cn', 'zh' => 'zh',
+            'zh-HK', 'zh-hk', 'zh-TW', 'zh-MO' => 'zhhk',
+            default => 'en',
+        };
         $path = resource_path('lang/'.$locale.'.json');
 
         $value = null;

@@ -13,7 +13,7 @@
                 <ul class="space-y-2 text-sm text-gray-400">
                     <li><a href="{{ url('/catalog') }}" class="hover:text-white transition">{{ i18n('nav.catalog') }}</a></li>
                     <li><a href="{{ url('/subscriptions') }}" class="hover:text-white transition">{{ i18n('nav.subscriptions') }}</a></li>
-                    <li><a href="#" class="hover:text-white transition">About Us</a></li>
+                    <li><a href="#" class="hover:text-white transition">{{ i18n('footer.aboutUs') }}</a></li>
                 </ul>
             </div>
             <div>

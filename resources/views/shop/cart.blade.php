@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Cart')
+@section('title', i18n('cart.title'))
 
 @section('content')
 <div class="min-h-screen bg-gray-50 py-12 px-4">
@@ -10,9 +10,9 @@
     <div class="mb-8">
         <h1 class="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
             <i data-lucide="shopping-cart" class="w-8 h-8 text-green-600"></i>
-            My Cart
+            {{ i18n('cart.title') }}
         </h1>
-        <p class="text-gray-500 mt-1">Review your items before checkout</p>
+        <p class="text-gray-500 mt-1">{{ i18n('cart.subtitle') }}</p>
     </div>
 
     {{-- Empty State (shown when cart is empty) --}}
@@ -20,10 +20,10 @@
         <div class="bg-green-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
             <i data-lucide="shopping-basket" class="w-10 h-10 text-green-400"></i>
         </div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
-        <p class="text-gray-500 mb-8">Looks like you haven't added anything yet. Browse our fresh produce!</p>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ i18n('cart.emptyTitle') }}</h2>
+        <p class="text-gray-500 mb-8">{{ i18n('cart.emptySubtitle') }}</p>
         <a href="{{ url('/catalog') }}" class="inline-flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-600/25">
-            <i data-lucide="shopping-basket" class="w-5 h-5"></i> Shop Now
+            <i data-lucide="shopping-basket" class="w-5 h-5"></i> {{ i18n('cart.shopNow') }}
         </a>
     </div>
 
@@ -40,28 +40,28 @@
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-6">
                 <h2 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
                     <i data-lucide="receipt" class="w-5 h-5 text-green-600"></i>
-                    Order Summary
+                    {{ i18n('cart.orderSummary') }}
                 </h2>
 
                 <div class="space-y-3 text-sm text-gray-600 mb-5">
                     <div class="flex justify-between">
-                        <span>Subtotal (<span id="summary-count">0</span> items)</span>
+                        <span>{{ i18n('cart.subtotal') }} (<span id="summary-count">0</span> {{ i18n('cart.items') }})</span>
                         <span class="font-semibold text-gray-900">HK$<span id="summary-subtotal">0.00</span></span>
                     </div>
                     <div class="flex justify-between">
                         <span class="flex items-center gap-1">
-                            <i data-lucide="truck" class="w-3.5 h-3.5 text-green-500"></i> Delivery Fee
+                            <i data-lucide="truck" class="w-3.5 h-3.5 text-green-500"></i> {{ i18n('cart.deliveryFee') }}
                         </span>
                         <span id="summary-delivery" class="font-semibold text-gray-900">HK$30.00</span>
                     </div>
                     <div class="flex justify-between text-green-600">
                         <span class="flex items-center gap-1">
-                            <i data-lucide="leaf" class="w-3.5 h-3.5"></i> Carbon Offset
+                            <i data-lucide="leaf" class="w-3.5 h-3.5"></i> {{ i18n('cart.carbonOffset') }}
                         </span>
-                        <span class="font-semibold">Included</span>
+                        <span class="font-semibold">{{ i18n('cart.included') }}</span>
                     </div>
                     <div class="border-t border-gray-100 pt-3 flex justify-between text-base font-bold text-gray-900">
-                        <span>Total</span>
+                        <span>{{ i18n('cart.total') }}</span>
                         <span class="text-green-600">HK$<span id="summary-total">0.00</span></span>
                     </div>
                 </div>
@@ -69,7 +69,7 @@
                 {{-- Free delivery progress --}}
                 <div class="mb-5" id="free-delivery-bar">
                     <p class="text-xs text-gray-500 mb-1.5">
-                        <span id="free-delivery-msg">Add HK$<span id="free-delivery-remaining">200</span> more for free delivery!</span>
+                        <span id="free-delivery-msg">{{ i18n('cart.freeDeliveryProgress', ['remaining' => '200']) }}</span>
                     </p>
                     <div class="w-full bg-gray-100 rounded-full h-2">
                         <div id="free-delivery-progress" class="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-500" style="width:0%"></div>
@@ -79,16 +79,16 @@
                 {{-- Eco badge --}}
                 <div class="bg-green-50 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-xs text-green-700 font-medium">
                     <i data-lucide="leaf" class="w-4 h-4"></i>
-                    All products sourced from HK & GBA organic farms
+                    {{ i18n('cart.localSourcing') }}
                 </div>
 
                 <a id="checkout-btn" href="{{ url('/login?return=/checkout') }}"
                     class="block w-full text-center bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-base hover:from-green-600 hover:to-emerald-700 transition shadow-lg shadow-green-500/30">
-                    Proceed to Checkout →
+                    {{ i18n('cart.checkout') }}
                 </a>
 
                 <a href="{{ url('/catalog') }}" class="block text-center text-sm text-gray-400 hover:text-green-600 mt-3 transition">
-                    ← Continue Shopping
+                    {{ i18n('cart.continueShopping') }}
                 </a>
             </div>
         </div>
@@ -108,6 +108,18 @@
 </style>
 
 <script>
+const cartI18n = {
+    freeDeliveryProgress: @json(i18n('cart.freeDeliveryProgress')),
+    freeDeliveryUnlocked: @json(i18n('cart.freeDeliveryUnlocked')),
+    free: @json(i18n('cart.free')),
+    each: @json(i18n('cart.each')),
+    remove: @json(i18n('cart.remove')),
+    updateFailed: @json(i18n('cart.updateFailed')),
+    deleteFailed: @json(i18n('cart.deleteFailed')),
+    deleteConfirm: @json(i18n('cart.deleteConfirm')),
+    items: @json(i18n('cart.items')),
+};
+
 $(document).ready(function() {
     const DELIVERY_FEE     = 30;
     const FREE_DELIVERY_AT = 200;
@@ -186,7 +198,7 @@ $(document).ready(function() {
                 ${thumb}
                 <div class="flex-1 min-w-0">
                     <h3 class="font-semibold text-gray-900 truncate">${escapeHtml(item.name)}</h3>
-                    <p class="text-sm text-gray-400 mt-0.5">HK$${item.price.toFixed(2)} each</p>
+                    <p class="text-sm text-gray-400 mt-0.5">HK$${item.price.toFixed(2)} ${cartI18n.each}</p>
                     <div class="flex items-center gap-3 mt-2">
                         <div class="inline-flex items-center border border-gray-200 rounded-lg overflow-hidden">
                             <button class="qty-btn w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50" onclick="window.changeQty('${item.id}', -1)">
@@ -198,7 +210,7 @@ $(document).ready(function() {
                             </button>
                         </div>
                         <button class="text-red-400 hover:text-red-600 transition text-xs font-medium flex items-center gap-1" onclick="window.removeItem('${item.id}')">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> ${cartI18n.remove}
                         </button>
                     </div>
                 </div>
@@ -222,14 +234,14 @@ $(document).ready(function() {
 
         $('#summary-count').text(itemCount);
         $('#summary-subtotal').text(subtotal.toFixed(2));
-        $('#summary-delivery').text(delivery === 0 ? '🎉 Free' : `HK$${delivery.toFixed(2)}`);
+        $('#summary-delivery').text(delivery === 0 ? '🎉 ' + cartI18n.free : `HK$${delivery.toFixed(2)}`);
         $('#summary-total').text(total.toFixed(2));
         $('#free-delivery-progress').css('width', pct + '%');
 
         if (remaining === 0) {
-            $('#free-delivery-msg').html('<span class="text-green-600 font-semibold">🎉 You\'ve unlocked free delivery!</span>');
+            $('#free-delivery-msg').html('<span class="text-green-600 font-semibold">🎉 ' + cartI18n.freeDeliveryUnlocked + '</span>');
         } else {
-            $('#free-delivery-msg').html(`Add <strong>HK$${remaining.toFixed(2)}</strong> more for free delivery!`);
+            $('#free-delivery-msg').html(cartI18n.freeDeliveryProgress.replace(':remaining', '<strong>HK$' + remaining.toFixed(2) + '</strong>'));
         }
 
         // 已登录：结账跳 /checkout；未登录：跳 /login?return=/checkout
@@ -270,7 +282,7 @@ $(document).ready(function() {
             })
             .then(r => r.json())
             .then(d => {
-                if (d.error) { alert('更新失败：' + (d.error.message || '未知')); return; }
+                if (d.error) { alert(cartI18n.updateFailed + ' ' + (d.error.message || '')); return; }
                 item.qty = newQty;
                 render();
             });
@@ -299,10 +311,10 @@ $(document).ready(function() {
         if (!item) return;
 
         if (isLoggedIn && typeof id === 'number') {
-            if (!confirm('確定要刪除這項嗎？')) return;
+            if (!confirm(cartI18n.deleteConfirm)) return;
             gbFetch(`/api/cart/${id}`, { method: 'DELETE' })
                 .then(r => {
-                    if (!r.ok) throw new Error('刪除失敗');
+                    if (!r.ok) throw new Error(cartI18n.deleteFailed);
                     items = items.filter(i => i.id !== id);
                     render();
                 });

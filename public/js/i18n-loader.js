@@ -23,9 +23,9 @@
  */
 
 const LOCALE_STORAGE_KEY = 'gb_locale';
-const DEFAULT_LOCALE = 'zh-HK';
+const DEFAULT_LOCALE = 'zh';
 const FALLBACK_LOCALE = 'en';
-const SUPPORTED_LOCALES = ['zh-HK', 'en', 'zh-CN'];
+const SUPPORTED_LOCALES = ['zh', 'en', 'zhhk'];
 
 /** In-memory cache: { [locale]: parsedDict } */
 const cache = new Map();
@@ -50,8 +50,8 @@ function detectInitialLocale() {
   } catch (_) { /* ignore */ }
 
   const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
-  if (nav.startsWith('zh-tw') || nav.startsWith('zh-hk') || nav.startsWith('zh-mo')) return 'zh-HK';
-  if (nav.startsWith('zh-cn') || nav === 'zh') return 'zh-CN';
+  if (nav.startsWith('zh-tw') || nav.startsWith('zh-hk') || nav.startsWith('zh-mo')) return 'zhhk';
+  if (nav.startsWith('zh-cn') || nav.startsWith('zh-sg') || nav.startsWith('zh')) return 'zh';
   if (nav.startsWith('en')) return 'en';
   return DEFAULT_LOCALE;
 }

@@ -42,14 +42,14 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Demo Customer',
                 'email' => 'demo@greenbite.hk',
                 'password' => Hash::make('password'),
-                'locale' => 'zh-HK',
+                'locale' => 'zh',
                 'is_admin' => false,
             ],
             [
                 'name' => 'Admin',
                 'email' => 'admin@greenbite.hk',
                 'password' => Hash::make('password'),
-                'locale' => 'zh-HK',
+                'locale' => 'zh',
                 'is_admin' => true,
             ],
         ];
