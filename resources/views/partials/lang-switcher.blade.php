@@ -10,7 +10,7 @@
         'zh'   => ['name' => '简体中文', 'flag' => '🇨🇳'],
     ];
     $current = str_replace('_', '-', app()->getLocale());
-    $currentInfo = $supported[$current] ?? $supported['zh-HK'];
+    $currentInfo = $supported[$current] ?? $supported['zh'];
 @endphp
 <div class="relative" x-data="{ open: false }">
     <button type="button"

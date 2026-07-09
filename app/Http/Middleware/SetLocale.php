@@ -84,10 +84,14 @@ class SetLocale
 
         $lc = strtolower($locale);
 
+        // 精确匹配 'zhhk'（避免被下面 str_starts_with('zh') 误吞）
+        if ($lc === 'zhhk') {
+            return 'zhhk';
+        }
         if (str_contains($lc, 'zh-tw') || str_contains($lc, 'zh-hk') || str_contains($lc, 'zh-mo')) {
             return 'zhhk';
         }
-        if (str_contains($lc, 'zh-cn') || str_contains($lc, 'zh-sg') || str_starts_with($lc, 'zh')) {
+        if (str_contains($lc, 'zh-cn') || str_contains($lc, 'zh-sg') || $lc === 'zh') {
             return 'zh';
         }
         if (str_starts_with($lc, 'en')) {
