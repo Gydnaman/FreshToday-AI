@@ -5,13 +5,14 @@
 ## Features
 
 - Local organic agriculture products catalog
-- AI-powered daily menu generation (Gemini)
+- AI-powered daily menu generation (Gemini / OpenAI / DeepSeek)
 - Shopping cart, multi-step checkout
-- Stripe + PayMe payment integration（Alipay HK 计划 Sprint 2 接入；PayMe webhook 验签待 Sprint 2）
+- Stripe + PayMe payment（Alipay HK 计划 Sprint 2；PayMe 验签待 Sprint 2）
 - Subscription plans
-- Order tracking with 7-state machine
-- Refund workflow
-- i18n (zh-HK / en / zh-CN)
+- Order tracking with 7-state machine + refund workflow
+- Admin panel with product CRUD + image upload
+- Multi-vendor: users manage their own products, admin manages all
+- i18n: 简体中文 / 繁體中文 / English（三语 JSON 系统）
 
 ## Tech Stack
 
@@ -91,11 +92,56 @@ bash scripts/unix/dev.sh stop
 | `bash scripts/unix/dev.sh serve` | 后台启动 artisan serve + vite（PID 写到 storage/framework/dev-pids/） |
 | `bash scripts/unix/dev.sh stop` | 停掉 serve + vite |
 | `bash scripts/unix/dev.sh tinker` | 进 Laravel REPL |
-| `bash scripts/unix/dev.sh test` | 跑 PHPUnit（当前 79 passed / 322 assertions / 0 failing） |
+| `bash scripts/unix/dev.sh test` | 跑 PHPUnit（当前 86 passed / 334 assertions / 0 failing） |
 | `bash scripts/unix/dev.sh all` | install + setup + serve 一把梭 |
 
 > `dev.sh` **不依赖** `php` 在 PATH 中（用 winget 安装的绝对路径调用），Git Bash 即可运行。
 > Windows PowerShell 辅助脚本见 `scripts/windows/`。
+
+---
+
+## Startup Workflow（启动流程）
+
+### 首次启动（全新 clone）
+
+```bash
+# 1. 安装依赖
+bash scripts/unix/dev.sh install       # composer + npm
+
+# 2. 初始化环境 + 建库 + 种子数据
+bash scripts/unix/dev.sh setup         # .env + key:generate + migrate --seed
+
+# 3. 编译前端 + 启动开发服务器
+bash scripts/unix/dev.sh serve         # artisan serve + vite dev
+```
+
+打开 <http://127.0.0.1:8000>
+
+### 日常开发
+
+```bash
+bash scripts/unix/dev.sh serve         # 启动
+bash scripts/unix/dev.sh stop          # 停止
+bash scripts/unix/dev.sh test          # 跑测试
+```
+
+### 重新开始（清空数据库）
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+### 验证清单
+
+| 步骤 | 操作 | 预期结果 |
+|------|------|----------|
+| 1 | 访问 `/` | 首页正常渲染，显示中文标语 |
+| 2 | 访问 `/catalog` | 产品目录（24 个种子商品） |
+| 3 | 点击右上角语言切换 | 简→繁→英 切换正常 |
+| 4 | 登录 `admin@greenbite.hk / password` | 右上角出现「管理」按钮 |
+| 5 | 访问 `/admin/products` | 管理后台，可创建/编辑产品 |
+| 6 | 注册新用户 → 登录 → 加购 | 购物车正常，可结算 |
+| 7 | 跑测试 | `php artisan test` 全部通过 |
 
 ---
 
@@ -341,7 +387,7 @@ bash scripts/unix/dev.sh test
 php artisan test
 ```
 
-**当前状态（2026-07-04）**：**79 passed / 322 assertions / 0 failed**。
+**当前状态（2026-07-09）**：**86 passed / 334 assertions / 0 failed**。
 
 ---
 
@@ -359,6 +405,7 @@ docker run -d -p 8080:80 --env-file .env greenbite/app:latest
 
 ## Documentation
 
+- **需求规格**：`docs/REQUIREMENTS.md`（功能 + 非功能需求，含 Sprint 2 待实现项）
 - **产品**：`docs/bmad/prd-mvp.md` + `docs/bmad/product-brief.md`
 - **架构**：`docs/bmad/architecture.md` + `docs/bmad/adr/`
 - **API**：`docs/bmad/api-contract.md` + `docs/bmad/openapi.yaml`
