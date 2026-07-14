@@ -36,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json(['error' => ['code' => 'UNAUTHENTICATED', 'message' => '未登录或令牌无效']], 401);
             }
+            // Web 页面未登录 → 重定向到 /login?return=原始URL
+            return redirect()->to('/login?return='.urlencode($request->fullUrl()));
         });
 
         // API 路径下 RouteNotFoundException 视为 404 JSON

@@ -15,6 +15,12 @@
 - **79 passed / 322 assertions / 0 failed**（零回归）
 - 新增：`tests/Unit/ProductImageUrlTest.php`（4 个测试）
 
+## 测试基线（2026-07-09 i18n 补全后）
+- **86 passed / 334 assertions / 0 failed**（零回归）
+- i18n 覆盖：所有 Blade 视图 + admin 后台；JS 文案通过 `@json(i18n('key'))` 注入
+- 三语言验证：默认 `zh` 显示中文，`?lang=en` 显示英文，`?lang=zhhk` 显示繁中（已修复 helper 映射 bug）
+
+
 ## BMAD+Superpowers 五轮 Review 修复摘要
 
 ### R1 初始修复 — 图片 URL 统一

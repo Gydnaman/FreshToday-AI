@@ -43,7 +43,7 @@
 
         <div class="mt-8 text-center border-t border-gray-100 pt-6">
             <button id="toggle-mode" type="button" class="text-green-600 hover:text-green-800 font-medium transition-colors">
-                {{ i18n('auth.toggleToRegister') }}
+                {!! i18n('auth.toggleToRegister') !!}
             </button>
         </div>
     </div>
@@ -68,7 +68,7 @@
         const i18n = {
             signIn: isHK ? '登入' : (isCN ? '登录' : 'Sign In'),
             signUp: isHK ? '註冊' : (isCN ? '注册' : 'Sign Up'),
-            signInTitle: isHK ? '歡迎回來' : (isCN ? '欢迎回来' : 'Welcome Back!'),
+            signInTitle: isHK ? '歡迎回來！' : (isCN ? '欢迎回来！' : 'Welcome Back!'),
             signUpTitle: isHK ? '加入 GreenBite' : (isCN ? '加入 GreenBite' : 'Join GreenBite'),
             toggleToSignUp: isHK ? '沒有帳號? 註冊' : (isCN ? '没有账号? 注册' : "Don't have an account? Sign Up"),
             toggleToSignIn: isHK ? '已有帳號? 登入' : (isCN ? '已有账号? 登录' : 'Already have an account? Login'),

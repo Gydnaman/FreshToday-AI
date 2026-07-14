@@ -22,7 +22,8 @@ if (! function_exists('i18n')) {
         $locale = $locale ?? app()->getLocale();
         $locale = match ($locale) {
             'zh-CN', 'zh-cn', 'zh' => 'zh',
-            'zh-HK', 'zh-hk', 'zh-TW', 'zh-MO' => 'zhhk',
+            'zh-HK', 'zh-hk', 'zh-TW', 'zh-tw', 'zh-MO', 'zh-mo', 'zhhk' => 'zhhk',
+            'en', 'en-US', 'en-GB', 'en-us', 'en-gb' => 'en',
             default => 'en',
         };
         $path = resource_path('lang/'.$locale.'.json');

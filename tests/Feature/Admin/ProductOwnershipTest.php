@@ -29,7 +29,7 @@ class ProductOwnershipTest extends TestCase
     public function test_guest_redirected()
     {
         $this->get('/admin/products')
-            ->assertRedirect('/login');
+            ->assertRedirectContains('/login');
     }
 
     /** 普通用户创建产品自动绑定 user_id */

@@ -42,12 +42,12 @@ class CheckoutController extends Controller
             'shipping_address.district' => 'required|string|max:64',
             'shipping_address.date' => 'nullable|date',
             'shipping_address.notes' => 'nullable|string|max:255',
-            'items' => 'required|json',
+            'items' => 'required|array',
             'coupon_code' => 'nullable|string|max:32',
         ]);
 
-        $items = json_decode($data['items'], true);
-        if (! is_array($items) || count($items) === 0) {
+        $items = $data['items']; // 已验证为 array
+        if (count($items) === 0) {
             return $this->errorRedirect('购物车为空', '/cart');
         }
 
