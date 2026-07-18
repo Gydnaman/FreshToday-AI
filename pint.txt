@@ -1,6 +1,0 @@
-
-In ConfigurationResolver.php line 409:
-                                 
-  The path ";" is not readable.  
-                                 
-
