@@ -68,12 +68,17 @@
 
         // ── Auth-aware cart count + auth area rendering ───────────────────
         $(document).ready(function() {
-            // ── 工具：fetch 包装，统一 401 处理 ─────────────────────────
+            // ── 工具：fetch 包装，统一 401 处理（双模式：cookie + token）────
             window.gbFetch = function(url, opts) {
                 opts = opts || {};
                 opts.credentials = 'include';  // Sanctum SPA cookie
                 opts.headers = opts.headers || {};
                 opts.headers['Accept'] = 'application/json';
+                // Token 模式：从 localStorage 读 token 附加 Authorization header
+                const token = localStorage.getItem('gb_token');
+                if (token) {
+                    opts.headers['Authorization'] = 'Bearer ' + token;
+                }
                 // XSRF-TOKEN cookie 自动被 Laravel 读取；POST/PUT/DELETE 需加 X-XSRF-TOKEN header
                 const xsrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
                 if (xsrf && ['POST','PUT','PATCH','DELETE'].includes((opts.method||'GET').toUpperCase())) {
@@ -81,7 +86,8 @@
                 }
                 return fetch(url, opts).then(function(resp) {
                     if (resp.status === 401) {
-                        // 全局 401：跳登录
+                        // 全局 401：清除 token 并跳登录
+                        localStorage.removeItem('gb_token');
                         if (location.pathname !== '/login') {
                             location.href = '/login?return=' + encodeURIComponent(location.pathname + location.search);
                         }
@@ -117,6 +123,7 @@
                 gbFetch('/api/logout', { method: 'POST' })
                     .catch(function(){ /* 即使失败也清 */ })
                     .finally(function() {
+                        localStorage.removeItem('gb_token');
                         localStorage.removeItem('greenbite_cart');
                         location.href = '/';
                     });

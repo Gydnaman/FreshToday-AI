@@ -126,7 +126,7 @@
                     locale: (lang || 'zh'),
                 };
 
-            // Sanctum SPA：先拿 csrf-cookie，再登录
+            // Sanctum 双模式：先拿 csrf-cookie（SPA 模式需要），再登录
             fetch('/sanctum/csrf-cookie', { credentials: 'include' })
                 .then(() => fetch(url, {
                     method: 'POST',
@@ -135,13 +135,22 @@
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-XSRF-TOKEN': decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [,''])[1]),
+                        'X-Requested-With': 'XMLHttpRequest', // 确保后端识别为前端请求
                     },
                     body: JSON.stringify(body),
                 }))
-                .then(r => r.json().then(j => ({ status: r.status, body: j })))
+                .then(r => {
+                    // 从响应头读取 token（纯 API 模式）
+                    const token = r.headers.get('X-Auth-Token');
+                    if (token) {
+                        localStorage.setItem('gb_token', token);
+                    }
+                    return r.json().then(j => ({ status: r.status, body: j }));
+                })
                 .then(({ status, body }) => {
                     if (status === 200 || status === 201) {
-                        // session 模式：cookie 已自动设置，不需存 localStorage
+                        // session 模式：cookie 已自动设置
+                        // token 模式：localStorage 已在上面设置
                         if (typeof renderAuthArea === 'function') renderAuthArea();
                         location.href = returnTo;
                     } else {
