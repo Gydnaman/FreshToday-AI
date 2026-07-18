@@ -7,6 +7,8 @@ use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Stripe\Exception\SignatureVerificationException;
+use Stripe\Webhook;
 
 /**
  * Stripe Webhook 控制器（无 auth，签名校验 + fail-closed）
@@ -72,10 +74,10 @@ class StripeWebhookController extends Controller
         // 使用 Stripe 官方 SDK 验签（Stripe-Signature 格式：t=<timestamp>,v1=<hex>）
         // 签名内容 = "<timestamp>.<raw_body>"，HMAC-SHA256
         try {
-            \Stripe\Webhook::constructEvent($rawBody, $signature, $secret);
+            Webhook::constructEvent($rawBody, $signature, $secret);
 
             return true;
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+        } catch (SignatureVerificationException $e) {
             Log::warning('Stripe signature verification failed', ['error' => $e->getMessage()]);
 
             return 'INVALID_SIGNATURE';

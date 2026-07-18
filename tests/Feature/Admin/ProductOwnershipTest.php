@@ -13,7 +13,9 @@ class ProductOwnershipTest extends TestCase
     use RefreshDatabase;
 
     private User $alice;
+
     private User $bob;
+
     private User $admin;
 
     protected function setUp(): void
@@ -21,7 +23,7 @@ class ProductOwnershipTest extends TestCase
         parent::setUp();
 
         $this->alice = User::factory()->create(['is_admin' => false]);
-        $this->bob   = User::factory()->create(['is_admin' => false]);
+        $this->bob = User::factory()->create(['is_admin' => false]);
         $this->admin = User::factory()->create(['is_admin' => true]);
     }
 
@@ -39,14 +41,14 @@ class ProductOwnershipTest extends TestCase
         $cat = Category::factory()->create();
 
         $this->post('/admin/products', [
-            'name'        => 'Alice 有机菜',
+            'name' => 'Alice 有机菜',
             'category_id' => $cat->id,
-            'price'       => 30,
-            'stock'       => 10,
+            'price' => 30,
+            'stock' => 10,
         ])->assertRedirect();
 
         $this->assertDatabaseHas('products', [
-            'name'    => 'Alice 有机菜',
+            'name' => 'Alice 有机菜',
             'user_id' => $this->alice->id,
         ]);
     }

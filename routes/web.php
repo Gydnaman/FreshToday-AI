@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/dashboard', function () {
         $aiMenu = session('daily_ai_menu', 'No menu generated yet. Please complete your profile survey!');
+
         return view('shop.dashboard', compact('aiMenu'));
     });
     Route::get('/checkout', [CheckoutController::class, 'show']);
