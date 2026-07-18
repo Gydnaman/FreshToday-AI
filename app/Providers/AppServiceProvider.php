@@ -65,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
         if (in_array('package:discover', $argv, true)) {
             return true;
         }
+
         return false;
     }
 
