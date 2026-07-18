@@ -45,7 +45,27 @@ class AppServiceProvider extends ServiceProvider
 
         // P0-2 启动断言：Stripe webhook secret 必须在所有非 local 环境配置
         // 防止 StripeWebhookController 静默放行（fail-closed）
-        $this->assertStripeWebhookSecretConfigured();
+        // 注意：跳过 `package:discover` 命令（此时 .env 还没创建，env() 取 config 默认值 production）
+        if (! $this->isPackageDiscover()) {
+            $this->assertStripeWebhookSecretConfigured();
+        }
+    }
+
+    /**
+     * 检测当前是否在 package:discover 命令执行中
+     * （避免 composer install 触发的 autoload dump 阶段报错）
+     */
+    private function isPackageDiscover(): bool
+    {
+        if (! $this->app->runningInConsole()) {
+            return false;
+        }
+        $argv = $_SERVER['argv'] ?? [];
+        // 例如: ['artisan', 'package:discover']
+        if (in_array('package:discover', $argv, true)) {
+            return true;
+        }
+        return false;
     }
 
     /**
