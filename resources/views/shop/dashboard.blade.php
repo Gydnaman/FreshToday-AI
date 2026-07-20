@@ -19,10 +19,51 @@
                 </div>
                 
                 <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-                    <p class="text-lg text-white leading-relaxed font-medium">
-                        {{ $aiMenu }}
-                    </p>
+                    @if($aiMenuHtml)
+                        {{-- 优先显示 HTML 版本（含食材链接） --}}
+                        <div class="text-lg text-white leading-relaxed font-medium ai-menu-container">
+                            {!! $aiMenuHtml !!}
+                        </div>
+                    @elseif($aiMenu)
+                        {{-- 降级：纯文本版本 --}}
+                        <p class="text-lg text-white leading-relaxed font-medium whitespace-pre-line">{{ $aiMenu }}</p>
+                    @else
+                        {{-- 无菜单：提示填问卷 --}}
+                        <p class="text-lg text-white leading-relaxed font-medium">
+                            No menu generated yet. Please complete your profile survey!
+                        </p>
+                    @endif
                 </div>
+
+                {{-- AI 菜单内的链接样式覆盖（白底背景下的绿色链接改为白色） --}}
+                <style>
+                    .ai-menu-container a {
+                        color: #d1fae5 !important; /* green-100 */
+                        text-decoration: underline;
+                        font-weight: 600;
+                    }
+                    .ai-menu-container a:hover {
+                        color: #fff !important;
+                    }
+                    .ai-menu-container .greeting,
+                    .ai-menu-container .meal h4,
+                    .ai-menu-container .meal p,
+                    .ai-menu-container .tip {
+                        color: #fff !important;
+                    }
+                    .ai-menu-container .meal {
+                        margin-bottom: 1rem;
+                    }
+                    .ai-menu-container .meal h4 {
+                        font-weight: 700;
+                        margin-bottom: 0.25rem;
+                    }
+                    .ai-menu-container .tip {
+                        margin-top: 1rem;
+                        padding-top: 1rem;
+                        border-top: 1px solid rgba(255,255,255,0.2);
+                    }
+                </style>
                 
                 <div class="mt-6 flex justify-end">
                     <button class="bg-white text-green-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-50 transition shadow-sm">

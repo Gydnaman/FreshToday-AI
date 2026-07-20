@@ -14,7 +14,7 @@
         @php
             $soldOut = ((int) $product->stock) <= 0;
         @endphp
-        <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group">
+        <div id="product-{{ $product->id }}" class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group scroll-mt-20">
             <div class="relative h-48 overflow-hidden bg-gray-100">
                 <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
 

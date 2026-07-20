@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Exceptions\GuardFailedException;
 use App\Http\Controllers\Controller;
+use App\Models\Product;
+use App\Services\Ai\MenuRenderer;
 use App\Services\AiMenuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,10 +23,20 @@ class MenuController extends Controller
             ], 404);
         }
 
+        // 渲染 HTML（食材链接）
+        $contentHtml = null;
+        if ($menu->menu_json) {
+            $productMap = Product::where('stock', '>', 0)
+                ->pluck('id', 'name')
+                ->toArray();
+            $contentHtml = MenuRenderer::renderHtmlFromJson($menu->menu_json, $productMap);
+        }
+
         return response()->json([
             'data' => [
                 'date' => $menu->date->toDateString(),
                 'content' => $menu->menu_content,
+                'content_html' => $contentHtml,
                 'source' => $menu->source ?? 'gemini',
                 'cached' => true,
             ],
