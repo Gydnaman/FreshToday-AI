@@ -81,4 +81,67 @@ class MenuOutputValidatorTest extends TestCase
         ];
         $this->assertFalse($this->validator->validateJson($data, ['Tomato', 'Spinach']));
     }
+
+    /** 严格校验：任何 1 个食材不在商品库 → 校验失败 */
+    public function test_validate_json_rejects_when_any_ingredient_not_in_products(): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Toast', 'ingredients' => ['Tomato'], 'description' => 'X'],
+                ['type' => 'lunch', 'name' => 'Salad', 'ingredients' => ['Spinach'], 'description' => 'Y'],
+                ['type' => 'dinner', 'name' => 'Luxury Dish', 'ingredients' => ['Truffle'], 'description' => 'Z'], // Truffle 不在商品库
+            ],
+            'tip' => 'Tip',
+        ];
+        $this->assertFalse($this->validator->validateJson($data, ['Tomato', 'Spinach']), 'Truffle 不在商品库，应校验失败');
+    }
+
+    /** 模糊匹配：食材名被商品名包含（如"菜心"匹配"本地有機菜心"） */
+    public function test_validate_json_accepts_fuzzy_match_ingredient_in_product(): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['菜心'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Y', 'ingredients' => ['白菜'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Z', 'ingredients' => ['紅蘿蔔'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+        $products = ['本地有機菜心', '本地有機白菜', '本地有機紅蘿蔔'];
+        $this->assertTrue($this->validator->validateJson($data, $products), '模糊匹配：菜心/白菜/紅蘿蔔 应匹配到 本地有機菜心/本地有機白菜/本地有機紅蘿蔔');
+    }
+
+    /** 模糊匹配：商品名被食材名包含（如"有機菜心"匹配"菜心"，较少见但应支持） */
+    public function test_validate_json_accepts_fuzzy_match_product_in_ingredient(): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['新鮮有機菜心'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Y', 'ingredients' => ['嫩白菜'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Z', 'ingredients' => ['甜紅蘿蔔'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+        $products = ['有機菜心', '白菜', '紅蘿蔔'];
+        $this->assertTrue($this->validator->validateJson($data, $products), '模糊匹配：新鮮有機菜心/嫩白菜/甜紅蘿蔔 应匹配到 有機菜心/白菜/紅蘿蔔');
+    }
+
+    /** 混合场景：部分精确匹配 + 部分模糊匹配 + 1 个不匹配 → 失败 */
+    public function test_validate_json_rejects_mixed_scenario_with_one_invalid(): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['Tomato'], 'description' => 'A'], // 精确匹配
+                ['type' => 'lunch', 'name' => 'Y', 'ingredients' => ['菜心'], 'description' => 'B'], // 模糊匹配到"本地有機菜心"
+                ['type' => 'dinner', 'name' => 'Z', 'ingredients' => ['Caviar'], 'description' => 'C'], // 不匹配
+            ],
+            'tip' => 'Tip',
+        ];
+        $products = ['Tomato', '本地有機菜心'];
+        $this->assertFalse($this->validator->validateJson($data, $products), 'Caviar 不在商品库，应校验失败');
+    }
 }

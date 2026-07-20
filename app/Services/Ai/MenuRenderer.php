@@ -108,13 +108,15 @@ class MenuRenderer
     {
         foreach ($json['meals'] as $meal) {
             foreach ($meal['ingredients'] as $ingredient) {
-                if (! isset($productMap[$ingredient])) {
-                    continue; // 无映射，保持纯文本
+                // 模糊匹配：查找商品名包含食材名 OR 食材名包含商品名的商品
+                $matchedProductId = self::fuzzyMatchProduct($ingredient, $productMap);
+
+                if ($matchedProductId === null) {
+                    continue; // 无匹配，保持纯文本
                 }
 
-                $productId = $productMap[$ingredient];
                 $escapedIngredient = e($ingredient);
-                $link = '<a href="/catalog#product-'.$productId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.$escapedIngredient.'</a>';
+                $link = '<a href="/catalog#product-'.$matchedProductId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.$escapedIngredient.'</a>';
 
                 // 用 preg_replace 的 limit=1 只替换第一次出现（避免同一食材多次出现全部替换）
                 // 不用 \b 单词边界，因为转义后的 HTML 实体（如 &quot;）会破坏边界匹配
@@ -128,5 +130,31 @@ class MenuRenderer
         }
 
         return $html;
+    }
+
+    /**
+     * 模糊匹配商品 ID
+     *
+     * 匹配规则（双向，大小写不敏感）：
+     *  - 商品名包含食材名（如"本地有機菜心"包含"菜心"）
+     *  - 食材名包含商品名（如"有機菜心"包含"菜心"，较少见）
+     *
+     * @param  array<string,int>  $productMap  商品名 → 商品 ID
+     * @return int|null 匹配到的商品 ID，无匹配返回 null
+     */
+    private static function fuzzyMatchProduct(string $ingredient, array $productMap): ?int
+    {
+        $ingredientLower = mb_strtolower(trim($ingredient));
+
+        foreach ($productMap as $productName => $productId) {
+            $productLower = mb_strtolower($productName);
+
+            if (mb_strpos($productLower, $ingredientLower) !== false
+                || mb_strpos($ingredientLower, $productLower) !== false) {
+                return $productId;
+            }
+        }
+
+        return null;
     }
 }

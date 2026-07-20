@@ -136,4 +136,70 @@ class MenuRendererTest extends TestCase
         $this->assertStringContainsString('Fresh', $html);
         $this->assertStringContainsString('Stay healthy!', $html);
     }
+
+    /** 模糊匹配：食材名"菜心"匹配商品"本地有機菜心"，生成链接 */
+    public function test_render_html_fuzzy_match_ingredient_in_product(): void
+    {
+        $json = [
+            'greeting' => 'Hi',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => '菜心粥', 'ingredients' => ['菜心'], 'description' => '清炒菜心'],
+                ['type' => 'lunch', 'name' => 'X', 'ingredients' => [], 'description' => 'Y'],
+                ['type' => 'dinner', 'name' => 'X', 'ingredients' => [], 'description' => 'Z'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        $productMap = ['本地有機菜心' => 3];
+        $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
+
+        // "菜心" 模糊匹配到 "本地有機菜心"，生成链接
+        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('>菜心</a>', $html);
+    }
+
+    /** 模糊匹配：食材名"新鮮有機菜心"匹配商品"有機菜心"（商品名被食材名包含） */
+    public function test_render_html_fuzzy_match_product_in_ingredient(): void
+    {
+        $json = [
+            'greeting' => 'Hi',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['新鮮有機菜心'], 'description' => '清炒新鮮有機菜心'],
+                ['type' => 'lunch', 'name' => 'X', 'ingredients' => [], 'description' => 'Y'],
+                ['type' => 'dinner', 'name' => 'X', 'ingredients' => [], 'description' => 'Z'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        $productMap = ['有機菜心' => 5];
+        $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
+
+        // "新鮮有機菜心" 包含 "有機菜心"，生成链接
+        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        $this->assertStringContainsString('>新鮮有機菜心</a>', $html);
+    }
+
+    /** 混合场景：精确匹配 + 模糊匹配 + 不匹配 */
+    public function test_render_html_mixed_matching_scenarios(): void
+    {
+        $json = [
+            'greeting' => 'Hi',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Tomato Toast', 'ingredients' => ['Tomato'], 'description' => 'Fresh Tomato'],
+                ['type' => 'lunch', 'name' => '菜心炒蛋', 'ingredients' => ['菜心'], 'description' => '清炒菜心'],
+                ['type' => 'dinner', 'name' => 'Truffle Pasta', 'ingredients' => ['Truffle'], 'description' => 'Luxury Truffle'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        $productMap = ['Tomato' => 3, '本地有機菜心' => 5];
+        $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
+
+        // Tomato 精确匹配 → 链接
+        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        // 菜心 模糊匹配到 本地有機菜心 → 链接
+        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        // Truffle 无匹配 → 纯文本
+        $this->assertStringNotContainsString('Truffle</a>', $html);
+    }
 }

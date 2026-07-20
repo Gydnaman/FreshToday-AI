@@ -18,7 +18,9 @@ namespace App\Services\Ai;
  *  2. meals 必须是数组且 count=3
  *  3. 每个 meal 必须含 type/name/ingredients/description
  *  4. type ∈ {breakfast, lunch, dinner}
- *  5. 所有 ingredients 拼接后至少匹配 1 个 availableProducts
+ *  5. 所有 ingredients 都必须能在 availableProducts 中模糊匹配到（严格约束）
+ *     - 模糊匹配：商品名包含食材名 OR 食材名包含商品名（如"菜心"匹配"本地有機菜心"）
+ *     - 任何 1 个食材匹配不到 → 校验失败 → 走 fallback
  */
 class MenuOutputValidator
 {
@@ -93,9 +95,9 @@ class MenuOutputValidator
             $allIngredients = array_merge($allIngredients, $meal['ingredients']);
         }
 
-        $ingredientsText = implode(' ', $allIngredients).' '.($data['greeting'] ?? '').' '.($data['tip'] ?? '');
-
-        return $this->mentionsAnyProduct($ingredientsText, $availableProducts);
+        // 严格校验：所有 ingredients 都必须能在商品库中模糊匹配到
+        // （已覆盖"至少提到 1 个商品"的宽松校验场景，无需重复检查）
+        return $this->allIngredientsInProducts($allIngredients, $availableProducts);
     }
 
     /**
@@ -113,5 +115,44 @@ class MenuOutputValidator
         }
 
         return false;
+    }
+
+    /**
+     * 严格校验：所有 ingredients 都必须能在商品库中模糊匹配到
+     *
+     * 模糊匹配规则（双向）：
+     *  - 商品名包含食材名（如"本地有機菜心"包含"菜心"）
+     *  - 食材名包含商品名（如"有機菜心"包含"菜心"，较少见）
+     *
+     * @param  array<int,string>  $ingredients
+     * @param  array<int,string>  $availableProducts
+     */
+    private function allIngredientsInProducts(array $ingredients, array $availableProducts): bool
+    {
+        if (empty($ingredients)) {
+            return false;
+        }
+
+        foreach ($ingredients as $ingredient) {
+            $found = false;
+            $ingredientLower = mb_strtolower(trim($ingredient));
+
+            foreach ($availableProducts as $product) {
+                $productLower = mb_strtolower($product);
+
+                // 双向模糊匹配
+                if (mb_strpos($productLower, $ingredientLower) !== false
+                    || mb_strpos($ingredientLower, $productLower) !== false) {
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (! $found) {
+                return false; // 任何 1 个食材匹配不到就失败
+            }
+        }
+
+        return true;
     }
 }
