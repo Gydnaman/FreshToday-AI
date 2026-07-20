@@ -11,8 +11,13 @@ class PromptBuilderTest extends TestCase
     {
         $prompt = PromptBuilder::buildSystemPrompt();
 
-        $this->assertStringContainsString('OUTPUT CONTRACT', $prompt);
-        $this->assertStringContainsString('NO markdown', $prompt);
+        // 输出格式契约（JSON 结构）
+        $this->assertStringContainsString('OUTPUT FORMAT', $prompt);
+        $this->assertStringContainsString('JSON', $prompt);
+        // 食材约束
+        $this->assertStringContainsString('INGREDIENT CONSTRAINTS', $prompt);
+        $this->assertStringContainsString('EXCLUSIVELY', $prompt);
+        // 禁止事项
         $this->assertStringContainsString('PROHIBITED', $prompt);
         $this->assertStringContainsString('FALLBACK', $prompt);
     }

@@ -46,20 +46,29 @@ class DeepseekProvider implements AiProviderInterface
         $url = rtrim($this->config['base_url'], '/').'/chat/completions';
 
         try {
-            $response = Http::timeout($this->config['timeout'] ?? 15)
+            $http = Http::timeout($this->config['timeout'] ?? 15)
                 ->withToken($this->config['key'])
                 ->acceptJson()
-                ->asJson()
-                ->post($url, [
+                ->asJson();
+
+            // 开发环境：Windows + XAMPP 常见 SSL 证书问题，临时禁用验证
+            // 生产环境必须移除（或使用正规 CA 证书）
+            if (app()->environment('local')) {
+                $http = $http->withoutVerifying();
+            }
+
+            $response = $http->post($url, [
                     'model' => $this->config['model'],
                     'messages' => [
                         ['role' => 'system', 'content' => $systemPrompt],
                         ['role' => 'user', 'content' => $userPrompt],
                     ],
                     'temperature' => 0.7,
-                    'max_tokens' => 500, // JSON 比纯文本耗 token，放宽到 500
+                    'max_tokens' => 500,
                     'stream' => false,
-                    'response_format' => MenuSchema::deepSeekSchema(),
+                    // 注释掉 response_format：DeepSeek V4 Flash 对 json_object + 复杂 prompt 组合
+                    // 可能返回空内容。让模型自由生成，后端 json_decode 失败会走 fallback。
+                    // 'response_format' => MenuSchema::deepSeekSchema(),
                 ]);
 
             if ($response->successful()) {

@@ -108,7 +108,7 @@ class JsonOutputTest extends TestCase
         });
     }
 
-    public function test_deepseek_provider_requests_json_object(): void
+    public function test_deepseek_provider_parses_json_from_content(): void
     {
         Http::fake([
             'api.deepseek.com/*' => Http::response([
@@ -136,12 +136,10 @@ class JsonOutputTest extends TestCase
 
         [$content, $tokens, $json] = $provider->generate(['purpose' => 'X'], ['Tomato', 'Spinach', 'Salmon']);
 
+        // DeepSeek 不用 response_format（V4 Flash 返回空），但 prompt 要求 JSON 输出
+        // Provider 内部 json_decode 解析 content
         $this->assertIsArray($json);
-        Http::assertSent(function ($request) {
-            $body = json_decode($request->body(), true);
-
-            return isset($body['response_format']['type'])
-                && $body['response_format']['type'] === 'json_object';
-        });
+        $this->assertArrayHasKey('meals', $json);
+        $this->assertEquals(100, $tokens);
     }
 }

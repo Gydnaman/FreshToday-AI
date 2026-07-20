@@ -77,7 +77,24 @@ class MenuRenderer
             $type = ucfirst($meal['type']);
             $html .= '<div class="meal mb-4">';
             $html .= '<h4 class="font-bold text-gray-900 mb-1">'.e($type).': '.e($meal['name']).'</h4>';
-            $html .= '<p class="text-gray-600 text-sm">'.e($meal['description']).'</p>';
+            $html .= '<p class="text-gray-600 text-sm mb-2">'.e($meal['description']).'</p>';
+
+            // 食材列表（每个食材包装成链接）
+            if (! empty($meal['ingredients'])) {
+                $html .= '<p class="ingredients text-sm text-gray-500">🥬 Ingredients: ';
+                $ingredientLinks = [];
+                foreach ($meal['ingredients'] as $ingredient) {
+                    $matchedProductId = self::fuzzyMatchProduct($ingredient, $productMap);
+                    if ($matchedProductId !== null) {
+                        $ingredientLinks[] = '<a href="/catalog#product-'.$matchedProductId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.e($ingredient).'</a>';
+                    } else {
+                        $ingredientLinks[] = e($ingredient);
+                    }
+                }
+                $html .= implode(', ', $ingredientLinks);
+                $html .= '</p>';
+            }
+
             $html .= '</div>';
         }
 
@@ -85,9 +102,6 @@ class MenuRenderer
         $html .= '<p class="tip text-gray-700 mt-4 pt-4 border-t border-gray-200">💡 Tip: '.e($json['tip']).'</p>';
 
         $html .= '</div>';
-
-        // 统一替换所有食材名为链接（在 HTML 转义后执行，避免 \b 边界失效）
-        $html = self::linkifyIngredients($html, $json, $productMap);
 
         return $html;
     }

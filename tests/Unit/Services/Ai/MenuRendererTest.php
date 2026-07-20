@@ -202,4 +202,36 @@ class MenuRendererTest extends TestCase
         // Truffle 无匹配 → 纯文本
         $this->assertStringNotContainsString('Truffle</a>', $html);
     }
+
+    /** ingredients 列表独立显示（不依赖 description 中出现食材名） */
+    public function test_render_html_shows_ingredients_list_with_links(): void
+    {
+        $json = [
+            'greeting' => 'Good day!',
+            'meals' => [
+                [
+                    'type' => 'breakfast',
+                    'name' => 'Smoothie',
+                    'ingredients' => ['本地有機紅蘿蔔', '本地有機臍橙', 'Unknown Fruit'],
+                    'description' => 'Blend carrot and orange for energy', // description 不含中文食材名
+                ],
+                ['type' => 'lunch', 'name' => 'X', 'ingredients' => [], 'description' => 'Y'],
+                ['type' => 'dinner', 'name' => 'X', 'ingredients' => [], 'description' => 'Z'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        $productMap = ['本地有機紅蘿蔔' => 3, '本地有機臍橙' => 5];
+        $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
+
+        // 即使 description 不含食材名，ingredients 列表也应显示链接
+        $this->assertStringContainsString('🥬 Ingredients:', $html);
+        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('>本地有機紅蘿蔔</a>', $html);
+        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        $this->assertStringContainsString('>本地有機臍橙</a>', $html);
+        // Unknown Fruit 无匹配 → 纯文本
+        $this->assertStringContainsString('Unknown Fruit', $html);
+        $this->assertStringNotContainsString('Unknown Fruit</a>', $html);
+    }
 }
