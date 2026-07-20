@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Providers;
 
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\PromptBuilder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -35,14 +36,8 @@ class OpenAiProvider implements AiProviderInterface
             return ['', 0];
         }
 
-        $userPrompt = "Create a ~100-word personalized daily menu.\n"
-            .'Purpose: '.($preferences['purpose'] ?? 'Healthy eating')."\n"
-            .'Dietary: '.($preferences['dietary_habits'] ?? 'No restriction')."\n"
-            .'Goals: '.($preferences['goals'] ?? 'Wellness')."\n"
-            .'Skill: '.($preferences['cooking_skill'] ?? 'Beginner')."\n"
-            .'Budget HKD/wk: '.($preferences['budget_habits'] ?? 'flexible')."\n"
-            .'Available products: '.implode(', ', $products)."\n"
-            .'Encourage low-carbon, healthy meals.';
+        $systemPrompt = PromptBuilder::buildSystemPrompt();
+        $userPrompt = PromptBuilder::buildUserPrompt($preferences, $products);
 
         $url = rtrim($this->config['base_url'], '/').'/chat/completions';
 
@@ -54,14 +49,8 @@ class OpenAiProvider implements AiProviderInterface
                 ->post($url, [
                     'model' => $this->config['model'],
                     'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => 'You are a professional nutritionist who writes concise, friendly meal suggestions focused on low-carbon and healthy eating.',
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $userPrompt,
-                        ],
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $userPrompt],
                     ],
                     'temperature' => 0.7,
                     'max_tokens' => 300,

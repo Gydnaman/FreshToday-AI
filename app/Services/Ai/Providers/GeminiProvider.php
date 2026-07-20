@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Providers;
 
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\PromptBuilder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -34,14 +35,11 @@ class GeminiProvider implements AiProviderInterface
             return ['', 0];
         }
 
-        $prompt = "You are a professional nutritionist. Create a ~100-word personalized daily menu.\n"
-            .'Purpose: '.($preferences['purpose'] ?? 'Healthy eating')."\n"
-            .'Dietary: '.($preferences['dietary_habits'] ?? 'No restriction')."\n"
-            .'Goals: '.($preferences['goals'] ?? 'Wellness')."\n"
-            .'Skill: '.($preferences['cooking_skill'] ?? 'Beginner')."\n"
-            .'Budget HKD/wk: '.($preferences['budget_hkd'] ?? 'flexible')."\n"
-            .'Available: '.implode(', ', $products)."\n"
-            .'Encourage low-carbon, healthy meals.';
+        $systemPrompt = PromptBuilder::buildSystemPrompt();
+        $userPrompt = PromptBuilder::buildUserPrompt($preferences, $products);
+
+        // Gemini v1beta 无独立 system role，把 system + user 合并到 contents
+        $combinedPrompt = $systemPrompt."\n\n".$userPrompt;
 
         $url = rtrim($this->config['base_url'], '/')
             .'/models/'.$this->config['model']
@@ -49,7 +47,7 @@ class GeminiProvider implements AiProviderInterface
 
         try {
             $response = Http::timeout($this->config['timeout'] ?? 8)->post($url, [
-                'contents' => [['parts' => [['text' => $prompt]]]],
+                'contents' => [['parts' => [['text' => $combinedPrompt]]]],
             ]);
 
             if ($response->successful()) {

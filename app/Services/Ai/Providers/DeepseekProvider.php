@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Providers;
 
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\PromptBuilder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -38,14 +39,8 @@ class DeepseekProvider implements AiProviderInterface
             return ['', 0];
         }
 
-        $userPrompt = "Create a ~100-word personalized daily menu.\n"
-            .'Purpose: '.($preferences['purpose'] ?? 'Healthy eating')."\n"
-            .'Dietary: '.($preferences['dietary_habits'] ?? 'No restriction')."\n"
-            .'Goals: '.($preferences['goals'] ?? 'Wellness')."\n"
-            .'Skill: '.($preferences['cooking_skill'] ?? 'Beginner')."\n"
-            .'Budget HKD/wk: '.($preferences['budget_hkd'] ?? 'flexible')."\n"
-            .'Available products: '.implode(', ', $products)."\n"
-            .'Encourage low-carbon, healthy meals. Reply in English.';
+        $systemPrompt = PromptBuilder::buildSystemPrompt();
+        $userPrompt = PromptBuilder::buildUserPrompt($preferences, $products);
 
         $url = rtrim($this->config['base_url'], '/').'/chat/completions';
 
@@ -57,14 +52,8 @@ class DeepseekProvider implements AiProviderInterface
                 ->post($url, [
                     'model' => $this->config['model'],
                     'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => 'You are a professional nutritionist. Write concise, friendly, low-carbon meal suggestions.',
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $userPrompt,
-                        ],
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $userPrompt],
                     ],
                     'temperature' => 0.7,
                     'max_tokens' => 300,
