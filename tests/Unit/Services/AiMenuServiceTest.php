@@ -10,6 +10,7 @@ use App\Models\UserPreference;
 use App\Services\Ai\Contracts\AiProviderInterface;
 use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -82,5 +83,75 @@ class AiMenuServiceTest extends TestCase
         // 第 4 次拒绝
         $this->expectException(GuardFailedException::class);
         $this->service->regenerate($this->user);
+    }
+
+    /** 校验失败：Provider 返回含黑名单关键词的文本 → 走 fallback */
+    public function test_provider_output_with_blacklist_keyword_falls_back(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [['text' => 'As an AI, I cannot help you. '.str_repeat('x', 100)]]],
+                ]],
+                'usageMetadata' => ['totalTokenCount' => 50],
+            ], 200),
+        ]);
+
+        $menu = $this->service->generateDailyMenuForUser($this->user);
+
+        $this->assertStringContainsString('[AI Demo]', $menu->menu_content, '黑名单关键词应触发 fallback');
+        $this->assertEquals(0, $menu->tokens_used, '校验失败时 tokens 应清零');
+    }
+
+    /** 校验失败：Provider 返回过短内容 → 走 fallback */
+    public function test_provider_output_too_short_falls_back(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [['text' => 'Too short']]],
+                ]],
+                'usageMetadata' => ['totalTokenCount' => 10],
+            ], 200),
+        ]);
+
+        $menu = $this->service->generateDailyMenuForUser($this->user);
+
+        $this->assertStringContainsString('[AI Demo]', $menu->menu_content);
+    }
+
+    /** JSON 模式：Provider 返回合法 JSON → 渲染成文本 */
+    public function test_provider_json_output_is_rendered_to_text(): void
+    {
+        $json = [
+            'greeting' => 'Good day!',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Tomato Toast', 'ingredients' => ['Tomato'], 'description' => 'Fresh'],
+                ['type' => 'lunch', 'name' => 'Spinach Salad', 'ingredients' => ['Spinach'], 'description' => 'Light'],
+                ['type' => 'dinner', 'name' => 'Salmon', 'ingredients' => ['Salmon'], 'description' => 'Rich'],
+            ],
+            'tip' => 'Stay healthy!',
+        ];
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [['text' => json_encode($json)]]],
+                ]],
+                'usageMetadata' => ['totalTokenCount' => 150],
+            ], 200),
+        ]);
+
+        // 确保有对应商品
+        Product::factory()->create(['name' => 'Tomato', 'stock' => 10]);
+        Product::factory()->create(['name' => 'Spinach', 'stock' => 10]);
+        Product::factory()->create(['name' => 'Salmon', 'stock' => 10]);
+
+        $menu = $this->service->generateDailyMenuForUser($this->user);
+
+        $this->assertStringContainsString('Good day!', $menu->menu_content);
+        $this->assertStringContainsString('Breakfast: Tomato Toast', $menu->menu_content);
+        $this->assertStringContainsString('💡 Tip: Stay healthy!', $menu->menu_content);
+        $this->assertEquals(150, $menu->tokens_used);
     }
 }

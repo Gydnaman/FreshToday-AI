@@ -8,6 +8,8 @@ use App\Models\DailyMenu;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\MenuOutputValidator;
+use App\Services\Ai\MenuRenderer;
 use App\Services\Ai\Providers\NullProvider;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -39,7 +41,10 @@ class AiMenuService
 
     private const CACHE_KEY_REGEN = 'ai_menu:regen:%d:%s';
 
-    public function __construct(private readonly AiProviderInterface $provider) {}
+    public function __construct(
+        private readonly AiProviderInterface $provider,
+        private readonly MenuOutputValidator $validator = new MenuOutputValidator,
+    ) {}
 
     public function generateDailyMenuForUser(User $user, ?array $overridePreferences = null): DailyMenu
     {
@@ -72,9 +77,25 @@ class AiMenuService
 
         // 3. 调 Provider
         $availableProducts = Product::where('stock', '>', 0)->pluck('name')->toArray();
-        [$content, $tokens] = $this->callProvider($preferences, $availableProducts);
+        [$content, $tokens, $jsonData] = $this->callProvider($preferences, $availableProducts);
 
-        // 4. Provider 返回空（缺 key / 全失败）→ 本地模板
+        // 4. 校验 + 渲染
+        // 4a. JSON 模式：优先用结构化数据
+        if ($jsonData !== null && $this->validator->validateJson($jsonData, $availableProducts)) {
+            $content = MenuRenderer::renderTextFromJson($jsonData);
+            // TODO: Task 6 把 $jsonData 存入 menu_json 列
+        }
+        // 4b. 自由文本模式：校验文本合法性
+        elseif ($content !== '' && ! $this->validator->validate($content, $availableProducts)) {
+            Log::warning('AiMenuService: provider output failed validation', [
+                'provider' => $this->provider->name(),
+                'content_preview' => substr($content, 0, 200),
+            ]);
+            $content = ''; // 触发 fallback
+            $tokens = 0;
+        }
+
+        // 5. Provider 返回空 / 校验失败 → 本地模板
         //    source 仍记 provider 名（保留 Sprint 1 行为："意图调用的 provider"）
         if ($content === '') {
             $content = $this->generateFallbackMenu($preferences, $availableProducts);
@@ -119,9 +140,17 @@ class AiMenuService
     /** 兼容旧接口：纯文本输出（供 SurveyController demo） */
     public function generateDailyMenu(array $preferences, array $availableProducts): string
     {
-        [$content] = $this->callProvider($preferences, $availableProducts);
+        [$content, , $jsonData] = $this->callProvider($preferences, $availableProducts);
 
-        return $content !== '' ? $content : $this->generateFallbackMenu($preferences, $availableProducts);
+        if ($jsonData !== null && $this->validator->validateJson($jsonData, $availableProducts)) {
+            return MenuRenderer::renderTextFromJson($jsonData);
+        }
+
+        if ($content !== '' && $this->validator->validate($content, $availableProducts)) {
+            return $content;
+        }
+
+        return $this->generateFallbackMenu($preferences, $availableProducts);
     }
 
     /**
@@ -171,13 +200,13 @@ class AiMenuService
      * 调用 Provider；统一封装"失败返回空"的语义
      * - Provider 内部已捕获所有异常，这里只兜底 NullProvider / 工厂异常
      *
-     * @return array{0:string,1:int} [content, tokens_used]
+     * @return array{0:string,1:int,2:?array} [content, tokens_used, json_data]
      */
     private function callProvider(array $preferences, array $availableProducts): array
     {
         // NullProvider 短路：避免无意义日志噪音
         if ($this->provider instanceof NullProvider) {
-            return ['', 0];
+            return ['', 0, null];
         }
 
         if (! $this->provider->isConfigured()) {
@@ -185,7 +214,7 @@ class AiMenuService
                 'provider' => $this->provider->name(),
             ]);
 
-            return ['', 0];
+            return ['', 0, null];
         }
 
         try {
@@ -197,7 +226,7 @@ class AiMenuService
                 'error' => $e->getMessage(),
             ]);
 
-            return ['', 0];
+            return ['', 0, null];
         }
     }
 
