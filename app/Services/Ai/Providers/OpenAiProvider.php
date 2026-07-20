@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Providers;
 
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\MenuSchema;
 use App\Services\Ai\PromptBuilder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -33,7 +34,7 @@ class OpenAiProvider implements AiProviderInterface
     public function generate(array $preferences, array $products): array
     {
         if (! $this->isConfigured()) {
-            return ['', 0];
+            return ['', 0, null];
         }
 
         $systemPrompt = PromptBuilder::buildSystemPrompt();
@@ -53,33 +54,44 @@ class OpenAiProvider implements AiProviderInterface
                         ['role' => 'user', 'content' => $userPrompt],
                     ],
                     'temperature' => 0.7,
-                    'max_tokens' => 300,
+                    'max_tokens' => 500, // JSON 比纯文本耗 token，放宽到 500
+                    'response_format' => MenuSchema::openAiSchema(),
                 ]);
 
             if ($response->successful()) {
                 $data = $response->json();
                 $text = $data['choices'][0]['message']['content'] ?? '';
                 $tokens = (int) ($data['usage']['total_tokens'] ?? 0);
+
                 if ($text !== '') {
-                    return [trim($text), $tokens];
+                    $json = json_decode($text, true);
+                    if (is_array($json)) {
+                        return [trim($text), $tokens, $json];
+                    }
+                    Log::warning('OpenAiProvider: invalid JSON', [
+                        'text' => substr($text, 0, 200),
+                    ]);
+
+                    return ['', 0, null];
                 }
-                Log::warning('OpenAiProvider: empty choices in response', [
+
+                Log::warning('OpenAiProvider: empty choices', [
                     'model' => $this->config['model'],
                 ]);
 
-                return ['', 0];
+                return ['', 0, null];
             }
 
-            Log::warning('OpenAiProvider: non-2xx response', [
+            Log::warning('OpenAiProvider: non-2xx', [
                 'status' => $response->status(),
                 'body' => substr($response->body(), 0, 200),
             ]);
         } catch (\Throwable $e) {
-            Log::warning('OpenAiProvider: request exception', [
+            Log::warning('OpenAiProvider: exception', [
                 'message' => $e->getMessage(),
             ]);
         }
 
-        return ['', 0];
+        return ['', 0, null];
     }
 }

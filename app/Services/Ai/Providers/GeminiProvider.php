@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Providers;
 
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\MenuSchema;
 use App\Services\Ai\PromptBuilder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +33,7 @@ class GeminiProvider implements AiProviderInterface
     public function generate(array $preferences, array $products): array
     {
         if (! $this->isConfigured()) {
-            return ['', 0];
+            return ['', 0, null];
         }
 
         $systemPrompt = PromptBuilder::buildSystemPrompt();
@@ -48,20 +49,34 @@ class GeminiProvider implements AiProviderInterface
         try {
             $response = Http::timeout($this->config['timeout'] ?? 8)->post($url, [
                 'contents' => [['parts' => [['text' => $combinedPrompt]]]],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json',
+                    'responseSchema' => MenuSchema::geminiSchema(),
+                ],
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
                 $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
                 $tokens = (int) ($data['usageMetadata']['totalTokenCount'] ?? 0);
+
                 if ($text !== '') {
-                    return [$text, $tokens];
+                    $json = json_decode($text, true);
+                    if (is_array($json)) {
+                        return [$text, $tokens, $json];
+                    }
+                    Log::warning('GeminiProvider: invalid JSON in response', [
+                        'text' => substr($text, 0, 200),
+                    ]);
+
+                    return ['', 0, null];
                 }
-                Log::warning('GeminiProvider: empty candidates in response', [
+
+                Log::warning('GeminiProvider: empty candidates', [
                     'model' => $this->config['model'],
                 ]);
 
-                return ['', 0];
+                return ['', 0, null];
             }
 
             Log::warning('GeminiProvider: non-2xx response', [
@@ -74,6 +89,6 @@ class GeminiProvider implements AiProviderInterface
             ]);
         }
 
-        return ['', 0];
+        return ['', 0, null];
     }
 }

@@ -28,6 +28,6 @@ class NullProvider implements AiProviderInterface
     public function generate(array $preferences, array $products): array
     {
         // 故意返回空 content，让 AiMenuService 走 generateFallbackMenu
-        return ['', 0];
+        return ['', 0, null];
     }
 }
