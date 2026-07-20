@@ -30,6 +30,9 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 
+// 健康检查（AI Provider 状态）
+Route::get('/health/ai', [\App\Http\Controllers\HealthController::class, 'ai']);
+
 // Webhook（无 auth，签名校验 + 显式高频限流 10000/min）
 //   - 不用 throttle:api（60/min 不够 Stripe/PayMe 高频重发）
 //   - 路由级挂 throttle:10000,1 数字形式

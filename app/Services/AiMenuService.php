@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Ai\Contracts\AiProviderInterface;
 use App\Services\Ai\MenuOutputValidator;
 use App\Services\Ai\MenuRenderer;
+use App\Services\Ai\MetricsRecorder;
 use App\Services\Ai\Providers\NullProvider;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -103,6 +104,10 @@ class AiMenuService
         }
 
         Cache::put($cacheKey, $content, self::CACHE_TTL_SECONDS);
+
+        // 指标埋点（latency 暂时传 0，Task 7 加 Stopwatch）
+        $status = $tokens > 0 ? 'success' : 'failure';
+        MetricsRecorder::recordGeneration($this->provider->name(), $status, 0, $tokens);
 
         return $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens);
     }
