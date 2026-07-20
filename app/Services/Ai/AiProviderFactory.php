@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use App\Services\Ai\Contracts\AiProviderInterface;
 use App\Services\Ai\Providers\DeepseekProvider;
+use App\Services\Ai\Providers\FailoverProvider;
 use App\Services\Ai\Providers\GeminiProvider;
 use App\Services\Ai\Providers\NullProvider;
 use App\Services\Ai\Providers\OpenAiProvider;
@@ -27,6 +28,11 @@ class AiProviderFactory
     {
         $config = config('ai');
 
+        // Failover 模式：启用后按 failover_order 顺序尝试多个 Provider
+        if ($config['failover_enabled'] ?? false) {
+            return self::buildFailover($config);
+        }
+
         // 1. 显式指定（如果该 Provider 不可用，回退到 auto_detect，不抛错）
         $explicit = $config['default'] ?? null;
         if ($explicit) {
@@ -46,6 +52,29 @@ class AiProviderFactory
 
         // 3. 全部不可用 → Null（永不抛错，UI 走 fallback 模板）
         return new NullProvider;
+    }
+
+    /**
+     * 构建 Failover 模式：多 Provider 灾备 + Circuit Breaker 熔断
+     */
+    private static function buildFailover(array $config): AiProviderInterface
+    {
+        $providers = [];
+        foreach ($config['failover_order'] ?? ['deepseek', 'openai', 'gemini'] as $name) {
+            $provider = self::build($name);
+            if ($provider !== null) {
+                $providers[] = $provider;
+            }
+        }
+
+        if (empty($providers)) {
+            return new NullProvider;
+        }
+
+        return new FailoverProvider($providers, new CircuitBreaker(
+            failureThreshold: $config['circuit_breaker']['failure_threshold'] ?? 5,
+            windowSeconds: $config['circuit_breaker']['window_seconds'] ?? 600,
+        ));
     }
 
     /**

@@ -69,4 +69,17 @@ return [
      * 探测顺序：当 AI_PROVIDER 留空时按此顺序查找第一个有 key 的 Provider
      */
     'auto_detect_order' => ['deepseek', 'openai', 'gemini'],
+
+    /*
+     * Failover 模式：启用后按 failover_order 顺序尝试多个 Provider
+     * 配合 CircuitBreaker 跳过熔断的 Provider
+     */
+    'failover_enabled' => (bool) env('AI_FAILOVER_ENABLED', false),
+
+    'failover_order' => ['deepseek', 'openai', 'gemini'],
+
+    'circuit_breaker' => [
+        'failure_threshold' => (int) env('AI_CB_FAILURE_THRESHOLD', 5),
+        'window_seconds' => (int) env('AI_CB_WINDOW_SECONDS', 600),
+    ],
 ];
