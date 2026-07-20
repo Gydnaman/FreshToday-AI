@@ -62,10 +62,10 @@ class AiMenuService
         $dateForDb = Carbon::parse($date)->startOfDay();
         $cacheKey = sprintf(self::CACHE_KEY_MENU, $user->id, $date);
 
-        // 1. 命中缓存
+        // 1. 命中缓存（无 json 数据，传 null）
         $cached = Cache::get($cacheKey);
         if ($cached) {
-            return $this->upsertMenu($user, $date, $cached, $this->provider->name(), 0);
+            return $this->upsertMenu($user, $date, $cached, $this->provider->name(), 0, null);
         }
 
         // 2. 命中 DB
@@ -84,7 +84,6 @@ class AiMenuService
         // 4a. JSON 模式：优先用结构化数据
         if ($jsonData !== null && $this->validator->validateJson($jsonData, $availableProducts)) {
             $content = MenuRenderer::renderTextFromJson($jsonData);
-            // TODO: Task 6 把 $jsonData 存入 menu_json 列
         }
         // 4b. 自由文本模式：校验文本合法性
         elseif ($content !== '' && ! $this->validator->validate($content, $availableProducts)) {
@@ -105,11 +104,12 @@ class AiMenuService
 
         Cache::put($cacheKey, $content, self::CACHE_TTL_SECONDS);
 
-        // 指标埋点（latency 暂时传 0，Task 7 加 Stopwatch）
+        // 指标埋点（latency 暂时传 0，后续加 Stopwatch）
         $status = $tokens > 0 ? 'success' : 'failure';
         MetricsRecorder::recordGeneration($this->provider->name(), $status, 0, $tokens);
 
-        return $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens);
+        // 6. 落库
+        return $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens, $jsonData ?? null);
     }
 
     /**
@@ -182,7 +182,7 @@ class AiMenuService
         ];
     }
 
-    private function upsertMenu(User $user, Carbon|string $date, string $content, string $source, int $tokens): DailyMenu
+    private function upsertMenu(User $user, Carbon|string $date, string $content, string $source, int $tokens, ?array $jsonData = null): DailyMenu
     {
         // 用 whereDate 自己查询再 save，规避 updateOrCreate 内部用精确 where 无法匹配 date cast 的问题
         $dateStr = $date instanceof Carbon ? $date->toDateString() : $date;
@@ -192,11 +192,16 @@ class AiMenuService
         if (! $menu) {
             $menu = new DailyMenu(['user_id' => $user->id, 'date' => $dateStr]);
         }
-        $menu->fill([
+        $fillData = [
             'menu_content' => $content,
             'source' => $source,
             'tokens_used' => $tokens,
-        ])->save();
+        ];
+        // 仅在 jsonData 非 null 时更新 menu_json，避免缓存命中路径清空已有数据
+        if ($jsonData !== null) {
+            $fillData['menu_json'] = $jsonData;
+        }
+        $menu->fill($fillData)->save();
 
         return $menu;
     }

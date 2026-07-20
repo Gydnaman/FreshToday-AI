@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DailyMenu extends Model
 {
-    protected $fillable = ['user_id', 'menu_content', 'date', 'source', 'tokens_used'];
+    protected $fillable = ['user_id', 'menu_content', 'menu_json', 'date', 'source', 'tokens_used'];
 
     protected $casts = [
         'date' => 'date',
         'tokens_used' => 'integer',
+        'menu_json' => 'array',
     ];
 
     public function user(): BelongsTo

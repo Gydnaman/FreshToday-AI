@@ -153,5 +153,49 @@ class AiMenuServiceTest extends TestCase
         $this->assertStringContainsString('Breakfast: Tomato Toast', $menu->menu_content);
         $this->assertStringContainsString('💡 Tip: Stay healthy!', $menu->menu_content);
         $this->assertEquals(150, $menu->tokens_used);
+
+        // menu_json 入库（Task 6）
+        $this->assertIsArray($menu->menu_json);
+        $this->assertSame('Good day!', $menu->menu_json['greeting']);
+        $this->assertCount(3, $menu->menu_json['meals']);
+    }
+
+    /** 缓存命中时 menu_json 保留（Task 6 Critical fix 回归测试） */
+    public function test_menu_json_is_preserved_on_cache_hit(): void
+    {
+        $json = [
+            'greeting' => 'Good day!',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Tomato Toast', 'ingredients' => ['Tomato'], 'description' => 'Fresh'],
+                ['type' => 'lunch', 'name' => 'Spinach Salad', 'ingredients' => ['Spinach'], 'description' => 'Light'],
+                ['type' => 'dinner', 'name' => 'Salmon', 'ingredients' => ['Salmon'], 'description' => 'Rich'],
+            ],
+            'tip' => 'Stay healthy!',
+        ];
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [['text' => json_encode($json)]]],
+                ]],
+                'usageMetadata' => ['totalTokenCount' => 150],
+            ], 200),
+        ]);
+
+        Product::factory()->create(['name' => 'Tomato', 'stock' => 10]);
+        Product::factory()->create(['name' => 'Spinach', 'stock' => 10]);
+        Product::factory()->create(['name' => 'Salmon', 'stock' => 10]);
+
+        // 第一次调用：正常生成（写缓存 + DB 含 menu_json）
+        $menu1 = $this->service->generateDailyMenuForUser($this->user);
+        $this->assertIsArray($menu1->menu_json);
+
+        // 第二次调用：缓存命中（步骤 1 upsertMenu(..., null)）
+        // 修复前：menu_json 被覆盖为 null
+        // 修复后：menu_json 保留
+        $menu2 = $this->service->generateDailyMenuForUser($this->user);
+        $this->assertIsArray($menu2->menu_json, '缓存命中后 menu_json 必须保留');
+        $this->assertSame('Good day!', $menu2->menu_json['greeting']);
+        $this->assertCount(3, $menu2->menu_json['meals']);
     }
 }
