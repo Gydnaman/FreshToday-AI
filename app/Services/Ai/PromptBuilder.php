@@ -91,6 +91,7 @@ PROMPT;
         $goals = self::sanitizeUserInput($preferences['goals'] ?? 'Wellness');
         $skill = self::sanitizeUserInput($preferences['cooking_skill'] ?? 'Beginner');
         $budget = self::sanitizeUserInput((string) ($preferences['budget_hkd'] ?? 'flexible'));
+        $menuDate = self::sanitizeUserInput($preferences['menu_date'] ?? now()->toDateString());
 
         $productsList = implode(', ', array_map(fn ($p) => self::sanitizeUserInput($p), $products));
 
@@ -103,6 +104,7 @@ Dietary: {$dietary}
 Goals: {$goals}
 Cooking skill: {$skill}
 Budget HKD/week: {$budget}
+Menu date: {$menuDate}
 </user_preferences>
 
 <available_products>

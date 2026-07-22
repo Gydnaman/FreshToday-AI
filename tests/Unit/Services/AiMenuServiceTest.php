@@ -99,7 +99,9 @@ class AiMenuServiceTest extends TestCase
 
         $menu = $this->service->generateDailyMenuForUser($this->user);
 
-        $this->assertStringContainsString('[AI Demo]', $menu->menu_content, '黑名单关键词应触发 fallback');
+        $this->assertIsArray($menu->menu_json, '黑名单关键词应触发结构化 fallback');
+        $this->assertCount(3, $menu->menu_json['meals']);
+        $this->assertStringContainsString($menu->menu_json['meals'][0]['name'], $menu->menu_content);
         $this->assertEquals(0, $menu->tokens_used, '校验失败时 tokens 应清零');
     }
 
@@ -117,7 +119,9 @@ class AiMenuServiceTest extends TestCase
 
         $menu = $this->service->generateDailyMenuForUser($this->user);
 
-        $this->assertStringContainsString('[AI Demo]', $menu->menu_content);
+        $this->assertIsArray($menu->menu_json);
+        $this->assertCount(3, $menu->menu_json['meals']);
+        $this->assertStringContainsString($menu->menu_json['meals'][0]['name'], $menu->menu_content);
     }
 
     /** JSON 模式：Provider 返回合法 JSON → 渲染成文本 */
