@@ -54,6 +54,13 @@
     "formCta": "Create Free Account",
     "formTerms": "By signing up, you agree to our Terms of Service."
   },
+  "homeMenu": {
+    "today": "Today",
+    "needsPreferences": "Complete your food preferences to generate a daily menu.",
+    "noProducts": "No eligible products are available for a daily menu right now.",
+    "generationFailed": "We could not generate your daily menu right now. Please try again later.",
+    "noMenu": "No menu is available for this day."
+  },
   "catalog": {
     "pageTitle": "Product Catalog",
     "title": "Local Farm Freshness",

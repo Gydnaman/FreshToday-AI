@@ -10,6 +10,7 @@ use App\Services\Ai\MenuRenderer;
 use App\Services\AiMenuService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Throwable;
 
 class HomeController extends Controller
 {
@@ -29,7 +30,7 @@ class HomeController extends Controller
         $menuState = 'ready';
         $menuError = null;
 
-        if (! $user->userPreferences()->exists()) {
+        if (! $user->userPreferences) {
             $menuState = 'needs_preferences';
         } else {
             try {
@@ -39,6 +40,9 @@ class HomeController extends Controller
                     ? 'no_products'
                     : 'generation_failed';
                 $menuError = $exception->userMessage;
+            } catch (Throwable) {
+                $menuState = 'generation_failed';
+                $menuError = i18n('homeMenu.generationFailed');
             }
         }
 
@@ -60,14 +64,21 @@ class HomeController extends Controller
         $menuDays = collect(range(0, 6))->map(function (int $daysAgo) use ($today, $menusByDate, $productMap): array {
             $date = $today->copy()->subDays($daysAgo);
             $menu = $menusByDate->get($date->toDateString());
+            $html = null;
+
+            if ($menu?->menu_json) {
+                try {
+                    $html = MenuRenderer::renderHtmlFromJson($menu->menu_json, $productMap);
+                } catch (Throwable) {
+                    $html = null;
+                }
+            }
 
             return [
                 'date' => $date->toDateString(),
                 'label' => $date->isToday() ? i18n('homeMenu.today') : $date->translatedFormat('m/d'),
                 'menu' => $menu,
-                'html' => $menu?->menu_json
-                    ? MenuRenderer::renderHtmlFromJson($menu->menu_json, $productMap)
-                    : null,
+                'html' => $html,
             ];
         });
 

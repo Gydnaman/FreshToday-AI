@@ -77,10 +77,7 @@
                 </div>
             @elseif ($menuState === 'generation_failed')
                 <div data-testid="menu-generation-failed">
-                    <p>{{ i18n('homeMenu.generationFailed') }}</p>
-                    @if ($menuError)
-                        <p>{{ $menuError }}</p>
-                    @endif
+                    <p>{{ $menuError ?: i18n('homeMenu.generationFailed') }}</p>
                 </div>
             @else
                 @foreach ($menuDays as $day)

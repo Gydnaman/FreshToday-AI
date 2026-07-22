@@ -54,6 +54,13 @@
     "formCta": "免費建立帳戶",
     "formTerms": "註冊即代表你同意我們的服務條款。"
   },
+  "homeMenu": {
+    "today": "今日",
+    "needsPreferences": "請先完成飲食偏好問卷，以生成每日菜單。",
+    "noProducts": "目前沒有可用於生成每日菜單的商品。",
+    "generationFailed": "暫時無法生成每日菜單，請稍後再試。",
+    "noMenu": "當日暫無菜單。"
+  },
   "catalog": {
     "pageTitle": "商品目錄",
     "title": "本地農場新鮮直送",

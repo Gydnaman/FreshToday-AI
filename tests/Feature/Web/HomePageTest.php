@@ -12,6 +12,7 @@ use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class HomePageTest extends TestCase
@@ -142,6 +143,86 @@ class HomePageTest extends TestCase
             ->assertSee('data-testid="menu-generation-failed"', false)
             ->assertSee(e($unsafeMessage), false)
             ->assertDontSee($unsafeMessage, false);
+    }
+
+    public function test_unexpected_generation_failure_returns_generic_error_without_leaking_details(): void
+    {
+        $user = User::factory()->create();
+        UserPreference::factory()->for($user)->create();
+        $sensitiveDetail = 'https://provider.example/v1/menu?key=PRIVATE_PROVIDER_KEY';
+
+        $this->mock(AiMenuService::class, function (MockInterface $mock) use ($sensitiveDetail): void {
+            $mock->shouldReceive('generateDailyMenuForUser')
+                ->once()
+                ->andThrow(new RuntimeException($sensitiveDetail));
+        });
+
+        $response = $this->actingAs($user)->get('/');
+
+        $response
+            ->assertOk()
+            ->assertViewHas('menuState', 'generation_failed')
+            ->assertViewHas('menuError', i18n('homeMenu.generationFailed'))
+            ->assertSee('data-testid="menu-generation-failed"', false)
+            ->assertSee(i18n('homeMenu.generationFailed'));
+        $this->assertStringNotContainsString($sensitiveDetail, $response->getContent());
+        $this->assertStringNotContainsString('PRIVATE_PROVIDER_KEY', $response->getContent());
+        $this->assertSame(1, substr_count($response->getContent(), e(i18n('homeMenu.generationFailed'))));
+    }
+
+    public function test_home_menu_copy_exists_in_all_supported_locales(): void
+    {
+        $user = User::factory()->create();
+        $keys = [
+            'homeMenu.today',
+            'homeMenu.needsPreferences',
+            'homeMenu.noProducts',
+            'homeMenu.generationFailed',
+            'homeMenu.noMenu',
+        ];
+
+        foreach (['en', 'zh', 'zhhk'] as $locale) {
+            $this->actingAs($user)->get('/?lang='.$locale)
+                ->assertOk()
+                ->assertDontSee('homeMenu.', false);
+
+            foreach ($keys as $key) {
+                $translation = i18n($key, locale: $locale);
+
+                $this->assertNotSame($key, $translation, "Missing {$locale} translation for {$key}");
+                $this->assertStringNotContainsString('homeMenu.', $translation);
+            }
+        }
+    }
+
+    public function test_malformed_historical_menu_json_falls_back_to_escaped_plain_text(): void
+    {
+        $user = User::factory()->create();
+        UserPreference::factory()->for($user)->create();
+        DailyMenu::create([
+            'user_id' => $user->id,
+            'date' => now()->toDateString(),
+            'menu_content' => 'Valid today menu',
+        ]);
+        $unsafeFallback = '<script>alert("history-secret")</script> Safe historic fallback';
+        DailyMenu::create([
+            'user_id' => $user->id,
+            'date' => now()->subDay()->toDateString(),
+            'menu_content' => $unsafeFallback,
+            'menu_json' => [
+                'greeting' => ['invalid'],
+                'meals' => [],
+                'tip' => 'Invalid persisted structure',
+            ],
+        ]);
+
+        $response = $this->actingAs($user)->get('/');
+
+        $response
+            ->assertOk()
+            ->assertSee('Valid today menu')
+            ->assertSee(e($unsafeFallback), false)
+            ->assertDontSee($unsafeFallback, false);
     }
 
     public function test_structured_menu_links_only_published_in_stock_products(): void
