@@ -60,6 +60,8 @@ class ProductController extends Controller
 
     public function show(Product $product): JsonResponse
     {
+        abort_unless($product->status === Product::STATUS_PUBLISHED, 404);
+
         $product->load('category:id,name,slug');
 
         return response()->json(['data' => $product]);
