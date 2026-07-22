@@ -57,12 +57,18 @@
         function normalizeReturnDestination(rawReturn, currentOrigin) {
             const origin = currentOrigin || window.location.origin;
 
-            if (typeof rawReturn !== 'string' || rawReturn.trim() === '') {
+            if (typeof rawReturn !== 'string') {
+                return '/';
+            }
+
+            const candidate = rawReturn.trim();
+
+            if (candidate === '' || candidate.startsWith('//') || candidate.startsWith('\\')) {
                 return '/';
             }
 
             try {
-                const destination = new URL(rawReturn, origin);
+                const destination = new URL(candidate, origin);
                 const isHttp = destination.protocol === 'http:' || destination.protocol === 'https:';
 
                 if (! isHttp || destination.origin !== origin) {

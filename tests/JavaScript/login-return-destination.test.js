@@ -22,6 +22,7 @@ const normalize = context.normalizeReturnDestination;
 const origin = 'https://fresh.test';
 
 test('keeps only the path, query, and hash of same-origin destinations', () => {
+    assert.equal(normalize('/orders?x=1#x', origin), '/orders?x=1#x');
     assert.equal(normalize('/catalog?sort=fresh#product-1', origin), '/catalog?sort=fresh#product-1');
     assert.equal(normalize('https://fresh.test/orders?page=2#latest', origin), '/orders?page=2#latest');
 });
@@ -31,7 +32,9 @@ for (const destination of [
     '',
     'javascript:alert(1)',
     'data:text/html,<script>alert(1)</script>',
+    '//fresh.test/orders',
     '//evil.example/steal',
+    '\\\\fresh.test/orders',
     'https://evil.example/steal',
     'http://evil.example/steal',
 ]) {
