@@ -40,7 +40,11 @@ class DailyMenuLifecycleTest extends TestCase
         {
             public array $calls = [];
 
-            public array $result = ['', 0, null];
+            public int $generation = 0;
+
+            public bool $returnEmpty = true;
+
+            public ?array $result = null;
 
             public function name(): string
             {
@@ -56,7 +60,27 @@ class DailyMenuLifecycleTest extends TestCase
             {
                 $this->calls[] = compact('preferences', 'products');
 
-                return $this->result;
+                if ($this->result !== null) {
+                    return $this->result;
+                }
+
+                if ($this->returnEmpty) {
+                    return ['', 0, null];
+                }
+
+                $this->generation++;
+                $ingredient = $products[0];
+                $json = [
+                    'greeting' => 'Generated menu '.$this->generation,
+                    'meals' => [
+                        ['type' => 'breakfast', 'name' => 'Menu '.$this->generation.' breakfast', 'ingredients' => [$ingredient], 'description' => 'Fresh breakfast with '.$ingredient],
+                        ['type' => 'lunch', 'name' => 'Menu '.$this->generation.' lunch', 'ingredients' => [$ingredient], 'description' => 'Fresh lunch with '.$ingredient],
+                        ['type' => 'dinner', 'name' => 'Menu '.$this->generation.' dinner', 'ingredients' => [$ingredient], 'description' => 'Fresh dinner with '.$ingredient],
+                    ],
+                    'tip' => 'Use fresh ingredients.',
+                ];
+
+                return [json_encode($json), 100, $json];
             }
         };
 
@@ -106,6 +130,24 @@ class DailyMenuLifecycleTest extends TestCase
         $this->assertNotSame($first->id, $second->id);
         $this->assertNotSame($firstProducts, $secondProducts);
         $this->assertCount(2, DailyMenu::where('user_id', $this->user->id)->get());
+    }
+
+    public function test_regenerate_calls_provider_again_and_overwrites_same_row(): void
+    {
+        Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
+        $this->provider->returnEmpty = false;
+
+        $first = $this->service->generateDailyMenuForUser($this->user);
+        $firstUpdatedAt = $first->updated_at;
+        Carbon::setTestNow(now()->addMinute());
+
+        $regenerated = $this->service->regenerate($this->user);
+
+        $this->assertSame($first->id, $regenerated->id);
+        $this->assertNotSame($first->menu_content, $regenerated->menu_content);
+        $this->assertTrue($regenerated->updated_at->gt($firstUpdatedAt));
+        $this->assertCount(2, $this->provider->calls);
+        $this->assertSame(1, DailyMenu::where('user_id', $this->user->id)->count());
     }
 
     public function test_fallback_is_structured_and_only_uses_candidate_products(): void

@@ -13,6 +13,7 @@ use App\Services\Ai\MenuRenderer;
 use App\Services\Ai\MetricsRecorder;
 use App\Services\Ai\Providers\NullProvider;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -49,7 +50,11 @@ class AiMenuService
         private readonly MenuOutputValidator $validator = new MenuOutputValidator,
     ) {}
 
-    public function generateDailyMenuForUser(User $user, ?array $overridePreferences = null, bool $force = false): DailyMenu
+    public function generateDailyMenuForUser(
+        User $user,
+        ?array $overridePreferences = null,
+        bool $force = false,
+    ): DailyMenu
     {
         $preferences = $overridePreferences ?? $this->resolvePreferences($user);
         if (empty($preferences)) {
@@ -65,18 +70,20 @@ class AiMenuService
         $dateForDb = Carbon::parse($date)->startOfDay();
         $cacheKey = sprintf(self::CACHE_KEY_MENU, $user->id, $date);
 
-        // 1. 命中缓存（无 json 数据，传 null）
-        $cached = Cache::get($cacheKey);
-        if ($cached) {
-            return $this->upsertMenu($user, $date, $cached, $this->provider->name(), 0, null);
-        }
+        if (! $force) {
+            // 1. 命中缓存（无 json 数据，传 null）
+            $cached = Cache::get($cacheKey);
+            if ($cached) {
+                return $this->upsertMenu($user, $date, $cached, $this->provider->name(), 0, null);
+            }
 
-        // 2. 命中 DB
-        $existing = DailyMenu::where('user_id', $user->id)->whereDate('date', $date)->first();
-        if ($existing) {
-            Cache::put($cacheKey, $existing->menu_content, self::CACHE_TTL_SECONDS);
+            // 2. 命中 DB
+            $existing = DailyMenu::where('user_id', $user->id)->whereDate('date', $date)->first();
+            if ($existing) {
+                Cache::put($cacheKey, $existing->menu_content, self::CACHE_TTL_SECONDS);
 
-            return $existing;
+                return $existing;
+            }
         }
 
         // 3. 调 Provider
@@ -151,7 +158,7 @@ class AiMenuService
         // 失效缓存
         Cache::forget(sprintf(self::CACHE_KEY_MENU, $user->id, $date));
 
-        return $this->generateDailyMenuForUser($user, $overridePreferences);
+        return $this->generateDailyMenuForUser($user, $overridePreferences, force: true);
     }
 
     public function getTodayMenu(User $user): ?DailyMenu
@@ -231,7 +238,19 @@ class AiMenuService
         if ($jsonData !== null) {
             $fillData['menu_json'] = $jsonData;
         }
-        $menu->fill($fillData)->save();
+        try {
+            $menu->fill($fillData)->save();
+        } catch (QueryException $exception) {
+            $menu = DailyMenu::where('user_id', $user->id)
+                ->whereDate('date', $dateStr)
+                ->first();
+
+            if (! $menu) {
+                throw $exception;
+            }
+
+            $menu->fill($fillData)->save();
+        }
 
         return $menu;
     }
