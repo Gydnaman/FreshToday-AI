@@ -14,6 +14,7 @@ use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class DailyMenuLifecycleTest extends TestCase
@@ -231,5 +232,61 @@ class DailyMenuLifecycleTest extends TestCase
         $this->assertNotSame($providerMenu, $menu->menu_json);
         $this->assertSame(0, $menu->tokens_used);
         $this->assertSame(['Carrot'], $menu->menu_json['meals'][0]['ingredients']);
+    }
+
+    #[DataProvider('invalidRenderableFieldProvider')]
+    public function test_invalid_renderable_provider_fields_use_structured_fallback(
+        string $field,
+        mixed $invalidValue,
+    ): void
+    {
+        Product::factory()->create([
+            'name' => 'Carrot',
+            'status' => Product::STATUS_PUBLISHED,
+            'stock' => 10,
+        ]);
+        $providerMenu = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'A', 'ingredients' => ['Carrot'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'B', 'ingredients' => ['Carrot'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'C', 'ingredients' => ['Carrot'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+        match ($field) {
+            'greeting', 'tip' => $providerMenu[$field] = $invalidValue,
+            'name', 'description' => $providerMenu['meals'][0][$field] = $invalidValue,
+        };
+        $this->provider->result = ['provider text', 100, $providerMenu];
+
+        $menu = $this->service->generateDailyMenuForUser($this->user);
+
+        $this->assertNotSame($providerMenu, $menu->menu_json);
+        $this->assertSame(0, $menu->tokens_used);
+        $this->assertIsString($menu->menu_json['greeting']);
+        $this->assertNotSame('', trim($menu->menu_json['greeting']));
+        $this->assertIsString($menu->menu_json['tip']);
+        $this->assertNotSame('', trim($menu->menu_json['tip']));
+        foreach ($menu->menu_json['meals'] as $meal) {
+            $this->assertIsString($meal['name']);
+            $this->assertNotSame('', trim($meal['name']));
+            $this->assertIsString($meal['description']);
+            $this->assertNotSame('', trim($meal['description']));
+        }
+    }
+
+    public static function invalidRenderableFieldProvider(): array
+    {
+        return [
+            'greeting array' => ['greeting', ['invalid']],
+            'tip array' => ['tip', ['invalid']],
+            'meal name array' => ['name', ['invalid']],
+            'meal description array' => ['description', ['invalid']],
+            'greeting empty' => ['greeting', ''],
+            'tip empty' => ['tip', ''],
+            'meal name empty' => ['name', ''],
+            'meal description empty' => ['description', ''],
+        ];
     }
 }

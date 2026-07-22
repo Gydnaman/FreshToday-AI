@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Ai;
 
 use App\Services\Ai\MenuOutputValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class MenuOutputValidatorTest extends TestCase
@@ -142,6 +143,44 @@ class MenuOutputValidatorTest extends TestCase
         ];
 
         $this->assertFalse($this->validator->validateJson($data, ['Tomato']));
+    }
+
+    #[DataProvider('invalidRenderableFieldProvider')]
+    public function test_validate_json_rejects_non_string_or_empty_renderable_fields(
+        string $field,
+        mixed $invalidValue,
+    ): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['Tomato'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Y', 'ingredients' => ['Tomato'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Z', 'ingredients' => ['Tomato'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        match ($field) {
+            'greeting', 'tip' => $data[$field] = $invalidValue,
+            'name', 'description' => $data['meals'][0][$field] = $invalidValue,
+        };
+
+        $this->assertFalse($this->validator->validateJson($data, ['Tomato']));
+    }
+
+    public static function invalidRenderableFieldProvider(): array
+    {
+        return [
+            'greeting array' => ['greeting', ['invalid']],
+            'tip array' => ['tip', ['invalid']],
+            'meal name array' => ['name', ['invalid']],
+            'meal description array' => ['description', ['invalid']],
+            'greeting empty' => ['greeting', ''],
+            'tip empty' => ['tip', ''],
+            'meal name empty' => ['name', ''],
+            'meal description empty' => ['description', ''],
+        ];
     }
 
     /** A mixed payload is rejected as soon as one ingredient is not an exact candidate. */

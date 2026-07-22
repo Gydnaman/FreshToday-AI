@@ -330,4 +330,45 @@ class AiMenuServiceFallbackTest extends TestCase
             $this->assertSame('NO_AVAILABLE_PRODUCTS', $exception->context['reason']);
         }
     }
+
+    public function test_text_only_interface_does_not_accept_invalid_json_as_free_text(): void
+    {
+        $invalidJson = [
+            'greeting' => str_repeat('Fresh Tomato menu. ', 5),
+            'meals' => [],
+            'tip' => 'Tip',
+        ];
+        $rawJson = json_encode($invalidJson, JSON_THROW_ON_ERROR);
+        $provider = new class($rawJson, $invalidJson) implements AiProviderInterface
+        {
+            public function __construct(
+                private readonly string $content,
+                private readonly array $json,
+            ) {}
+
+            public function name(): string
+            {
+                return 'fake';
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function generate(array $preferences, array $products): array
+            {
+                return [$this->content, 50, $this->json];
+            }
+        };
+
+        $content = (new AiMenuService($provider))->generateDailyMenu(
+            preferences: ['dietary_habits' => 'Healthy'],
+            availableProducts: ['Tomato'],
+        );
+
+        $this->assertNotSame($rawJson, $content);
+        $this->assertStringContainsString('Breakfast: Morning Tomato', $content);
+        $this->assertStringContainsString('Dinner: Evening Tomato', $content);
+    }
 }

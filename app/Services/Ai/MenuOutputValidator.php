@@ -18,7 +18,8 @@ namespace App\Services\Ai;
  *  2. meals 必须是数组且 count=3
  *  3. 每个 meal 必须含 type/name/ingredients/description
  *  4. type ∈ {breakfast, lunch, dinner}
- *  5. 所有 ingredients 都必须是非空字符串，并与 availableProducts 中的候选名称完全一致
+ *  5. greeting/tip/name/description 必须是非空字符串
+ *  6. 所有 ingredients 都必须是非空字符串，并与 availableProducts 中的候选名称完全一致
  *     - 任何 1 个食材匹配不到 → 校验失败 → 走 fallback
  */
 class MenuOutputValidator
@@ -73,6 +74,11 @@ class MenuOutputValidator
             return false;
         }
 
+        if (! $this->isNonEmptyString($data['greeting'])
+            || ! $this->isNonEmptyString($data['tip'])) {
+            return false;
+        }
+
         if (! is_array($data['meals']) || count($data['meals']) !== 3) {
             return false;
         }
@@ -86,6 +92,10 @@ class MenuOutputValidator
                 return false;
             }
             if (! in_array($meal['type'], self::VALID_MEAL_TYPES, true)) {
+                return false;
+            }
+            if (! $this->isNonEmptyString($meal['name'])
+                || ! $this->isNonEmptyString($meal['description'])) {
                 return false;
             }
             if (! is_array($meal['ingredients'])) {
@@ -137,5 +147,10 @@ class MenuOutputValidator
         }
 
         return true;
+    }
+
+    private function isNonEmptyString(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
     }
 }

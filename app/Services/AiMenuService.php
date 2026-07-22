@@ -92,8 +92,9 @@ class AiMenuService
         // 4. 校验 + 渲染
         // 4a. JSON 模式：优先用结构化数据
         if ($jsonData !== null) {
-            if ($this->isValidJsonOutput($jsonData, $availableProducts)) {
-                $content = MenuRenderer::renderTextFromJson($jsonData);
+            $renderedJson = $this->renderValidJsonOutput($jsonData, $availableProducts);
+            if ($renderedJson !== null) {
+                $content = $renderedJson;
             } else {
                 Log::warning('AiMenuService: provider JSON output failed validation', [
                     'provider' => $this->provider->name(),
@@ -171,8 +172,11 @@ class AiMenuService
 
         [$content, , $jsonData] = $this->callProvider($preferences, $availableProducts);
 
-        if ($jsonData !== null && $this->isValidJsonOutput($jsonData, $availableProducts)) {
-            return MenuRenderer::renderTextFromJson($jsonData);
+        if ($jsonData !== null) {
+            return $this->renderValidJsonOutput($jsonData, $availableProducts)
+                ?? MenuRenderer::renderTextFromJson(
+                    $this->generateFallbackMenuJson($preferences, $availableProducts)
+                );
         }
 
         if ($content !== '' && $this->validator->validate($content, $availableProducts)) {
@@ -267,23 +271,27 @@ class AiMenuService
     }
 
     /**
-     * Treat malformed provider JSON and validator failures as invalid output so
-     * the caller can persist the structured local fallback.
+     * Validate and render provider JSON inside one exception boundary so malformed
+     * output can safely fall back without persisting an unrenderable structure.
      *
      * @param  array<string, mixed>  $jsonData
      * @param  array<int, string>  $availableProducts
      */
-    private function isValidJsonOutput(array $jsonData, array $availableProducts): bool
+    private function renderValidJsonOutput(array $jsonData, array $availableProducts): ?string
     {
         try {
-            return $this->validator->validateJson($jsonData, $availableProducts);
+            if (! $this->validator->validateJson($jsonData, $availableProducts)) {
+                return null;
+            }
+
+            return MenuRenderer::renderTextFromJson($jsonData);
         } catch (\Throwable $exception) {
-            Log::warning('AiMenuService: provider JSON validation threw an exception', [
+            Log::warning('AiMenuService: provider JSON validation or rendering threw an exception', [
                 'provider' => $this->provider->name(),
                 'error' => $exception->getMessage(),
             ]);
 
-            return false;
+            return null;
         }
     }
 
