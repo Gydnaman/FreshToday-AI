@@ -186,16 +186,18 @@
 
 <script>
     $(document).ready(function() {
-        $('[data-menu-date]').on('click', function() {
-            const selectedDate = $(this).data('menu-date');
+        const $tabs = $('[data-menu-date]');
 
-            $('[data-menu-date]')
+        function activateMenuTab($tab, shouldFocus) {
+            const selectedDate = $tab.data('menu-date');
+
+            $tabs
                 .attr('aria-selected', 'false')
                 .attr('tabindex', '-1')
                 .removeClass('border-green-600 bg-green-600 text-white')
                 .addClass('border-gray-200 bg-white text-gray-700');
 
-            $(this)
+            $tab
                 .attr('aria-selected', 'true')
                 .attr('tabindex', '0')
                 .removeClass('border-gray-200 bg-white text-gray-700')
@@ -203,6 +205,39 @@
 
             $('[data-menu-panel]').prop('hidden', true);
             $('[data-menu-panel="' + selectedDate + '"]').prop('hidden', false);
+
+            if (shouldFocus) {
+                $tab.trigger('focus');
+            }
+        }
+
+        $tabs.on('click', function() {
+            activateMenuTab($(this), false);
+        });
+
+        $tabs.on('keydown', function(event) {
+            const currentIndex = $tabs.index(this);
+            let targetIndex;
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    targetIndex = (currentIndex - 1 + $tabs.length) % $tabs.length;
+                    break;
+                case 'ArrowRight':
+                    targetIndex = (currentIndex + 1) % $tabs.length;
+                    break;
+                case 'Home':
+                    targetIndex = 0;
+                    break;
+                case 'End':
+                    targetIndex = $tabs.length - 1;
+                    break;
+                default:
+                    return;
+            }
+
+            event.preventDefault();
+            activateMenuTab($tabs.eq(targetIndex), true);
         });
 
         $('#regenerate-menu-button').on('click', function() {

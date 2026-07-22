@@ -174,11 +174,20 @@ class HomePageTest extends TestCase
     {
         $user = User::factory()->create();
         $keys = [
+            'homeMenu.title',
+            'homeMenu.subtitle',
             'homeMenu.today',
+            'homeMenu.previousDays',
+            'homeMenu.noMenu',
             'homeMenu.needsPreferences',
+            'homeMenu.completePreferences',
             'homeMenu.noProducts',
             'homeMenu.generationFailed',
-            'homeMenu.noMenu',
+            'homeMenu.regenerate',
+            'homeMenu.regenerating',
+            'homeMenu.regenerateFailed',
+            'homeMenu.updated',
+            'homeMenu.source',
         ];
 
         foreach (['en', 'zh', 'zhhk'] as $locale) {
@@ -201,8 +210,8 @@ class HomePageTest extends TestCase
         UserPreference::factory()->for($user)->create();
         DailyMenu::create(['user_id' => $user->id, 'date' => now()->toDateString(), 'menu_content' => 'Menu']);
 
-        $this->actingAs($user)->get('/?lang=zh')->assertSee('浠婃棩鑿滃崟');
-        $this->actingAs($user)->get('/?lang=zhhk')->assertSee('浠婃棩椁愬柈');
+        $this->actingAs($user)->get('/?lang=zh')->assertSee('今日菜单');
+        $this->actingAs($user)->get('/?lang=zhhk')->assertSee('今日餐單');
         $this->actingAs($user)->get('/?lang=en')->assertSee("Today's menu");
     }
 
@@ -219,10 +228,26 @@ class HomePageTest extends TestCase
 
     public function test_login_defaults_to_home_and_preserves_explicit_return_code(): void
     {
-        $this->get('/login')
+        $response = $this->get('/login')
             ->assertOk()
-            ->assertSee("params.get('return') || '/'", false)
-            ->assertSee("params.get('return')", false);
+            ->assertSee('function normalizeReturnDestination(rawReturn, currentOrigin)', false)
+            ->assertSee("normalizeReturnDestination(params.get('return'))", false);
+
+        $this->assertSame(2, substr_count($response->getContent(), 'location.href = returnTo;'));
+    }
+
+    public function test_daily_menu_tabs_support_roving_keyboard_focus(): void
+    {
+        $user = User::factory()->create();
+        UserPreference::factory()->for($user)->create();
+        DailyMenu::create(['user_id' => $user->id, 'date' => now()->toDateString(), 'menu_content' => 'Menu']);
+
+        $this->actingAs($user)->get('/')
+            ->assertSee("case 'ArrowLeft':", false)
+            ->assertSee("case 'ArrowRight':", false)
+            ->assertSee("case 'Home':", false)
+            ->assertSee("case 'End':", false)
+            ->assertSee('activateMenuTab($tabs.eq(targetIndex), true);', false);
     }
 
     public function test_malformed_historical_menu_json_falls_back_to_escaped_plain_text(): void
