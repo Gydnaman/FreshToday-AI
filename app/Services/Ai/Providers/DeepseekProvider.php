@@ -64,7 +64,7 @@ class DeepseekProvider implements AiProviderInterface
                     ['role' => 'user', 'content' => $userPrompt],
                 ],
                 'temperature' => 0.7,
-                'max_tokens' => 500,
+                'max_tokens' => $this->config['max_tokens'] ?? 400,
                 'stream' => false,
                 // 注释掉 response_format：DeepSeek V4 Flash 对 json_object + 复杂 prompt 组合
                 // 可能返回空内容。让模型自由生成，后端 json_decode 失败会走 fallback。

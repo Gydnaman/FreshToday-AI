@@ -142,4 +142,32 @@ class JsonOutputTest extends TestCase
         $this->assertArrayHasKey('meals', $json);
         $this->assertEquals(100, $tokens);
     }
+
+    public function test_deepseek_provider_uses_configured_output_budget(): void
+    {
+        Http::fake([
+            'api.deepseek.com/*' => Http::response([
+                'choices' => [[
+                    'message' => ['content' => '{}'],
+                ]],
+                'usage' => ['total_tokens' => 1],
+            ], 200),
+        ]);
+
+        $provider = new DeepseekProvider([
+            'key' => 'fake',
+            'base_url' => 'https://api.deepseek.com/v1',
+            'model' => 'deepseek-chat',
+            'max_tokens' => 400,
+            'timeout' => 15,
+        ]);
+
+        $provider->generate(['purpose' => 'X'], ['Tomato']);
+
+        Http::assertSent(fn ($request) =>
+            $request['model'] === 'deepseek-chat'
+            && $request['max_tokens'] === 400
+            && count($request['messages']) === 2
+        );
+    }
 }
