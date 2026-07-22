@@ -67,6 +67,20 @@
     "carbonFootprint": "Carbon Footprint",
     "explorePlans": "Explore Subscription Plans"
   },
+  "productDetail": {
+    "backToCatalog": "Back to catalog",
+    "organic": "Organic",
+    "carbonFootprint": "Carbon footprint",
+    "carbonUnit": "kg CO2e",
+    "origin": "Origin",
+    "inStock": "In stock",
+    "stockRemaining": ":count remaining",
+    "quantity": "Quantity",
+    "addToCart": "Add to cart",
+    "soldOut": "Sold out",
+    "description": "Product description",
+    "imageUnavailable": "Image unavailable"
+  },
     "cart": {
     "title": "My Cart",
     "subtitle": "Review your items before checkout",

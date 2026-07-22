@@ -52,4 +52,51 @@ class ProductDetailTest extends TestCase
     {
         $this->get('/products/999999')->assertNotFound();
     }
+
+    public function test_in_stock_detail_renders_quantity_and_add_to_cart_contract(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Fresh Carrot',
+            'price' => 18,
+            'stock' => 7,
+            'status' => Product::STATUS_PUBLISHED,
+        ]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertSee('id="product-quantity"', false)
+            ->assertSee('min="1"', false)
+            ->assertSee('max="7"', false)
+            ->assertSee('addToCartAuth(', false)
+            ->assertSee('Fresh Carrot');
+    }
+
+    public function test_sold_out_detail_disables_purchase_controls(): void
+    {
+        $product = Product::factory()->outOfStock()->create([
+            'status' => Product::STATUS_PUBLISHED,
+        ]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertSee('data-testid="sold-out-button"', false)
+            ->assertSee('disabled', false)
+            ->assertDontSee('id="product-quantity"', false);
+    }
+
+    public function test_optional_product_fields_are_not_rendered_when_null(): void
+    {
+        $product = Product::factory()->create([
+            'status' => Product::STATUS_PUBLISHED,
+            'origin' => null,
+            'carbon_footprint' => null,
+            'image' => null,
+        ]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertSee('data-testid="product-image-placeholder"', false)
+            ->assertDontSee('data-testid="product-origin"', false)
+            ->assertDontSee('data-testid="product-carbon"', false);
+    }
 }

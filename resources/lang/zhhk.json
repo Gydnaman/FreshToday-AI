@@ -67,6 +67,20 @@
     "carbonFootprint": "碳足跡",
     "explorePlans": "探索訂閱計劃"
   },
+  "productDetail": {
+    "backToCatalog": "返回商品目錄",
+    "organic": "有機",
+    "carbonFootprint": "碳足跡",
+    "carbonUnit": "kg CO2e",
+    "origin": "產地",
+    "inStock": "有存貨",
+    "stockRemaining": "剩餘 :count 件",
+    "quantity": "數量",
+    "addToCart": "加入購物車",
+    "soldOut": "售罄",
+    "description": "商品描述",
+    "imageUnavailable": "暫無商品圖片"
+  },
     "cart": {
     "title": "我的購物車",
     "subtitle": "結帳前檢視你的商品",
