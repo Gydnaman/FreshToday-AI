@@ -145,7 +145,7 @@
             // 签名：addToCartAuth(productId, name, price, qty=1)
             // F-3 修正：不用 gbFetch（避免 401 全局跳转），直接 fetch + 401 走 fallback
             window.addToCartAuth = function(productId, name, price, qty) {
-                qty = qty || 1;
+                qty = Math.max(1, Math.floor(Number(qty) || 1));
                 fetch('/api/cart', {
                     method: 'POST',
                     credentials: 'include',
@@ -154,18 +154,17 @@
                 }).then(r => {
                     if (r.status === 401) {
                         // guest：走 localStorage，不跳登录
-                        fallbackLocalAdd(productId, name, price);
+                        fallbackLocalAdd(productId, name, price, qty);
                         return null;
                     }
-                    return r.json();
-                }).then(d => {
-                    if (d === null) return;  // 已走 fallback
-                    if (d.error) { fallbackLocalAdd(productId, name, price); return; }
+                    // 登录态的库存或校验错误由 API 保持权威，不降级写入本地购物车。
+                    if (!r.ok) return null;
                     // 成功：刷新角标
                     return fetch('/api/cart', { credentials: 'include' })
                         .then(r2 => r2.json())
-                        .then(d2 => { $('#cart-count').text(d2.item_count || 0); });
-                }).catch(() => fallbackLocalAdd(productId, name, price));
+                        .then(d2 => { $('#cart-count').text(d2.item_count || 0); })
+                        .catch(() => {});
+                }, () => fallbackLocalAdd(productId, name, price, qty));
                 // 角标动画
                 $('#cart-count').addClass('scale-150').delay(200).queue(function(next){
                     $(this).removeClass('scale-150');
@@ -173,9 +172,11 @@
                 });
             };
 
-            function fallbackLocalAdd(productId, name, price) {
+            function fallbackLocalAdd(productId, name, price, qty) {
                 const cart = JSON.parse(localStorage.getItem('greenbite_cart') || '[]');
-                cart.push({ name: name, price: parseFloat(price), product_id: productId });
+                for (let i = 0; i < qty; i++) {
+                    cart.push({ name: name, price: parseFloat(price), product_id: productId });
+                }
                 localStorage.setItem('greenbite_cart', JSON.stringify(cart));
                 $('#cart-count').text(cart.length);
             }

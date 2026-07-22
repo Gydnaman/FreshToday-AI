@@ -114,4 +114,17 @@ class ProductDetailTest extends TestCase
         $this->assertSame(2, substr_count($response->getContent(), 'href="'.$detailUrl.'"'));
         $response->assertSee('addToCartAuth('.$product->id, false);
     }
+
+    public function test_guest_cart_fallback_preserves_selected_quantity_contract(): void
+    {
+        $product = Product::factory()->create([
+            'stock' => 7,
+            'status' => Product::STATUS_PUBLISHED,
+        ]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertSee('fallbackLocalAdd(productId, name, price, qty)', false)
+            ->assertSee('for (let i = 0; i < qty; i++)', false);
+    }
 }
