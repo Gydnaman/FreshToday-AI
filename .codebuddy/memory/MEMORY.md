@@ -20,6 +20,20 @@
 - i18n 覆盖：所有 Blade 视图 + admin 后台；JS 文案通过 `@json(i18n('key'))` 注入
 - 三语言验证：默认 `zh` 显示中文，`?lang=en` 显示英文，`?lang=zhhk` 显示繁中（已修复 helper 映射 bug）
 
+## 测试基线（2026-07-20 AI 菜单生产化加固后）
+- **129 passed / 468 assertions / 0 failed**（零回归）
+- 基线修正：实际起点 94 tests（非 86），缺 .env 导致 8 个 MissingAppKeyException
+- 新增 35 个测试覆盖 7 个 Task
+
+## AI 菜单生产化架构（2026-07-20 落地）
+- **五道防线**：PromptBuilder 契约 → JSON Schema 强制 → MenuOutputValidator 校验 → 本地 fallback → FailoverProvider 灾备
+- **新组件**（`app/Services/Ai/`）：MenuOutputValidator / PromptBuilder / MenuSchema / MenuRenderer / MetricsRecorder / CircuitBreaker / Providers/FailoverProvider
+- **Provider 返回契约**：`array{0:string,1:int,2:?array}`（content, tokens, json_data）
+- **数据层**：`daily_menus.menu_json` JSON 列（nullable）存结构化，`menu_content` 保留渲染文本
+- **可观测**：`GET /api/health/ai` 返回 provider/configured/last_success_at/last_failure_at/failure_rate_1h
+- **Failover 模式**：`AI_FAILOVER_ENABLED=true` 开启，按 `failover_order=['deepseek','openai','gemini']` 顺序尝试，CircuitBreaker 熔断（默认 5 次失败 / 600s 窗口）
+- **已知语义边界**：FailoverProvider "content 非空即成功"，不感知业务校验层（跑题 JSON 会判成功直接返回，落本地 fallback）
+
 
 ## BMAD+Superpowers 五轮 Review 修复摘要
 

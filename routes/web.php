@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\Web\CheckoutController;
+use App\Http\Controllers\Web\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -33,7 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/cart', function () {
         return view('shop.cart');
     });
-    Route::get('/dashboard', [\App\Http\Controllers\Web\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/checkout', [CheckoutController::class, 'show']);
     Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('web.checkout.place');
 });

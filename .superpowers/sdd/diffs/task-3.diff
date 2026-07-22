@@ -1,0 +1,606 @@
+2d4afc4 feat(ai): enforce JSON structured output across all providers
+
+ app/Services/Ai/Contracts/AiProviderInterface.php  |   5 +-
+ app/Services/Ai/MenuSchema.php                     |  95 +++++++++++++
+ app/Services/Ai/Providers/DeepseekProvider.php     |  28 ++--
+ app/Services/Ai/Providers/GeminiProvider.php       |  25 +++-
+ app/Services/Ai/Providers/NullProvider.php         |   2 +-
+ app/Services/Ai/Providers/OpenAiProvider.php       |  28 ++--
+ .../Unit/Services/Ai/Providers/JsonOutputTest.php  | 147 +++++++++++++++++++++
+ 7 files changed, 307 insertions(+), 23 deletions(-)
+
+diff --git a/app/Services/Ai/Contracts/AiProviderInterface.php b/app/Services/Ai/Contracts/AiProviderInterface.php
+index a35aabf..9975114 100644
+--- a/app/Services/Ai/Contracts/AiProviderInterface.php
++++ b/app/Services/Ai/Contracts/AiProviderInterface.php
+@@ -26,14 +26,17 @@ public function name(): string;
+     /**
+      * 当前 Provider 是否已配置（key 非空等）
+      */
+     public function isConfigured(): bool;
+ 
+     /**
+      * 生成个性化菜单文本
+      *
+      * @param  array<string,mixed>  $preferences  来自 UserPreference 的偏好
+      * @param  array<int,string>  $products  可售商品名称列表
+-     * @return array{0:string,1:int} [content, tokens_used]
++     * @return array{0:string,1:int,2:?array} [content, tokens_used, json_data]
++     *         content: 原始文本（JSON 字符串或纯文本）
++     *         tokens_used: 成功时 Provider 报告的 token 数，失败为 0
++     *         json_data: 解析后的 JSON 数组（JSON 模式），非 JSON 模式或解析失败为 null
+      */
+     public function generate(array $preferences, array $products): array;
+ }
+diff --git a/app/Services/Ai/MenuSchema.php b/app/Services/Ai/MenuSchema.php
+new file mode 100644
+index 0000000..bd7a5d3
+--- /dev/null
++++ b/app/Services/Ai/MenuSchema.php
+@@ -0,0 +1,95 @@
++<?php
++
++namespace App\Services\Ai;
++
++/**
++ * 菜单 JSON Schema 定义
++ *
++ * 三家 Provider 的 schema 格式略有差异：
++ *  - Gemini: responseSchema (OpenAPI 3.0 subset)
++ *  - OpenAI: json_schema (JSON Schema draft 2020-12)
++ *  - DeepSeek: 仅支持 json_object，schema 靠后端校验
++ */
++class MenuSchema
++{
++    /**
++     * Gemini responseSchema 格式
++     *
++     * @see https://ai.google.dev/api/rest/v1beta/GenerationConfig
++     */
++    public static function geminiSchema(): array
++    {
++        return [
++            'type' => 'object',
++            'properties' => [
++                'greeting' => ['type' => 'string', 'description' => 'Friendly opening line'],
++                'meals' => [
++                    'type' => 'array',
++                    'items' => [
++                        'type' => 'object',
++                        'properties' => [
++                            'type' => ['type' => 'string', 'enum' => ['breakfast', 'lunch', 'dinner']],
++                            'name' => ['type' => 'string'],
++                            'ingredients' => ['type' => 'array', 'items' => ['type' => 'string']],
++                            'description' => ['type' => 'string'],
++                        ],
++                        'required' => ['type', 'name', 'ingredients', 'description'],
++                    ],
++                    'minItems' => 3,
++                    'maxItems' => 3,
++                ],
++                'tip' => ['type' => 'string', 'description' => 'Closing nutrition tip'],
++            ],
++            'required' => ['greeting', 'meals', 'tip'],
++        ];
++    }
++
++    /**
++     * OpenAI Structured Outputs 格式
++     *
++     * @see https://platform.openai.com/docs/guides/structured-outputs
++     */
++    public static function openAiSchema(): array
++    {
++        return [
++            'type' => 'json_schema',
++            'json_schema' => [
++                'name' => 'daily_menu',
++                'strict' => true,
++                'schema' => [
++                    'type' => 'object',
++                    'properties' => [
++                        'greeting' => ['type' => 'string'],
++                        'meals' => [
++                            'type' => 'array',
++                            'items' => [
++                                'type' => 'object',
++                                'properties' => [
++                                    'type' => ['type' => 'string', 'enum' => ['breakfast', 'lunch', 'dinner']],
++                                    'name' => ['type' => 'string'],
++                                    'ingredients' => ['type' => 'array', 'items' => ['type' => 'string']],
++                                    'description' => ['type' => 'string'],
++                                ],
++                                'required' => ['type', 'name', 'ingredients', 'description'],
++                                'additionalProperties' => false,
++                            ],
++                            'minItems' => 3,
++                            'maxItems' => 3,
++                        ],
++                        'tip' => ['type' => 'string'],
++                    ],
++                    'required' => ['greeting', 'meals', 'tip'],
++                    'additionalProperties' => false,
++                ],
++            ],
++        ];
++    }
++
++    /**
++     * DeepSeek 仅支持 json_object（不强制 schema）
++     */
++    public static function deepSeekSchema(): array
++    {
++        return ['type' => 'json_object'];
++    }
++}
+diff --git a/app/Services/Ai/Providers/DeepseekProvider.php b/app/Services/Ai/Providers/DeepseekProvider.php
+index 3f705f4..b382485 100644
+--- a/app/Services/Ai/Providers/DeepseekProvider.php
++++ b/app/Services/Ai/Providers/DeepseekProvider.php
+@@ -1,15 +1,16 @@
+ <?php
+ 
+ namespace App\Services\Ai\Providers;
+ 
+ use App\Services\Ai\Contracts\AiProviderInterface;
++use App\Services\Ai\MenuSchema;
+ use App\Services\Ai\PromptBuilder;
+ use Illuminate\Support\Facades\Http;
+ use Illuminate\Support\Facades\Log;
+ 
+ /**
+  * DeepSeek Provider（OpenAI 兼容协议）
+  *
+  * 协议：POST {base_url}/chat/completions
+  * 鉴权：Authorization: Bearer {api_key}
+  *
+@@ -29,61 +30,72 @@ public function name(): string
+     }
+ 
+     public function isConfigured(): bool
+     {
+         return ! empty($this->config['key']);
+     }
+ 
+     public function generate(array $preferences, array $products): array
+     {
+         if (! $this->isConfigured()) {
+-            return ['', 0];
++            return ['', 0, null];
+         }
+ 
+         $systemPrompt = PromptBuilder::buildSystemPrompt();
+         $userPrompt = PromptBuilder::buildUserPrompt($preferences, $products);
+ 
+         $url = rtrim($this->config['base_url'], '/').'/chat/completions';
+ 
+         try {
+             $response = Http::timeout($this->config['timeout'] ?? 15)
+                 ->withToken($this->config['key'])
+                 ->acceptJson()
+                 ->asJson()
+                 ->post($url, [
+                     'model' => $this->config['model'],
+                     'messages' => [
+                         ['role' => 'system', 'content' => $systemPrompt],
+                         ['role' => 'user', 'content' => $userPrompt],
+                     ],
+                     'temperature' => 0.7,
+-                    'max_tokens' => 300,
++                    'max_tokens' => 500, // JSON 比纯文本耗 token，放宽到 500
+                     'stream' => false,
++                    'response_format' => MenuSchema::deepSeekSchema(),
+                 ]);
+ 
+             if ($response->successful()) {
+                 $data = $response->json();
+                 $text = $data['choices'][0]['message']['content'] ?? '';
+                 $tokens = (int) ($data['usage']['total_tokens'] ?? 0);
++
+                 if ($text !== '') {
+-                    return [trim($text), $tokens];
++                    $json = json_decode($text, true);
++                    if (is_array($json)) {
++                        return [trim($text), $tokens, $json];
++                    }
++                    Log::warning('DeepseekProvider: invalid JSON', [
++                        'text' => substr($text, 0, 200),
++                    ]);
++
++                    return ['', 0, null];
+                 }
+-                Log::warning('DeepseekProvider: empty choices in response', [
++
++                Log::warning('DeepseekProvider: empty choices', [
+                     'model' => $this->config['model'],
+                 ]);
+ 
+-                return ['', 0];
++                return ['', 0, null];
+             }
+ 
+-            Log::warning('DeepseekProvider: non-2xx response', [
++            Log::warning('DeepseekProvider: non-2xx', [
+                 'status' => $response->status(),
+                 'body' => substr($response->body(), 0, 200),
+             ]);
+         } catch (\Throwable $e) {
+-            Log::warning('DeepseekProvider: request exception', [
++            Log::warning('DeepseekProvider: exception', [
+                 'message' => $e->getMessage(),
+             ]);
+         }
+ 
+-        return ['', 0];
++        return ['', 0, null];
+     }
+ }
+diff --git a/app/Services/Ai/Providers/GeminiProvider.php b/app/Services/Ai/Providers/GeminiProvider.php
+index 6fbbab4..e25140a 100644
+--- a/app/Services/Ai/Providers/GeminiProvider.php
++++ b/app/Services/Ai/Providers/GeminiProvider.php
+@@ -1,15 +1,16 @@
+ <?php
+ 
+ namespace App\Services\Ai\Providers;
+ 
+ use App\Services\Ai\Contracts\AiProviderInterface;
++use App\Services\Ai\MenuSchema;
+ use App\Services\Ai\PromptBuilder;
+ use Illuminate\Support\Facades\Http;
+ use Illuminate\Support\Facades\Log;
+ 
+ /**
+  * Google Gemini Provider
+  *
+  * 协议：generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+  * 鉴权：query string ?key={api_key}
+  *
+@@ -25,55 +26,69 @@ public function name(): string
+     }
+ 
+     public function isConfigured(): bool
+     {
+         return ! empty($this->config['key']);
+     }
+ 
+     public function generate(array $preferences, array $products): array
+     {
+         if (! $this->isConfigured()) {
+-            return ['', 0];
++            return ['', 0, null];
+         }
+ 
+         $systemPrompt = PromptBuilder::buildSystemPrompt();
+         $userPrompt = PromptBuilder::buildUserPrompt($preferences, $products);
+ 
+         // Gemini v1beta 无独立 system role，把 system + user 合并到 contents
+         $combinedPrompt = $systemPrompt."\n\n".$userPrompt;
+ 
+         $url = rtrim($this->config['base_url'], '/')
+             .'/models/'.$this->config['model']
+             .':generateContent?key='.$this->config['key'];
+ 
+         try {
+             $response = Http::timeout($this->config['timeout'] ?? 8)->post($url, [
+                 'contents' => [['parts' => [['text' => $combinedPrompt]]]],
++                'generationConfig' => [
++                    'responseMimeType' => 'application/json',
++                    'responseSchema' => MenuSchema::geminiSchema(),
++                ],
+             ]);
+ 
+             if ($response->successful()) {
+                 $data = $response->json();
+                 $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                 $tokens = (int) ($data['usageMetadata']['totalTokenCount'] ?? 0);
++
+                 if ($text !== '') {
+-                    return [$text, $tokens];
++                    $json = json_decode($text, true);
++                    if (is_array($json)) {
++                        return [$text, $tokens, $json];
++                    }
++                    Log::warning('GeminiProvider: invalid JSON in response', [
++                        'text' => substr($text, 0, 200),
++                    ]);
++
++                    return ['', 0, null];
+                 }
+-                Log::warning('GeminiProvider: empty candidates in response', [
++
++                Log::warning('GeminiProvider: empty candidates', [
+                     'model' => $this->config['model'],
+                 ]);
+ 
+-                return ['', 0];
++                return ['', 0, null];
+             }
+ 
+             Log::warning('GeminiProvider: non-2xx response', [
+                 'status' => $response->status(),
+                 'body' => substr($response->body(), 0, 200),
+             ]);
+         } catch (\Throwable $e) {
+             Log::warning('GeminiProvider: request exception', [
+                 'message' => $e->getMessage(),
+             ]);
+         }
+ 
+-        return ['', 0];
++        return ['', 0, null];
+     }
+ }
+diff --git a/app/Services/Ai/Providers/NullProvider.php b/app/Services/Ai/Providers/NullProvider.php
+index 6fea7f4..a666594 100644
+--- a/app/Services/Ai/Providers/NullProvider.php
++++ b/app/Services/Ai/Providers/NullProvider.php
+@@ -21,13 +21,13 @@ public function name(): string
+     }
+ 
+     public function isConfigured(): bool
+     {
+         return false;
+     }
+ 
+     public function generate(array $preferences, array $products): array
+     {
+         // 故意返回空 content，让 AiMenuService 走 generateFallbackMenu
+-        return ['', 0];
++        return ['', 0, null];
+     }
+ }
+diff --git a/app/Services/Ai/Providers/OpenAiProvider.php b/app/Services/Ai/Providers/OpenAiProvider.php
+index 4964bd7..f66fa70 100644
+--- a/app/Services/Ai/Providers/OpenAiProvider.php
++++ b/app/Services/Ai/Providers/OpenAiProvider.php
+@@ -1,15 +1,16 @@
+ <?php
+ 
+ namespace App\Services\Ai\Providers;
+ 
+ use App\Services\Ai\Contracts\AiProviderInterface;
++use App\Services\Ai\MenuSchema;
+ use App\Services\Ai\PromptBuilder;
+ use Illuminate\Support\Facades\Http;
+ use Illuminate\Support\Facades\Log;
+ 
+ /**
+  * OpenAI Provider（Chat Completions 协议）
+  *
+  * 协议：POST {base_url}/chat/completions
+  * 鉴权：Authorization: Bearer {api_key}
+  *
+@@ -26,60 +27,71 @@ public function name(): string
+     }
+ 
+     public function isConfigured(): bool
+     {
+         return ! empty($this->config['key']);
+     }
+ 
+     public function generate(array $preferences, array $products): array
+     {
+         if (! $this->isConfigured()) {
+-            return ['', 0];
++            return ['', 0, null];
+         }
+ 
+         $systemPrompt = PromptBuilder::buildSystemPrompt();
+         $userPrompt = PromptBuilder::buildUserPrompt($preferences, $products);
+ 
+         $url = rtrim($this->config['base_url'], '/').'/chat/completions';
+ 
+         try {
+             $response = Http::timeout($this->config['timeout'] ?? 15)
+                 ->withToken($this->config['key'])
+                 ->acceptJson()
+                 ->asJson()
+                 ->post($url, [
+                     'model' => $this->config['model'],
+                     'messages' => [
+                         ['role' => 'system', 'content' => $systemPrompt],
+                         ['role' => 'user', 'content' => $userPrompt],
+                     ],
+                     'temperature' => 0.7,
+-                    'max_tokens' => 300,
++                    'max_tokens' => 500, // JSON 比纯文本耗 token，放宽到 500
++                    'response_format' => MenuSchema::openAiSchema(),
+                 ]);
+ 
+             if ($response->successful()) {
+                 $data = $response->json();
+                 $text = $data['choices'][0]['message']['content'] ?? '';
+                 $tokens = (int) ($data['usage']['total_tokens'] ?? 0);
++
+                 if ($text !== '') {
+-                    return [trim($text), $tokens];
++                    $json = json_decode($text, true);
++                    if (is_array($json)) {
++                        return [trim($text), $tokens, $json];
++                    }
++                    Log::warning('OpenAiProvider: invalid JSON', [
++                        'text' => substr($text, 0, 200),
++                    ]);
++
++                    return ['', 0, null];
+                 }
+-                Log::warning('OpenAiProvider: empty choices in response', [
++
++                Log::warning('OpenAiProvider: empty choices', [
+                     'model' => $this->config['model'],
+                 ]);
+ 
+-                return ['', 0];
++                return ['', 0, null];
+             }
+ 
+-            Log::warning('OpenAiProvider: non-2xx response', [
++            Log::warning('OpenAiProvider: non-2xx', [
+                 'status' => $response->status(),
+                 'body' => substr($response->body(), 0, 200),
+             ]);
+         } catch (\Throwable $e) {
+-            Log::warning('OpenAiProvider: request exception', [
++            Log::warning('OpenAiProvider: exception', [
+                 'message' => $e->getMessage(),
+             ]);
+         }
+ 
+-        return ['', 0];
++        return ['', 0, null];
+     }
+ }
+diff --git a/tests/Unit/Services/Ai/Providers/JsonOutputTest.php b/tests/Unit/Services/Ai/Providers/JsonOutputTest.php
+new file mode 100644
+index 0000000..4307b41
+--- /dev/null
++++ b/tests/Unit/Services/Ai/Providers/JsonOutputTest.php
+@@ -0,0 +1,147 @@
++<?php
++
++namespace Tests\Unit\Services\Ai\Providers;
++
++use App\Services\Ai\MenuSchema;
++use App\Services\Ai\Providers\DeepseekProvider;
++use App\Services\Ai\Providers\GeminiProvider;
++use App\Services\Ai\Providers\OpenAiProvider;
++use Illuminate\Support\Facades\Http;
++use Tests\TestCase;
++
++class JsonOutputTest extends TestCase
++{
++    public function test_menu_schema_has_required_fields(): void
++    {
++        $gemini = MenuSchema::geminiSchema();
++        $this->assertArrayHasKey('type', $gemini);
++        $this->assertSame('object', $gemini['type']);
++        $this->assertArrayHasKey('properties', $gemini);
++        $this->assertArrayHasKey('greeting', $gemini['properties']);
++        $this->assertArrayHasKey('meals', $gemini['properties']);
++        $this->assertArrayHasKey('tip', $gemini['properties']);
++
++        $openai = MenuSchema::openAiSchema();
++        $this->assertArrayHasKey('type', $openai);
++        $this->assertSame('json_schema', $openai['type']);
++        $this->assertArrayHasKey('json_schema', $openai);
++    }
++
++    public function test_gemini_provider_requests_json_output(): void
++    {
++        Http::fake([
++            'generativelanguage.googleapis.com/*' => Http::response([
++                'candidates' => [[
++                    'content' => ['parts' => [['text' => json_encode([
++                        'greeting' => 'Hi',
++                        'meals' => [
++                            ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['Tomato'], 'description' => 'Y'],
++                            ['type' => 'lunch', 'name' => 'X', 'ingredients' => ['Spinach'], 'description' => 'Y'],
++                            ['type' => 'dinner', 'name' => 'X', 'ingredients' => ['Salmon'], 'description' => 'Y'],
++                        ],
++                        'tip' => 'Tip',
++                    ])]]],
++                ]],
++                'usageMetadata' => ['totalTokenCount' => 100],
++            ], 200),
++        ]);
++
++        $provider = new GeminiProvider([
++            'key' => 'fake',
++            'base_url' => 'https://generativelanguage.googleapis.com/v1beta',
++            'model' => 'gemini-2.5-flash',
++            'timeout' => 8,
++        ]);
++
++        [$content, $tokens, $json] = $provider->generate(['purpose' => 'X'], ['Tomato', 'Spinach', 'Salmon']);
++
++        $this->assertNotEmpty($content);
++        $this->assertIsArray($json);
++        $this->assertArrayHasKey('meals', $json);
++
++        Http::assertSent(function ($request) {
++            $body = json_decode($request->body(), true);
++
++            return isset($body['generationConfig']['responseMimeType'])
++                && $body['generationConfig']['responseMimeType'] === 'application/json'
++                && isset($body['generationConfig']['responseSchema']);
++        });
++    }
++
++    public function test_openai_provider_requests_json_output(): void
++    {
++        Http::fake([
++            'api.openai.com/*' => Http::response([
++                'choices' => [[
++                    'message' => ['content' => json_encode([
++                        'greeting' => 'Hi',
++                        'meals' => [
++                            ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['Tomato'], 'description' => 'Y'],
++                            ['type' => 'lunch', 'name' => 'X', 'ingredients' => ['Spinach'], 'description' => 'Y'],
++                            ['type' => 'dinner', 'name' => 'X', 'ingredients' => ['Salmon'], 'description' => 'Y'],
++                        ],
++                        'tip' => 'Tip',
++                    ])],
++                ]],
++                'usage' => ['total_tokens' => 100],
++            ], 200),
++        ]);
++
++        $provider = new OpenAiProvider([
++            'key' => 'fake',
++            'base_url' => 'https://api.openai.com/v1',
++            'model' => 'gpt-4o-mini',
++            'timeout' => 15,
++        ]);
++
++        [$content, $tokens, $json] = $provider->generate(['purpose' => 'X'], ['Tomato', 'Spinach', 'Salmon']);
++
++        $this->assertIsArray($json);
++        Http::assertSent(function ($request) {
++            $body = json_decode($request->body(), true);
++
++            return isset($body['response_format']['type'])
++                && $body['response_format']['type'] === 'json_schema'
++                && ($body['response_format']['json_schema']['name'] ?? '') === 'daily_menu'
++                && ($body['response_format']['json_schema']['strict'] ?? false) === true
++                && ($body['response_format']['json_schema']['schema']['additionalProperties'] ?? true) === false;
++        });
++    }
++
++    public function test_deepseek_provider_requests_json_object(): void
++    {
++        Http::fake([
++            'api.deepseek.com/*' => Http::response([
++                'choices' => [[
++                    'message' => ['content' => json_encode([
++                        'greeting' => 'Hi',
++                        'meals' => [
++                            ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['Tomato'], 'description' => 'Y'],
++                            ['type' => 'lunch', 'name' => 'X', 'ingredients' => ['Spinach'], 'description' => 'Y'],
++                            ['type' => 'dinner', 'name' => 'X', 'ingredients' => ['Salmon'], 'description' => 'Y'],
++                        ],
++                        'tip' => 'Tip',
++                    ])],
++                ]],
++                'usage' => ['total_tokens' => 100],
++            ], 200),
++        ]);
++
++        $provider = new DeepseekProvider([
++            'key' => 'fake',
++            'base_url' => 'https://api.deepseek.com/v1',
++            'model' => 'deepseek-chat',
++            'timeout' => 15,
++        ]);
++
++        [$content, $tokens, $json] = $provider->generate(['purpose' => 'X'], ['Tomato', 'Spinach', 'Salmon']);
++
++        $this->assertIsArray($json);
++        Http::assertSent(function ($request) {
++            $body = json_decode($request->body(), true);
++
++            return isset($body['response_format']['type'])
++                && $body['response_format']['type'] === 'json_object';
++        });
++    }
++}

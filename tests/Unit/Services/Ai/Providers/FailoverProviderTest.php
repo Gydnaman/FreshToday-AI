@@ -18,16 +18,40 @@ class FailoverProviderTest extends TestCase
 
     public function test_failover_returns_first_successful_provider(): void
     {
-        $primary = new class extends NullProvider {
-            public function name(): string { return 'primary'; }
-            public function isConfigured(): bool { return true; }
-            public function generate(array $p, array $pr): array { return ['', 0, null]; } // 失败
+        $primary = new class extends NullProvider
+        {
+            public function name(): string
+            {
+                return 'primary';
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function generate(array $p, array $pr): array
+            {
+                return ['', 0, null];
+            } // 失败
         };
 
-        $secondary = new class extends NullProvider {
-            public function name(): string { return 'secondary'; }
-            public function isConfigured(): bool { return true; }
-            public function generate(array $p, array $pr): array { return ['menu', 100, null]; } // 成功
+        $secondary = new class extends NullProvider
+        {
+            public function name(): string
+            {
+                return 'secondary';
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function generate(array $p, array $pr): array
+            {
+                return ['menu', 100, null];
+            } // 成功
         };
 
         $failover = new FailoverProvider([$primary, $secondary], new CircuitBreaker);
@@ -41,19 +65,43 @@ class FailoverProviderTest extends TestCase
     {
         $breaker = new CircuitBreaker(failureThreshold: 1, windowSeconds: 600);
 
-        $primary = new class extends NullProvider {
-            public function name(): string { return 'primary'; }
-            public function isConfigured(): bool { return true; }
-            public function generate(array $p, array $pr): array { return ['primary_menu', 50, null]; }
+        $primary = new class extends NullProvider
+        {
+            public function name(): string
+            {
+                return 'primary';
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function generate(array $p, array $pr): array
+            {
+                return ['primary_menu', 50, null];
+            }
         };
 
         // 手动熔断 primary
         $breaker->recordFailure('primary');
 
-        $secondary = new class extends NullProvider {
-            public function name(): string { return 'secondary'; }
-            public function isConfigured(): bool { return true; }
-            public function generate(array $p, array $pr): array { return ['secondary_menu', 100, null]; }
+        $secondary = new class extends NullProvider
+        {
+            public function name(): string
+            {
+                return 'secondary';
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function generate(array $p, array $pr): array
+            {
+                return ['secondary_menu', 100, null];
+            }
         };
 
         $failover = new FailoverProvider([$primary, $secondary], $breaker);

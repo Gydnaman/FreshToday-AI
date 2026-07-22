@@ -1,0 +1,460 @@
+d4faa1f feat(ai): add FailoverProvider with circuit breaker for multi-provider resilience
+
+ app/Services/Ai/AiProviderFactory.php              | 29 +++++++
+ app/Services/Ai/CircuitBreaker.php                 | 76 +++++++++++++++++
+ app/Services/Ai/Providers/FailoverProvider.php     | 96 ++++++++++++++++++++++
+ config/ai.php                                      | 13 +++
+ tests/Unit/Services/Ai/CircuitBreakerTest.php      | 60 ++++++++++++++
+ .../Services/Ai/Providers/FailoverProviderTest.php | 73 ++++++++++++++++
+ 6 files changed, 347 insertions(+)
+
+diff --git a/app/Services/Ai/AiProviderFactory.php b/app/Services/Ai/AiProviderFactory.php
+index 6c6346d..013bf11 100644
+--- a/app/Services/Ai/AiProviderFactory.php
++++ b/app/Services/Ai/AiProviderFactory.php
+@@ -1,16 +1,17 @@
+ <?php
+ 
+ namespace App\Services\Ai;
+ 
+ use App\Services\Ai\Contracts\AiProviderInterface;
+ use App\Services\Ai\Providers\DeepseekProvider;
++use App\Services\Ai\Providers\FailoverProvider;
+ use App\Services\Ai\Providers\GeminiProvider;
+ use App\Services\Ai\Providers\NullProvider;
+ use App\Services\Ai\Providers\OpenAiProvider;
+ 
+ /**
+  * AI Provider 工厂
+  *
+  * 解析规则（按优先级）：
+  *   1. config('ai.default') 显式指定 → 强制使用该 Provider
+  *   2. 未指定 → 按 config('ai.auto_detect_order') 顺序查找第一个 key 非空的
+@@ -20,20 +21,25 @@
+  *   $this->app->singleton(AiProviderInterface::class, function () {
+  *       return AiProviderFactory::make();
+  *   });
+  */
+ class AiProviderFactory
+ {
+     public static function make(): AiProviderInterface
+     {
+         $config = config('ai');
+ 
++        // Failover 模式：启用后按 failover_order 顺序尝试多个 Provider
++        if ($config['failover_enabled'] ?? false) {
++            return self::buildFailover($config);
++        }
++
+         // 1. 显式指定（如果该 Provider 不可用，回退到 auto_detect，不抛错）
+         $explicit = $config['default'] ?? null;
+         if ($explicit) {
+             $provider = self::build($explicit);
+             if ($provider !== null) {
+                 return $provider;
+             }
+         }
+ 
+         // 2. 按 auto_detect_order 探测
+@@ -41,20 +47,43 @@ public static function make(): AiProviderInterface
+             $provider = self::build($name);
+             if ($provider !== null) {
+                 return $provider;
+             }
+         }
+ 
+         // 3. 全部不可用 → Null（永不抛错，UI 走 fallback 模板）
+         return new NullProvider;
+     }
+ 
++    /**
++     * 构建 Failover 模式：多 Provider 灾备 + Circuit Breaker 熔断
++     */
++    private static function buildFailover(array $config): AiProviderInterface
++    {
++        $providers = [];
++        foreach ($config['failover_order'] ?? ['deepseek', 'openai', 'gemini'] as $name) {
++            $provider = self::build($name);
++            if ($provider !== null) {
++                $providers[] = $provider;
++            }
++        }
++
++        if (empty($providers)) {
++            return new NullProvider;
++        }
++
++        return new FailoverProvider($providers, new CircuitBreaker(
++            failureThreshold: $config['circuit_breaker']['failure_threshold'] ?? 5,
++            windowSeconds: $config['circuit_breaker']['window_seconds'] ?? 600,
++        ));
++    }
++
+     /**
+      * 构建指定 name 的 Provider；返回 null 表示该 Provider 不可用（缺 key 等）
+      *
+      * Key 来源（按优先级）：
+      *  1. config('ai.providers.{name}.key') —— 标准路径（运行时配置）
+      *  2. env('XXX_API_KEY') —— 兜底（兼容测试 putenv 注入与 config-cache 场景）
+      */
+     public static function build(string $name): ?AiProviderInterface
+     {
+         $cfg = config("ai.providers.{$name}");
+diff --git a/app/Services/Ai/CircuitBreaker.php b/app/Services/Ai/CircuitBreaker.php
+new file mode 100644
+index 0000000..d14bfe0
+--- /dev/null
++++ b/app/Services/Ai/CircuitBreaker.php
+@@ -0,0 +1,76 @@
++<?php
++
++namespace App\Services\Ai;
++
++use Illuminate\Support\Facades\Cache;
++
++/**
++ * AI Provider 熔断器
++ *
++ * 职责：某 Provider 连续失败达到阈值时，临时熔断（跳过调用），避免雪崩。
++ *
++ * 状态机：
++ *  - Closed（正常）：失败计数 < 阈值
++ *  - Open（熔断）：失败计数 >= 阈值，持续 windowSeconds 秒
++ *  - Half-Open（试探）：窗口过期后下一次调用允许通过，成功则 Closed，失败则重新 Open
++ *
++ * 存储：Redis（Cache facade）
++ *  - circuit:{provider}:failures  失败计数（带 TTL）
++ *  - circuit:{provider}:opened_at  熔断开启时间戳
++ */
++class CircuitBreaker
++{
++    public function __construct(
++        private readonly int $failureThreshold = 5,
++        private readonly int $windowSeconds = 600, // 10 分钟
++    ) {}
++
++    public function isOpen(string $provider): bool
++    {
++        $failures = (int) Cache::get("circuit:{$provider}:failures", 0);
++
++        if ($failures < $this->failureThreshold) {
++            return false;
++        }
++
++        $openedAt = Cache::get("circuit:{$provider}:opened_at");
++        if (! $openedAt) {
++            // 达到阈值但未记录 opened_at，立即熔断
++            Cache::put("circuit:{$provider}:opened_at", now()->timestamp, $this->windowSeconds);
++
++            return true;
++        }
++
++        // 检查是否已过熔断窗口
++        if (now()->timestamp - $openedAt > $this->windowSeconds) {
++            $this->reset($provider);
++
++            return false;
++        }
++
++        return true;
++    }
++
++    public function recordFailure(string $provider): void
++    {
++        $key = "circuit:{$provider}:failures";
++        // 读改写：避免 Cache::increment 在某些 store（如 database）对缺失 key 返回 false 导致计数器写不进去
++        $failures = (int) Cache::get($key, 0) + 1;
++        Cache::put($key, $failures, $this->windowSeconds);
++
++        if ($failures >= $this->failureThreshold) {
++            Cache::put("circuit:{$provider}:opened_at", now()->timestamp, $this->windowSeconds);
++        }
++    }
++
++    public function recordSuccess(string $provider): void
++    {
++        $this->reset($provider);
++    }
++
++    private function reset(string $provider): void
++    {
++        Cache::forget("circuit:{$provider}:failures");
++        Cache::forget("circuit:{$provider}:opened_at");
++    }
++}
+diff --git a/app/Services/Ai/Providers/FailoverProvider.php b/app/Services/Ai/Providers/FailoverProvider.php
+new file mode 100644
+index 0000000..3b662bc
+--- /dev/null
++++ b/app/Services/Ai/Providers/FailoverProvider.php
+@@ -0,0 +1,96 @@
++<?php
++
++namespace App\Services\Ai\Providers;
++
++use App\Services\Ai\CircuitBreaker;
++use App\Services\Ai\Contracts\AiProviderInterface;
++use Illuminate\Support\Facades\Log;
++
++/**
++ * 多 Provider 灾备装饰器
++ *
++ * 职责：按优先级顺序尝试多个 Provider，任一成功即返回；全部失败返回空。
++ *       配合 CircuitBreaker 跳过熔断的 Provider。
++ *
++ * 成功定义：Provider 返回 content 非空即视为成功（不校验 json_data）。
++ *   JSON 解析失败导致的 json_data=null 由 AiMenuService 的降级路径处理，
++ *   failover 层不感知 JSON 解析层。
++ *
++ * 使用：
++ *   $failover = new FailoverProvider([
++ *       new DeepseekProvider($config),
++ *       new OpenAiProvider($config),
++ *       new GeminiProvider($config),
++ *   ], new CircuitBreaker);
++ */
++class FailoverProvider implements AiProviderInterface
++{
++    /**
++     * @param  array<int,AiProviderInterface>  $providers
++     */
++    public function __construct(
++        private readonly array $providers,
++        private readonly CircuitBreaker $breaker = new CircuitBreaker,
++    ) {}
++
++    public function name(): string
++    {
++        // 返回当前生效的 Provider 名（第一个非熔断的）
++        foreach ($this->providers as $provider) {
++            if (! $this->breaker->isOpen($provider->name())) {
++                return $provider->name();
++            }
++        }
++
++        return 'failover'; // 全部熔断
++    }
++
++    public function isConfigured(): bool
++    {
++        foreach ($this->providers as $provider) {
++            if ($provider->isConfigured()) {
++                return true;
++            }
++        }
++
++        return false;
++    }
++
++    public function generate(array $preferences, array $products): array
++    {
++        foreach ($this->providers as $provider) {
++            $name = $provider->name();
++
++            // 跳过熔断的 Provider
++            if ($this->breaker->isOpen($name)) {
++                Log::info("FailoverProvider: skip {$name} (circuit open)");
++
++                continue;
++            }
++
++            // 跳过未配置的 Provider
++            if (! $provider->isConfigured()) {
++                continue;
++            }
++
++            try {
++                [$content, $tokens, $json] = $provider->generate($preferences, $products);
++
++                if ($content !== '') {
++                    $this->breaker->recordSuccess($name);
++
++                    return [$content, $tokens, $json];
++                }
++
++                // Provider 返回空 = 失败
++                $this->breaker->recordFailure($name);
++            } catch (\Throwable $e) {
++                Log::warning("FailoverProvider: {$name} exception", ['error' => $e->getMessage()]);
++                $this->breaker->recordFailure($name);
++            }
++        }
++
++        // 全部失败
++        return ['', 0, null];
++    }
++}
+diff --git a/config/ai.php b/config/ai.php
+index b072c7e..ab55ad6 100644
+--- a/config/ai.php
++++ b/config/ai.php
+@@ -62,11 +62,24 @@
+             'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
+             'model' => env('AI_DEEPSEEK_MODEL', 'deepseek-chat'),
+             'timeout' => (int) env('AI_TIMEOUT', 15),
+         ],
+     ],
+ 
+     /*
+      * 探测顺序：当 AI_PROVIDER 留空时按此顺序查找第一个有 key 的 Provider
+      */
+     'auto_detect_order' => ['deepseek', 'openai', 'gemini'],
++
++    /*
++     * Failover 模式：启用后按 failover_order 顺序尝试多个 Provider
++     * 配合 CircuitBreaker 跳过熔断的 Provider
++     */
++    'failover_enabled' => (bool) env('AI_FAILOVER_ENABLED', false),
++
++    'failover_order' => ['deepseek', 'openai', 'gemini'],
++
++    'circuit_breaker' => [
++        'failure_threshold' => (int) env('AI_CB_FAILURE_THRESHOLD', 5),
++        'window_seconds' => (int) env('AI_CB_WINDOW_SECONDS', 600),
++    ],
+ ];
+diff --git a/tests/Unit/Services/Ai/CircuitBreakerTest.php b/tests/Unit/Services/Ai/CircuitBreakerTest.php
+new file mode 100644
+index 0000000..2d24979
+--- /dev/null
++++ b/tests/Unit/Services/Ai/CircuitBreakerTest.php
+@@ -0,0 +1,60 @@
++<?php
++
++namespace Tests\Unit\Services\Ai;
++
++use App\Services\Ai\CircuitBreaker;
++use Illuminate\Support\Facades\Cache;
++use Tests\TestCase;
++
++class CircuitBreakerTest extends TestCase
++{
++    protected function setUp(): void
++    {
++        parent::setUp();
++        Cache::flush();
++    }
++
++    public function test_circuit_closed_initially(): void
++    {
++        $breaker = new CircuitBreaker;
++
++        $this->assertFalse($breaker->isOpen('gemini'));
++    }
++
++    public function test_circuit_opens_after_threshold_failures(): void
++    {
++        $breaker = new CircuitBreaker(failureThreshold: 3, windowSeconds: 300);
++
++        for ($i = 0; $i < 3; $i++) {
++            $breaker->recordFailure('gemini');
++        }
++
++        $this->assertTrue($breaker->isOpen('gemini'));
++    }
++
++    public function test_circuit_closes_on_success(): void
++    {
++        $breaker = new CircuitBreaker(failureThreshold: 3, windowSeconds: 300);
++
++        for ($i = 0; $i < 3; $i++) {
++            $breaker->recordFailure('gemini');
++        }
++        $this->assertTrue($breaker->isOpen('gemini'));
++
++        $breaker->recordSuccess('gemini');
++        $this->assertFalse($breaker->isOpen('gemini'));
++    }
++
++    public function test_circuit_resets_after_timeout(): void
++    {
++        $breaker = new CircuitBreaker(failureThreshold: 2, windowSeconds: 1);
++
++        $breaker->recordFailure('gemini');
++        $breaker->recordFailure('gemini');
++        $this->assertTrue($breaker->isOpen('gemini'));
++
++        sleep(2); // 等待熔断窗口过期
++
++        $this->assertFalse($breaker->isOpen('gemini'), '熔断器应在窗口过期后自动关闭');
++    }
++}
+diff --git a/tests/Unit/Services/Ai/Providers/FailoverProviderTest.php b/tests/Unit/Services/Ai/Providers/FailoverProviderTest.php
+new file mode 100644
+index 0000000..b7baa84
+--- /dev/null
++++ b/tests/Unit/Services/Ai/Providers/FailoverProviderTest.php
+@@ -0,0 +1,73 @@
++<?php
++
++namespace Tests\Unit\Services\Ai\Providers;
++
++use App\Services\Ai\CircuitBreaker;
++use App\Services\Ai\Providers\FailoverProvider;
++use App\Services\Ai\Providers\NullProvider;
++use Illuminate\Support\Facades\Cache;
++use Tests\TestCase;
++
++class FailoverProviderTest extends TestCase
++{
++    protected function setUp(): void
++    {
++        parent::setUp();
++        Cache::flush();
++    }
++
++    public function test_failover_returns_first_successful_provider(): void
++    {
++        $primary = new class extends NullProvider {
++            public function name(): string { return 'primary'; }
++            public function isConfigured(): bool { return true; }
++            public function generate(array $p, array $pr): array { return ['', 0, null]; } // 失败
++        };
++
++        $secondary = new class extends NullProvider {
++            public function name(): string { return 'secondary'; }
++            public function isConfigured(): bool { return true; }
++            public function generate(array $p, array $pr): array { return ['menu', 100, null]; } // 成功
++        };
++
++        $failover = new FailoverProvider([$primary, $secondary], new CircuitBreaker);
++        [$content, $tokens] = $failover->generate([], []);
++
++        $this->assertSame('menu', $content);
++        $this->assertSame(100, $tokens);
++    }
++
++    public function test_failover_skips_circuit_open_provider(): void
++    {
++        $breaker = new CircuitBreaker(failureThreshold: 1, windowSeconds: 600);
++
++        $primary = new class extends NullProvider {
++            public function name(): string { return 'primary'; }
++            public function isConfigured(): bool { return true; }
++            public function generate(array $p, array $pr): array { return ['primary_menu', 50, null]; }
++        };
++
++        // 手动熔断 primary
++        $breaker->recordFailure('primary');
++
++        $secondary = new class extends NullProvider {
++            public function name(): string { return 'secondary'; }
++            public function isConfigured(): bool { return true; }
++            public function generate(array $p, array $pr): array { return ['secondary_menu', 100, null]; }
++        };
++
++        $failover = new FailoverProvider([$primary, $secondary], $breaker);
++        [$content] = $failover->generate([], []);
++
++        $this->assertSame('secondary_menu', $content, '应跳过熔断的 primary');
++    }
++
++    public function test_failover_returns_empty_when_all_fail(): void
++    {
++        $failover = new FailoverProvider([new NullProvider, new NullProvider]);
++        [$content, $tokens] = $failover->generate([], []);
++
++        $this->assertSame('', $content);
++        $this->assertSame(0, $tokens);
++    }
++}

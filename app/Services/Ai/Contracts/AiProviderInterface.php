@@ -34,9 +34,9 @@ interface AiProviderInterface
      * @param  array<string,mixed>  $preferences  来自 UserPreference 的偏好
      * @param  array<int,string>  $products  可售商品名称列表
      * @return array{0:string,1:int,2:?array} [content, tokens_used, json_data]
-     *         content: 原始文本（JSON 字符串或纯文本）
-     *         tokens_used: 成功时 Provider 报告的 token 数，失败为 0
-     *         json_data: 解析后的 JSON 数组（JSON 模式），非 JSON 模式或解析失败为 null
+     *                                        content: 原始文本（JSON 字符串或纯文本）
+     *                                        tokens_used: 成功时 Provider 报告的 token 数，失败为 0
+     *                                        json_data: 解析后的 JSON 数组（JSON 模式），非 JSON 模式或解析失败为 null
      */
     public function generate(array $preferences, array $products): array;
 }

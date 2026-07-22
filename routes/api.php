@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\SurveyController;
+use App\Http\Controllers\HealthController;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -31,7 +32,7 @@ Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 
 // 健康检查（AI Provider 状态）
-Route::get('/health/ai', [\App\Http\Controllers\HealthController::class, 'ai']);
+Route::get('/health/ai', [HealthController::class, 'ai']);
 
 // Webhook（无 auth，签名校验 + 显式高频限流 10000/min）
 //   - 不用 throttle:api（60/min 不够 Stripe/PayMe 高频重发）
