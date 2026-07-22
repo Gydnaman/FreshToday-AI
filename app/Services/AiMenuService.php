@@ -128,14 +128,15 @@ class AiMenuService
             $tokens = 0;
         }
 
-        Cache::put($cacheKey, $content, self::CACHE_TTL_SECONDS);
-
         // 指标埋点（latency 暂时传 0，后续加 Stopwatch）
         $status = $tokens > 0 ? 'success' : 'failure';
         MetricsRecorder::recordGeneration($this->provider->name(), $status, 0, $tokens);
 
         // 6. 落库
-        return $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens, $jsonData ?? null);
+        $menu = $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens, $jsonData ?? null);
+        Cache::put($cacheKey, $menu->menu_content, self::CACHE_TTL_SECONDS);
+
+        return $menu;
     }
 
     /**
@@ -238,9 +239,14 @@ class AiMenuService
         if ($jsonData !== null) {
             $fillData['menu_json'] = $jsonData;
         }
+        $isInsert = ! $menu->exists;
         try {
             $menu->fill($fillData)->save();
         } catch (QueryException $exception) {
+            if (! $isInsert || ! $this->isDailyMenuUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+
             $menu = DailyMenu::where('user_id', $user->id)
                 ->whereDate('date', $dateStr)
                 ->first();
@@ -253,6 +259,27 @@ class AiMenuService
         }
 
         return $menu;
+    }
+
+    private function isDailyMenuUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $errorInfo = $exception->errorInfo ?? [];
+        $sqlState = (string) ($errorInfo[0] ?? $exception->getCode());
+        $driverCode = (int) ($errorInfo[1] ?? 0);
+        $message = strtolower($exception->getMessage().' '.($errorInfo[2] ?? ''));
+
+        if ($sqlState !== '23000') {
+            return false;
+        }
+
+        if ($driverCode === 1062) {
+            return str_contains($message, 'daily_menus_user_date_unique');
+        }
+
+        return $driverCode === 19
+            && str_contains($message, 'unique constraint failed')
+            && str_contains($message, 'daily_menus.user_id')
+            && str_contains($message, 'daily_menus.date');
     }
 
     /**

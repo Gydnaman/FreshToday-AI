@@ -11,9 +11,13 @@ use App\Models\UserPreference;
 use App\Services\Ai\Contracts\AiProviderInterface;
 use App\Services\Ai\MenuOutputValidator;
 use App\Services\AiMenuService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use PDOException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -147,6 +151,146 @@ class DailyMenuLifecycleTest extends TestCase
         $this->assertNotSame($first->menu_content, $regenerated->menu_content);
         $this->assertTrue($regenerated->updated_at->gt($firstUpdatedAt));
         $this->assertCount(2, $this->provider->calls);
+        $this->assertSame(1, DailyMenu::where('user_id', $this->user->id)->count());
+    }
+
+    public function test_non_unique_insert_query_exception_is_rethrown_even_when_a_same_date_row_exists(): void
+    {
+        Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
+        $this->provider->returnEmpty = false;
+        $exception = self::queryException(
+            ['HY000', 5, 'database is locked'],
+            'SQLSTATE[HY000]: General error: 5 database is locked',
+        );
+        $eventName = 'eloquent.creating: '.DailyMenu::class;
+
+        Event::listen($eventName, function (DailyMenu $menu) use ($exception): void {
+            DB::table('daily_menus')->insert([
+                'user_id' => $menu->user_id,
+                'date' => $menu->date->toDateString(),
+                'menu_content' => 'Concurrent winner',
+                'source' => 'fake',
+                'tokens_used' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            throw $exception;
+        });
+
+        try {
+            try {
+                $this->service->generateDailyMenuForUser($this->user, force: true);
+                $this->fail('Expected the non-unique query exception to be rethrown.');
+            } catch (QueryException $caught) {
+                $this->assertSame($exception, $caught);
+            }
+        } finally {
+            Event::forget($eventName);
+        }
+
+        $this->assertSame(
+            'Concurrent winner',
+            DailyMenu::where('user_id', $this->user->id)->firstOrFail()->menu_content,
+        );
+    }
+
+    public function test_failed_insert_does_not_cache_unpersisted_menu_content(): void
+    {
+        Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
+        $this->provider->returnEmpty = false;
+        $exception = self::queryException(
+            ['HY000', 5, 'database is locked'],
+            'SQLSTATE[HY000]: General error: 5 database is locked',
+        );
+        $eventName = 'eloquent.creating: '.DailyMenu::class;
+        Event::listen($eventName, fn (): never => throw $exception);
+
+        try {
+            try {
+                $this->service->generateDailyMenuForUser($this->user, force: true);
+                $this->fail('Expected the failed insert to throw.');
+            } catch (QueryException $caught) {
+                $this->assertSame($exception, $caught);
+            }
+        } finally {
+            Event::forget($eventName);
+        }
+
+        $cacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
+        $this->assertFalse(Cache::has($cacheKey));
+    }
+
+    public function test_update_query_exception_is_rethrown_without_race_recovery_or_cache_replacement(): void
+    {
+        Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
+        $this->provider->returnEmpty = false;
+        $original = $this->service->generateDailyMenuForUser($this->user);
+        $cacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
+        $exception = self::queryException(
+            ['23000', 19, 'UNIQUE constraint failed: daily_menus.user_id, daily_menus.date'],
+            'SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: daily_menus.user_id, daily_menus.date',
+            'update daily_menus set menu_content = ?',
+        );
+        $attempts = 0;
+        $eventName = 'eloquent.updating: '.DailyMenu::class;
+        Event::listen($eventName, function () use (&$attempts, $exception): never {
+            $attempts++;
+
+            throw $exception;
+        });
+
+        try {
+            try {
+                $this->service->generateDailyMenuForUser($this->user, force: true);
+                $this->fail('Expected the failed update to throw.');
+            } catch (QueryException $caught) {
+                $this->assertSame($exception, $caught);
+            }
+        } finally {
+            Event::forget($eventName);
+        }
+
+        $this->assertSame(1, $attempts);
+        $this->assertSame($original->menu_content, Cache::get($cacheKey));
+    }
+
+    #[DataProvider('dailyMenuUniqueConstraintProvider')]
+    public function test_supported_unique_insert_race_updates_the_winning_row(
+        array $errorInfo,
+        string $message,
+    ): void
+    {
+        Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
+        $this->provider->returnEmpty = false;
+        $exception = self::queryException($errorInfo, $message);
+        $winnerId = null;
+        $eventName = 'eloquent.creating: '.DailyMenu::class;
+
+        Event::listen($eventName, function (DailyMenu $menu) use ($exception, &$winnerId): void {
+            $winnerId = DB::table('daily_menus')->insertGetId([
+                'user_id' => $menu->user_id,
+                'date' => $menu->date->toDateString(),
+                'menu_content' => 'Concurrent winner',
+                'source' => 'fake',
+                'tokens_used' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            throw $exception;
+        });
+
+        try {
+            $regenerated = $this->service->generateDailyMenuForUser($this->user, force: true);
+        } finally {
+            Event::forget($eventName);
+        }
+
+        $cacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
+        $this->assertSame($winnerId, $regenerated->id);
+        $this->assertStringContainsString('Generated menu 1', $regenerated->menu_content);
+        $this->assertSame($regenerated->menu_content, Cache::get($cacheKey));
         $this->assertSame(1, DailyMenu::where('user_id', $this->user->id)->count());
     }
 
@@ -330,5 +474,31 @@ class DailyMenuLifecycleTest extends TestCase
             'meal name empty' => ['name', ''],
             'meal description empty' => ['description', ''],
         ];
+    }
+
+    public static function dailyMenuUniqueConstraintProvider(): array
+    {
+        return [
+            'SQLite' => [
+                ['23000', 19, 'UNIQUE constraint failed: daily_menus.user_id, daily_menus.date'],
+                'SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: daily_menus.user_id, daily_menus.date',
+            ],
+            'MySQL' => [
+                ['23000', 1062, "Duplicate entry '1-2026-07-22' for key 'daily_menus_user_date_unique'"],
+                "SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '1-2026-07-22' for key 'daily_menus_user_date_unique'",
+            ],
+        ];
+    }
+
+    private static function queryException(
+        array $errorInfo,
+        string $message,
+        string $sql = 'insert into daily_menus (...) values (...)',
+    ): QueryException
+    {
+        $previous = new PDOException($message, (int) $errorInfo[1]);
+        $previous->errorInfo = $errorInfo;
+
+        return new QueryException('testing', $sql, [], $previous);
     }
 }

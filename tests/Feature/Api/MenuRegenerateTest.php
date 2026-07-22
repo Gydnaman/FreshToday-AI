@@ -18,6 +18,8 @@ class MenuRegenerateTest extends TestCase
 
     private User $user;
 
+    private object $provider;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,7 +28,7 @@ class MenuRegenerateTest extends TestCase
         UserPreference::factory()->for($this->user)->create();
         Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
 
-        $provider = new class implements AiProviderInterface
+        $this->provider = new class implements AiProviderInterface
         {
             public int $generation = 0;
 
@@ -58,7 +60,7 @@ class MenuRegenerateTest extends TestCase
             }
         };
 
-        $this->app->instance(AiProviderInterface::class, $provider);
+        $this->app->instance(AiProviderInterface::class, $this->provider);
         $this->app->forgetInstance(AiMenuService::class);
     }
 
@@ -83,11 +85,15 @@ class MenuRegenerateTest extends TestCase
             $this->postJson('/api/menu/regenerate')->assertOk();
         }
         $latest = DailyMenu::where('user_id', $this->user->id)->firstOrFail()->menu_content;
+        $menuCacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
+        $this->assertSame($latest, Cache::get($menuCacheKey));
 
         $this->postJson('/api/menu/regenerate')
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'GUARD-AI-RATE');
 
+        $this->assertSame(3, $this->provider->generation);
+        $this->assertSame($latest, Cache::get($menuCacheKey));
         $this->assertSame($latest, DailyMenu::where('user_id', $this->user->id)->firstOrFail()->menu_content);
     }
 }
