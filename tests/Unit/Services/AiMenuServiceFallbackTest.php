@@ -317,4 +317,17 @@ class AiMenuServiceFallbackTest extends TestCase
         $this->assertStringContainsString('Dinner: Evening', $content);
         $this->assertStringContainsString('Keto', $content);
     }
+
+    public function test_text_only_interface_rejects_an_empty_product_list(): void
+    {
+        try {
+            $this->service->generateDailyMenu(
+                preferences: ['dietary_habits' => 'Healthy'],
+                availableProducts: [],
+            );
+            $this->fail('Expected generation to be rejected without available products.');
+        } catch (GuardFailedException $exception) {
+            $this->assertSame('NO_AVAILABLE_PRODUCTS', $exception->context['reason']);
+        }
+    }
 }

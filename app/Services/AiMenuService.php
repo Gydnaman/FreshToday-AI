@@ -92,7 +92,7 @@ class AiMenuService
         // 4. 校验 + 渲染
         // 4a. JSON 模式：优先用结构化数据
         if ($jsonData !== null) {
-            if ($this->validator->validateJson($jsonData, $availableProducts)) {
+            if ($this->isValidJsonOutput($jsonData, $availableProducts)) {
                 $content = MenuRenderer::renderTextFromJson($jsonData);
             } else {
                 Log::warning('AiMenuService: provider JSON output failed validation', [
@@ -163,9 +163,15 @@ class AiMenuService
     /** 兼容旧接口：纯文本输出（供 SurveyController demo） */
     public function generateDailyMenu(array $preferences, array $availableProducts): string
     {
+        if ($availableProducts === []) {
+            throw new GuardFailedException(GuardCode::Ai, '暂无可推荐商品', [
+                'reason' => 'NO_AVAILABLE_PRODUCTS',
+            ]);
+        }
+
         [$content, , $jsonData] = $this->callProvider($preferences, $availableProducts);
 
-        if ($jsonData !== null && $this->validator->validateJson($jsonData, $availableProducts)) {
+        if ($jsonData !== null && $this->isValidJsonOutput($jsonData, $availableProducts)) {
             return MenuRenderer::renderTextFromJson($jsonData);
         }
 
@@ -257,6 +263,27 @@ class AiMenuService
             ]);
 
             return ['', 0, null];
+        }
+    }
+
+    /**
+     * Treat malformed provider JSON and validator failures as invalid output so
+     * the caller can persist the structured local fallback.
+     *
+     * @param  array<string, mixed>  $jsonData
+     * @param  array<int, string>  $availableProducts
+     */
+    private function isValidJsonOutput(array $jsonData, array $availableProducts): bool
+    {
+        try {
+            return $this->validator->validateJson($jsonData, $availableProducts);
+        } catch (\Throwable $exception) {
+            Log::warning('AiMenuService: provider JSON validation threw an exception', [
+                'provider' => $this->provider->name(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
         }
     }
 

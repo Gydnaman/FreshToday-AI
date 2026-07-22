@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\UserPreference;
 use App\Services\Ai\Contracts\AiProviderInterface;
+use App\Services\Ai\MenuOutputValidator;
 use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -38,6 +39,8 @@ class DailyMenuLifecycleTest extends TestCase
         {
             public array $calls = [];
 
+            public array $result = ['', 0, null];
+
             public function name(): string
             {
                 return 'fake';
@@ -52,7 +55,7 @@ class DailyMenuLifecycleTest extends TestCase
             {
                 $this->calls[] = compact('preferences', 'products');
 
-                return ['', 0, null];
+                return $this->result;
             }
         };
 
@@ -133,5 +136,100 @@ class DailyMenuLifecycleTest extends TestCase
             $this->assertSame('NO_AVAILABLE_PRODUCTS', $exception->context['reason']);
             $this->assertSame([], $this->provider->calls);
         }
+    }
+
+    public function test_non_scalar_provider_ingredient_is_rejected_and_structured_fallback_is_persisted(): void
+    {
+        $products = ['Choy Sum', 'Chinese Cabbage', 'Carrot'];
+        foreach ($products as $product) {
+            Product::factory()->create([
+                'name' => $product,
+                'status' => Product::STATUS_PUBLISHED,
+                'stock' => 10,
+            ]);
+        }
+
+        $providerMenu = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Broken', 'ingredients' => [['name' => 'Choy Sum']], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Lunch', 'ingredients' => ['Chinese Cabbage'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Dinner', 'ingredients' => ['Carrot'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+        $this->provider->result = ['provider text', 100, $providerMenu];
+
+        $menu = $this->service->generateDailyMenuForUser($this->user);
+
+        $this->assertNotSame($providerMenu, $menu->menu_json);
+        $this->assertSame(0, $menu->tokens_used);
+        $ingredients = collect($menu->menu_json['meals'])->pluck('ingredients')->flatten()->all();
+        $this->assertContainsOnly('string', $ingredients);
+        $this->assertEmpty(array_diff($ingredients, $products));
+    }
+
+    public function test_provider_ingredients_are_persisted_only_when_they_exactly_match_candidates(): void
+    {
+        $products = ['Local Organic Choy Sum', 'Chinese Cabbage', 'Carrot'];
+        foreach ($products as $product) {
+            Product::factory()->create([
+                'name' => $product,
+                'status' => Product::STATUS_PUBLISHED,
+                'stock' => 10,
+            ]);
+        }
+
+        $providerMenu = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Abbreviated', 'ingredients' => ['Choy Sum'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Empty', 'ingredients' => [''], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Exact', 'ingredients' => ['Carrot'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+        $this->provider->result = ['provider text', 100, $providerMenu];
+
+        $menu = $this->service->generateDailyMenuForUser($this->user);
+
+        $this->assertNotSame($providerMenu, $menu->menu_json);
+        $ingredients = collect($menu->menu_json['meals'])->pluck('ingredients')->flatten()->all();
+        $this->assertEmpty(array_diff($ingredients, $products));
+        $this->assertNotContains('Choy Sum', $ingredients);
+        $this->assertNotContains('', $ingredients);
+    }
+
+    public function test_validator_exception_is_treated_as_invalid_provider_output_and_falls_back(): void
+    {
+        Product::factory()->create([
+            'name' => 'Carrot',
+            'status' => Product::STATUS_PUBLISHED,
+            'stock' => 10,
+        ]);
+        $providerMenu = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'A', 'ingredients' => ['Carrot'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'B', 'ingredients' => ['Carrot'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'C', 'ingredients' => ['Carrot'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+        $this->provider->result = ['provider text', 100, $providerMenu];
+        $validator = new class extends MenuOutputValidator
+        {
+            public function validateJson(array $data, array $availableProducts): bool
+            {
+                throw new \TypeError('Malformed provider payload');
+            }
+        };
+
+        $menu = (new AiMenuService($this->provider, $validator))
+            ->generateDailyMenuForUser($this->user);
+
+        $this->assertNotSame($providerMenu, $menu->menu_json);
+        $this->assertSame(0, $menu->tokens_used);
+        $this->assertSame(['Carrot'], $menu->menu_json['meals'][0]['ingredients']);
     }
 }
