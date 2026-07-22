@@ -55,11 +55,20 @@
     "formTerms": "註冊即代表你同意我們的服務條款。"
   },
   "homeMenu": {
-    "today": "今日",
-    "needsPreferences": "請先完成飲食偏好問卷，以生成每日菜單。",
-    "noProducts": "目前沒有可用於生成每日菜單的商品。",
-    "generationFailed": "暫時無法生成每日菜單，請稍後再試。",
-    "noMenu": "當日暫無菜單。"
+    "title": "浠婃棩椁愬柈",
+    "subtitle": "鏌ョ湅浠婃棩鍙婇亷鍘诲叚鏃ョ殑鍊嬩汉鍖栨帹钖﹂鍠€?",
+    "today": "浠婃棩",
+    "previousDays": "閬庡線椁愬柈",
+    "noMenu": "鐣舵棩鏆劇椁愬柈銆?",
+    "needsPreferences": "璜嬪厛瀹屾垚椋查鍋忓ソ锛屽啀鐢熸垚椁愬柈銆?",
+    "completePreferences": "濉椋查鍋忓ソ",
+    "noProducts": "鐩墠娌掓湁鍙敤鏂兼帹钖﹂鍠殑鍟嗗搧銆?",
+    "generationFailed": "浠婃棩椁愬柈鐢熸垚澶辨晽銆?",
+    "regenerate": "閲嶆柊鐢熸垚",
+    "regenerating": "姝ｅ湪閲嶆柊鐢熸垚...",
+    "regenerateFailed": "閲嶆柊鐢熸垚澶辨晽锛岃珛绋嶅緦鍐嶈│銆?",
+    "updated": "浠婃棩宸插劜瀛?",
+    "source": "渚嗘簮"
   },
   "catalog": {
     "pageTitle": "商品目錄",

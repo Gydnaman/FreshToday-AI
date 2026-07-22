@@ -195,6 +195,36 @@ class HomePageTest extends TestCase
         }
     }
 
+    public function test_daily_menu_copy_is_available_in_all_supported_locales(): void
+    {
+        $user = User::factory()->create();
+        UserPreference::factory()->for($user)->create();
+        DailyMenu::create(['user_id' => $user->id, 'date' => now()->toDateString(), 'menu_content' => 'Menu']);
+
+        $this->actingAs($user)->get('/?lang=zh')->assertSee('浠婃棩鑿滃崟');
+        $this->actingAs($user)->get('/?lang=zhhk')->assertSee('浠婃棩椁愬柈');
+        $this->actingAs($user)->get('/?lang=en')->assertSee("Today's menu");
+    }
+
+    public function test_saved_today_menu_has_regenerate_contract(): void
+    {
+        $user = User::factory()->create();
+        UserPreference::factory()->for($user)->create();
+        DailyMenu::create(['user_id' => $user->id, 'date' => now()->toDateString(), 'menu_content' => 'Menu']);
+
+        $this->actingAs($user)->get('/')
+            ->assertSee('data-testid="regenerate-menu-button"', false)
+            ->assertSee("gbFetch('/api/menu/regenerate'", false);
+    }
+
+    public function test_login_defaults_to_home_and_preserves_explicit_return_code(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee("params.get('return') || '/'", false)
+            ->assertSee("params.get('return')", false);
+    }
+
     public function test_malformed_historical_menu_json_falls_back_to_escaped_plain_text(): void
     {
         $user = User::factory()->create();

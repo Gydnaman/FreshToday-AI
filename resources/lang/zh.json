@@ -55,11 +55,20 @@
     "formTerms": "注册即代表你同意我们的服务条款。"
   },
   "homeMenu": {
-    "today": "今天",
-    "needsPreferences": "请先完成饮食偏好问卷，以生成每日菜单。",
-    "noProducts": "目前没有可用于生成每日菜单的商品。",
-    "generationFailed": "暂时无法生成每日菜单，请稍后再试。",
-    "noMenu": "当天暂无菜单。"
+    "title": "浠婃棩鑿滃崟",
+    "subtitle": "鏌ョ湅浠婂ぉ鍙婅繃鍘诲叚澶╃殑涓€у寲鎺ㄨ崘鑿滃崟銆?",
+    "today": "浠婂ぉ",
+    "previousDays": "寰€鏃ヨ彍鍗?",
+    "noMenu": "褰撴棩鏆傛棤鑿滃崟銆?",
+    "needsPreferences": "璇峰厛瀹屾垚楗鍋忓ソ锛屽啀鐢熸垚鑿滃崟銆?",
+    "completePreferences": "濉啓楗鍋忓ソ",
+    "noProducts": "褰撳墠娌℃湁鍙敤浜庢帹鑽愯彍鍗曠殑鍟嗗搧銆?",
+    "generationFailed": "浠婃棩鑿滃崟鐢熸垚澶辫触銆?",
+    "regenerate": "閲嶆柊鐢熸垚",
+    "regenerating": "姝ｅ湪閲嶆柊鐢熸垚...",
+    "regenerateFailed": "閲嶆柊鐢熸垚澶辫触锛岃绋嶅悗閲嶈瘯銆?",
+    "updated": "浠婃棩宸蹭繚瀛?",
+    "source": "鏉ユ簮"
   },
   "catalog": {
     "pageTitle": "商品目录",

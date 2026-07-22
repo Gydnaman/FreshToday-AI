@@ -54,7 +54,7 @@
         let isLogin = true;
         // 读 ?return= 路径，登录后回跳
         const params = new URLSearchParams(location.search);
-        const returnTo = params.get('return') || '/catalog';
+        const returnTo = params.get('return') || '/';
 
         // 已登录则直接跳（session 模式：调 /api/me 判断）
         fetch('/api/me', { credentials: 'include' })

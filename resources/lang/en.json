@@ -55,11 +55,20 @@
     "formTerms": "By signing up, you agree to our Terms of Service."
   },
   "homeMenu": {
+    "title": "Today's menu",
+    "subtitle": "Your personalized recommendations for today and the previous six days.",
     "today": "Today",
-    "needsPreferences": "Complete your food preferences to generate a daily menu.",
-    "noProducts": "No eligible products are available for a daily menu right now.",
-    "generationFailed": "We could not generate your daily menu right now. Please try again later.",
-    "noMenu": "No menu is available for this day."
+    "previousDays": "Previous days",
+    "noMenu": "No menu was saved for this day.",
+    "needsPreferences": "Complete your preferences before generating a menu.",
+    "completePreferences": "Complete preferences",
+    "noProducts": "No products are currently available for menu recommendations.",
+    "generationFailed": "We could not generate today's menu.",
+    "regenerate": "Regenerate",
+    "regenerating": "Regenerating...",
+    "regenerateFailed": "Regeneration failed. Please try again.",
+    "updated": "Saved for today",
+    "source": "Source"
   },
   "catalog": {
     "pageTitle": "Product Catalog",
