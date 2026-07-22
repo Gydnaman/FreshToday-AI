@@ -99,4 +99,19 @@ class ProductDetailTest extends TestCase
             ->assertDontSee('data-testid="product-origin"', false)
             ->assertDontSee('data-testid="product-carbon"', false);
     }
+
+    public function test_catalog_links_product_image_and_title_to_detail(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Linked Product',
+            'status' => Product::STATUS_PUBLISHED,
+        ]);
+
+        $response = $this->get(route('catalog'))->assertOk();
+        $detailUrl = route('products.show', $product);
+
+        $response->assertSee($detailUrl, false);
+        $this->assertSame(2, substr_count($response->getContent(), 'href="'.$detailUrl.'"'));
+        $response->assertSee('addToCartAuth('.$product->id, false);
+    }
 }

@@ -16,7 +16,9 @@
         @endphp
         <div id="product-{{ $product->id }}" class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group scroll-mt-20">
             <div class="relative h-48 overflow-hidden bg-gray-100">
-                <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                <a href="{{ route('products.show', $product) }}" aria-label="{{ $product->name }}">
+                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                </a>
 
                 {{-- 碳足迹徽章（左上） --}}
                 @if(!is_null($product->carbon_footprint))
@@ -33,7 +35,9 @@
                 @endif
             </div>
             <div class="p-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-1">{{ $product->name }}</h3>
+                <h3 class="text-lg font-bold text-gray-900 mb-1">
+                    <a href="{{ route('products.show', $product) }}" class="hover:text-green-700 transition-colors">{{ $product->name }}</a>
+                </h3>
                 @if($product->origin)
                 <p class="text-xs text-gray-400 mb-2 flex items-center gap-1">
                     <i data-lucide="map-pin" class="w-3 h-3"></i> {{ $product->origin }}
