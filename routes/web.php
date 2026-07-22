@@ -11,7 +11,8 @@ Route::get('/', function () {
     return view('pages.welcome');
 });
 
-Route::get('/catalog', [ProductController::class, 'index']);
+Route::get('/catalog', [ProductController::class, 'index'])->name('catalog');
+Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
 Route::get('/login', function () {
     return view('auth.login');
