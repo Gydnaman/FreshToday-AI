@@ -50,8 +50,57 @@
             </div>
         </div>
 
+        @auth
+        <section data-testid="daily-menu-section" class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100 p-8">
+            <div class="flex flex-wrap gap-2 mb-6" role="tablist">
+                @foreach ($menuDays as $day)
+                    <button type="button"
+                            role="tab"
+                            aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+                            data-menu-date="{{ $day['date'] }}"
+                            class="px-4 py-2 rounded-lg border border-gray-200">
+                        {{ $day['label'] }}
+                    </button>
+                @endforeach
+            </div>
+
+            @if ($menuState === 'needs_preferences')
+                <div data-testid="menu-needs-preferences">
+                    <a href="{{ url('/survey') }}">{{ i18n('homeMenu.needsPreferences') }}</a>
+                </div>
+            @elseif ($menuState === 'no_products')
+                <div data-testid="menu-no-products">
+                    <p>{{ i18n('homeMenu.noProducts') }}</p>
+                    @if ($menuError)
+                        <p>{{ $menuError }}</p>
+                    @endif
+                </div>
+            @elseif ($menuState === 'generation_failed')
+                <div data-testid="menu-generation-failed">
+                    <p>{{ i18n('homeMenu.generationFailed') }}</p>
+                    @if ($menuError)
+                        <p>{{ $menuError }}</p>
+                    @endif
+                </div>
+            @else
+                @foreach ($menuDays as $day)
+                    <div data-menu-panel="{{ $day['date'] }}" @if (! $loop->first) hidden @endif>
+                        @if ($day['html'])
+                            {!! $day['html'] !!}
+                        @elseif ($day['menu'])
+                            <p class="whitespace-pre-line">{{ $day['menu']->menu_content }}</p>
+                        @else
+                            <p>{{ i18n('homeMenu.noMenu') }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            @endif
+        </section>
+        @endauth
+
         <!-- Join CTA -->
-        <div class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100">
+        @guest
+        <div data-testid="guest-signup-section" class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100">
             <div class="grid grid-cols-1 lg:grid-cols-2">
                 <div class="p-12 bg-gradient-to-br from-green-600 to-emerald-700 text-white flex flex-col justify-center">
                     <h2 class="text-4xl font-bold mb-4 tracking-tight">{{ i18n('home.joinTitle') }}</h2>
@@ -88,6 +137,7 @@
                 </div>
             </div>
         </div>
+        @endguest
     </div>
 </div>
 
