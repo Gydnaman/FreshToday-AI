@@ -84,6 +84,7 @@ class MenuOutputValidator
         }
 
         $allIngredients = [];
+        $mealTypes = [];
         foreach ($data['meals'] as $meal) {
             if (! is_array($meal)) {
                 return false;
@@ -94,6 +95,7 @@ class MenuOutputValidator
             if (! in_array($meal['type'], self::VALID_MEAL_TYPES, true)) {
                 return false;
             }
+            $mealTypes[] = $meal['type'];
             if (! $this->isNonEmptyString($meal['name'])
                 || ! $this->isNonEmptyString($meal['description'])) {
                 return false;
@@ -106,6 +108,13 @@ class MenuOutputValidator
 
         // 严格校验：所有 ingredients 都必须是商品候选名称的精确成员
         // （已覆盖"至少提到 1 个商品"的宽松校验场景，无需重复检查）
+        sort($mealTypes);
+        $expectedMealTypes = self::VALID_MEAL_TYPES;
+        sort($expectedMealTypes);
+        if ($mealTypes !== $expectedMealTypes) {
+            return false;
+        }
+
         return $this->allIngredientsInProducts($allIngredients, $availableProducts);
     }
 

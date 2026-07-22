@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $product->name)
+@section('title'){{ $product->name }}@endsection
 
 @section('content')
 @php($soldOut = (int) $product->stock <= 0)

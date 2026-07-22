@@ -71,16 +71,26 @@ class AiMenuService
         $cacheKey = sprintf(self::CACHE_KEY_MENU, $user->id, $date);
 
         if (! $force) {
-            // 1. 命中缓存（无 json 数据，传 null）
+            // Cache stores only a persisted row identity; the database remains authoritative.
             $cached = Cache::get($cacheKey);
             if ($cached) {
-                return $this->upsertMenu($user, $date, $cached, $this->provider->name(), 0, null);
+                $cachedMenu = (is_int($cached) || (is_string($cached) && ctype_digit($cached)))
+                    ? DailyMenu::query()
+                        ->whereKey((int) $cached)
+                        ->where('user_id', $user->id)
+                        ->whereDate('date', $date)
+                        ->first()
+                    : null;
+
+                if ($cachedMenu) {
+                    return $cachedMenu;
+                }
             }
 
-            // 2. 命中 DB
+            // Resolve legacy/stale cache values from the persisted daily row.
             $existing = DailyMenu::where('user_id', $user->id)->whereDate('date', $date)->first();
             if ($existing) {
-                Cache::put($cacheKey, $existing->menu_content, self::CACHE_TTL_SECONDS);
+                Cache::put($cacheKey, $existing->getKey(), self::CACHE_TTL_SECONDS);
 
                 return $existing;
             }
@@ -114,7 +124,7 @@ class AiMenuService
         elseif ($content !== '' && ! $this->validator->validate($content, $availableProducts)) {
             Log::warning('AiMenuService: provider output failed validation', [
                 'provider' => $this->provider->name(),
-                'content_preview' => substr($content, 0, 200),
+                'reason' => 'invalid_output',
             ]);
             $content = ''; // 触发 fallback
             $tokens = 0;
@@ -134,7 +144,7 @@ class AiMenuService
 
         // 6. 落库
         $menu = $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens, $jsonData ?? null);
-        Cache::put($cacheKey, $menu->menu_content, self::CACHE_TTL_SECONDS);
+        Cache::put($cacheKey, $menu->getKey(), self::CACHE_TTL_SECONDS);
 
         return $menu;
     }
@@ -146,10 +156,8 @@ class AiMenuService
     {
         $date = now()->toDateString();
         $regenKey = sprintf(self::CACHE_KEY_REGEN, $user->id, $date);
+        Cache::add($regenKey, 0, self::CACHE_TTL_SECONDS);
         $count = (int) Cache::increment($regenKey);
-        // I-6 修复：每次调用都刷新 TTL + 用 increment 返回值（非固定 1）
-        // 旧代码只在 count===1 时 put(1, TTL)，并发下可能被固定值重置
-        Cache::put($regenKey, $count, self::CACHE_TTL_SECONDS);
         if ($count > self::DAILY_REGEN_LIMIT) {
             throw new GuardFailedException(GuardCode::AiRate, '每日最多重新生成 3 次', [
                 'limit' => self::DAILY_REGEN_LIMIT,
@@ -254,8 +262,6 @@ class AiMenuService
             if (! $menu) {
                 throw $exception;
             }
-
-            $menu->fill($fillData)->save();
         }
 
         return $menu;
@@ -309,7 +315,7 @@ class AiMenuService
             // Provider 自身已捕获异常；这里再兜一次（防御性编程）
             Log::error('AiMenuService: unexpected provider exception', [
                 'provider' => $this->provider->name(),
-                'error' => $e->getMessage(),
+                'reason' => 'unexpected_provider_exception',
             ]);
 
             return ['', 0, null];
@@ -334,7 +340,7 @@ class AiMenuService
         } catch (\Throwable $exception) {
             Log::warning('AiMenuService: provider JSON validation or rendering threw an exception', [
                 'provider' => $this->provider->name(),
-                'error' => $exception->getMessage(),
+                'reason' => 'validation_exception',
             ]);
 
             return null;
@@ -355,7 +361,7 @@ class AiMenuService
             return [];
         }
 
-        $offset = ($user->id + Carbon::parse($date)->dayOfYear) % $names->count();
+        $offset = ($user->id + (int) Carbon::parse($date)->format('Ymd')) % $names->count();
 
         return $names->slice($offset)
             ->concat($names->take($offset))

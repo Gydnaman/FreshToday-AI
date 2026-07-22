@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\GuardCode;
 use App\Exceptions\GuardFailedException;
 use App\Http\Controllers\Controller;
 use App\Models\DailyMenu;
@@ -36,10 +37,15 @@ class HomeController extends Controller
             try {
                 $this->aiService->generateDailyMenuForUser($user);
             } catch (GuardFailedException $exception) {
-                $menuState = ($exception->context['reason'] ?? null) === 'NO_AVAILABLE_PRODUCTS'
-                    ? 'no_products'
-                    : 'generation_failed';
-                $menuError = $exception->userMessage;
+                if (($exception->context['reason'] ?? null) === 'NO_AVAILABLE_PRODUCTS') {
+                    $menuState = 'no_products';
+                    $menuError = null;
+                } else {
+                    $menuState = 'generation_failed';
+                    $menuError = $exception->guardCode === GuardCode::AiRate
+                        ? i18n('homeMenu.rateLimited')
+                        : i18n('homeMenu.generationFailed');
+                }
             } catch (Throwable) {
                 $menuState = 'generation_failed';
                 $menuError = i18n('homeMenu.generationFailed');

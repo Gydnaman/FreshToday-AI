@@ -66,26 +66,34 @@ class GeminiProvider implements AiProviderInterface
                         return [$text, $tokens, $json];
                     }
                     Log::warning('GeminiProvider: invalid JSON in response', [
-                        'text' => substr($text, 0, 200),
+                        'provider' => $this->name(),
+                        'model' => $this->config['model'],
+                        'reason' => 'invalid_json',
                     ]);
 
                     return ['', 0, null];
                 }
 
                 Log::warning('GeminiProvider: empty candidates', [
+                    'provider' => $this->name(),
                     'model' => $this->config['model'],
+                    'reason' => 'empty_candidates',
                 ]);
 
                 return ['', 0, null];
             }
 
             Log::warning('GeminiProvider: non-2xx response', [
+                'provider' => $this->name(),
+                'model' => $this->config['model'],
                 'status' => $response->status(),
-                'body' => substr($response->body(), 0, 200),
+                'reason' => 'provider_http_error',
             ]);
         } catch (\Throwable $e) {
             Log::warning('GeminiProvider: request exception', [
-                'message' => $e->getMessage(),
+                'provider' => $this->name(),
+                'model' => $this->config['model'],
+                'reason' => 'provider_exception',
             ]);
         }
 

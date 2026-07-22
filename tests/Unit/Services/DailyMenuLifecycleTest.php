@@ -136,6 +136,64 @@ class DailyMenuLifecycleTest extends TestCase
         $this->assertCount(2, DailyMenu::where('user_id', $this->user->id)->get());
     }
 
+    public function test_candidate_rotation_uses_the_full_date_across_years(): void
+    {
+        Product::factory()->count(9)->sequence(fn ($sequence) => [
+            'name' => 'Yearly Product '.$sequence->index,
+            'status' => Product::STATUS_PUBLISHED,
+            'stock' => 10,
+        ])->create();
+
+        $this->service->generateDailyMenuForUser($this->user);
+        $firstProducts = $this->provider->calls[0]['products'];
+
+        Carbon::setTestNow('2027-07-22 09:00:00');
+        $this->service->generateDailyMenuForUser($this->user);
+        $secondProducts = $this->provider->calls[1]['products'];
+
+        $this->assertNotSame($firstProducts, $secondProducts);
+    }
+
+    public function test_normal_cache_hit_returns_database_truth_without_rewriting_the_menu(): void
+    {
+        $winnerJson = [
+            'greeting' => 'Persisted greeting',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'A', 'ingredients' => ['Carrot'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'B', 'ingredients' => ['Carrot'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'C', 'ingredients' => ['Carrot'], 'description' => 'C'],
+            ],
+            'tip' => 'Persisted tip',
+        ];
+        $persisted = DailyMenu::create([
+            'user_id' => $this->user->id,
+            'date' => now()->toDateString(),
+            'menu_content' => 'Persisted menu content',
+            'menu_json' => $winnerJson,
+            'source' => 'persisted-provider',
+            'tokens_used' => 77,
+        ])->fresh();
+        $cacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
+        Cache::put($cacheKey, 'Unpersisted cache content', 86400);
+        Carbon::setTestNow(now()->addMinute());
+
+        $returned = $this->service->generateDailyMenuForUser($this->user);
+        $fresh = $persisted->fresh();
+
+        $this->assertSame($persisted->id, $returned->id);
+        $this->assertSame($persisted->id, $fresh->id);
+        $this->assertSame($persisted->menu_content, $fresh->menu_content);
+        $this->assertSame($persisted->menu_json, $fresh->menu_json);
+        $this->assertSame($persisted->source, $fresh->source);
+        $this->assertSame($persisted->tokens_used, $fresh->tokens_used);
+        $this->assertTrue($persisted->created_at->equalTo($fresh->created_at));
+        $this->assertTrue($persisted->updated_at->equalTo($fresh->updated_at));
+        $this->assertSame($persisted->menu_content, $returned->menu_content);
+        $this->assertSame($persisted->menu_json, $returned->menu_json);
+        $this->assertSame($persisted->id, Cache::get($cacheKey));
+        $this->assertSame([], $this->provider->calls);
+    }
+
     public function test_regenerate_calls_provider_again_and_overwrites_same_row(): void
     {
         Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
@@ -252,11 +310,11 @@ class DailyMenuLifecycleTest extends TestCase
         }
 
         $this->assertSame(1, $attempts);
-        $this->assertSame($original->menu_content, Cache::get($cacheKey));
+        $this->assertSame($original->id, Cache::get($cacheKey));
     }
 
     #[DataProvider('dailyMenuUniqueConstraintProvider')]
-    public function test_supported_unique_insert_race_updates_the_winning_row(
+    public function test_supported_unique_insert_race_returns_the_winner_without_overwriting_it(
         array $errorInfo,
         string $message,
     ): void
@@ -265,32 +323,49 @@ class DailyMenuLifecycleTest extends TestCase
         $this->provider->returnEmpty = false;
         $exception = self::queryException($errorInfo, $message);
         $winnerId = null;
+        $winnerTimestamp = now()->subMinute();
+        $winnerJson = [
+            'greeting' => 'Concurrent winner greeting',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Winner A', 'ingredients' => ['Carrot'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Winner B', 'ingredients' => ['Carrot'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Winner C', 'ingredients' => ['Carrot'], 'description' => 'C'],
+            ],
+            'tip' => 'Concurrent winner tip',
+        ];
         $eventName = 'eloquent.creating: '.DailyMenu::class;
 
-        Event::listen($eventName, function (DailyMenu $menu) use ($exception, &$winnerId): void {
+        Event::listen($eventName, function (DailyMenu $menu) use ($exception, &$winnerId, $winnerTimestamp, $winnerJson): void {
             $winnerId = DB::table('daily_menus')->insertGetId([
                 'user_id' => $menu->user_id,
                 'date' => $menu->date->toDateString(),
                 'menu_content' => 'Concurrent winner',
-                'source' => 'fake',
-                'tokens_used' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'menu_json' => json_encode($winnerJson, JSON_THROW_ON_ERROR),
+                'source' => 'concurrent-provider',
+                'tokens_used' => 41,
+                'created_at' => $winnerTimestamp,
+                'updated_at' => $winnerTimestamp,
             ]);
 
             throw $exception;
         });
 
         try {
-            $regenerated = $this->service->generateDailyMenuForUser($this->user, force: true);
+            $returned = $this->service->generateDailyMenuForUser($this->user);
         } finally {
             Event::forget($eventName);
         }
 
         $cacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
-        $this->assertSame($winnerId, $regenerated->id);
-        $this->assertStringContainsString('Generated menu 1', $regenerated->menu_content);
-        $this->assertSame($regenerated->menu_content, Cache::get($cacheKey));
+        $winner = DailyMenu::findOrFail($winnerId);
+        $this->assertSame($winnerId, $returned->id);
+        $this->assertSame('Concurrent winner', $returned->menu_content);
+        $this->assertSame($winnerJson, $returned->menu_json);
+        $this->assertSame('concurrent-provider', $returned->source);
+        $this->assertSame(41, $returned->tokens_used);
+        $this->assertTrue($winnerTimestamp->equalTo($winner->created_at));
+        $this->assertTrue($winnerTimestamp->equalTo($winner->updated_at));
+        $this->assertSame($winnerId, Cache::get($cacheKey));
         $this->assertSame(1, DailyMenu::where('user_id', $this->user->id)->count());
     }
 

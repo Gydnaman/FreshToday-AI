@@ -64,6 +64,7 @@
     "completePreferences": "填写饮食偏好",
     "noProducts": "当前没有可用于推荐菜单的商品。",
     "generationFailed": "今日菜单生成失败。",
+    "rateLimited": "今日重新生成次数已达上限，请明天再试。",
     "regenerate": "重新生成",
     "regenerating": "正在重新生成...",
     "regenerateFailed": "重新生成失败，请稍后重试。",

@@ -64,6 +64,7 @@
     "completePreferences": "Complete preferences",
     "noProducts": "No products are currently available for menu recommendations.",
     "generationFailed": "We could not generate today's menu.",
+    "rateLimited": "The daily regeneration limit has been reached. Please try again tomorrow.",
     "regenerate": "Regenerate",
     "regenerating": "Regenerating...",
     "regenerateFailed": "Regeneration failed. Please try again.",

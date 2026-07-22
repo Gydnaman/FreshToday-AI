@@ -34,6 +34,29 @@ class ProductDetailTest extends TestCase
             ->assertSee('Leafy Greens');
     }
 
+    public function test_product_name_is_escaped_inside_the_page_title(): void
+    {
+        $maliciousName = '</title><script>alert("stored-title")</script>';
+        $product = Product::factory()->create([
+            'name' => $maliciousName,
+            'status' => Product::STATUS_PUBLISHED,
+        ]);
+
+        $content = $this->get(route('products.show', $product))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('<title>'.e($maliciousName).' - ', $content);
+        $this->assertStringNotContainsString('<title>'.$maliciousName, $content);
+        $this->assertStringNotContainsString('<script>alert("stored-title")</script>', $content);
+
+        $template = file_get_contents(resource_path('views/shop/product-detail.blade.php'));
+        $this->assertIsString($template);
+        $this->assertStringContainsString("@section('title')", $template);
+        $this->assertStringContainsString('{{ $product->name }}', $template);
+        $this->assertStringNotContainsString("@section('title', \$product->name)", $template);
+    }
+
     public function test_draft_product_detail_returns_404(): void
     {
         $product = Product::factory()->create(['status' => Product::STATUS_DRAFT]);

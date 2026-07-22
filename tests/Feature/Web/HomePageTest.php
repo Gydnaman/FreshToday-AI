@@ -12,6 +12,7 @@ use App\Services\AiMenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -117,32 +118,56 @@ class HomePageTest extends TestCase
         $this->actingAs($user)->get('/')
             ->assertOk()
             ->assertViewHas('menuState', 'no_products')
-            ->assertViewHas('menuError', fn (?string $error): bool => filled($error))
-            ->assertSee('data-testid="menu-no-products"', false);
+            ->assertViewHas('menuError', null)
+            ->assertSee('data-testid="menu-no-products"', false)
+            ->assertSee(i18n('homeMenu.noProducts'));
 
         $this->assertDatabaseCount('daily_menus', 0);
     }
 
-    public function test_generation_failure_still_returns_safe_home_state(): void
+    #[DataProvider('localizedGuardFailureProvider')]
+    public function test_guard_failure_is_mapped_to_localized_home_copy(
+        string $requestLocale,
+        string $translationLocale,
+        GuardCode $guardCode,
+        array $context,
+        string $expectedState,
+        string $translationKey,
+        bool $expectsMenuError,
+    ): void
     {
         $user = User::factory()->create();
         UserPreference::factory()->for($user)->create();
-        $unsafeMessage = '<script>alert("menu")</script>';
+        $serviceMessage = '服务层简体中文错误，不可直接展示';
 
-        $this->mock(AiMenuService::class, function (MockInterface $mock) use ($user, $unsafeMessage): void {
+        $this->mock(AiMenuService::class, function (MockInterface $mock) use ($user, $guardCode, $serviceMessage, $context): void {
             $mock->shouldReceive('generateDailyMenuForUser')
                 ->once()
                 ->withArgs(fn (User $requestedUser): bool => $requestedUser->is($user))
-                ->andThrow(new GuardFailedException(GuardCode::Ai, $unsafeMessage));
+                ->andThrow(new GuardFailedException($guardCode, $serviceMessage, $context));
         });
 
-        $this->actingAs($user)->get('/')
+        $expectedMessage = i18n($translationKey, locale: $translationLocale);
+        $response = $this->actingAs($user)->get('/?lang='.$requestLocale)
             ->assertOk()
-            ->assertViewHas('menuState', 'generation_failed')
-            ->assertViewHas('menuError', $unsafeMessage)
-            ->assertSee('data-testid="menu-generation-failed"', false)
-            ->assertSee(e($unsafeMessage), false)
-            ->assertDontSee($unsafeMessage, false);
+            ->assertViewHas('menuState', $expectedState)
+            ->assertViewHas('menuError', $expectsMenuError ? $expectedMessage : null)
+            ->assertSee($expectedMessage);
+
+        $this->assertStringNotContainsString($serviceMessage, $response->getContent());
+    }
+
+    public static function localizedGuardFailureProvider(): array
+    {
+        return [
+            'English generation failure' => ['en', 'en', GuardCode::Ai, [], 'generation_failed', 'homeMenu.generationFailed', true],
+            'Simplified Chinese generation failure' => ['zh', 'zh', GuardCode::Ai, [], 'generation_failed', 'homeMenu.generationFailed', true],
+            'Traditional Chinese generation failure' => ['zh-TW', 'zhhk', GuardCode::Ai, [], 'generation_failed', 'homeMenu.generationFailed', true],
+            'English no products' => ['en', 'en', GuardCode::Ai, ['reason' => 'NO_AVAILABLE_PRODUCTS'], 'no_products', 'homeMenu.noProducts', false],
+            'Traditional Chinese no products' => ['zh-TW', 'zhhk', GuardCode::Ai, ['reason' => 'NO_AVAILABLE_PRODUCTS'], 'no_products', 'homeMenu.noProducts', false],
+            'English rate limit' => ['en', 'en', GuardCode::AiRate, [], 'generation_failed', 'homeMenu.rateLimited', true],
+            'Traditional Chinese rate limit' => ['zh-TW', 'zhhk', GuardCode::AiRate, [], 'generation_failed', 'homeMenu.rateLimited', true],
+        ];
     }
 
     public function test_unexpected_generation_failure_returns_generic_error_without_leaking_details(): void
@@ -183,6 +208,7 @@ class HomePageTest extends TestCase
             'homeMenu.completePreferences',
             'homeMenu.noProducts',
             'homeMenu.generationFailed',
+            'homeMenu.rateLimited',
             'homeMenu.regenerate',
             'homeMenu.regenerating',
             'homeMenu.regenerateFailed',

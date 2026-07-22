@@ -69,6 +69,21 @@ class MenuOutputValidatorTest extends TestCase
         $this->assertTrue($this->validator->validateJson($data, ['Tomato', 'Spinach', 'Salmon']));
     }
 
+    public function test_validate_json_requires_each_meal_type_exactly_once(): void
+    {
+        $data = [
+            'greeting' => 'Good morning!',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Tomato Toast', 'ingredients' => ['Tomato'], 'description' => 'Fresh start'],
+                ['type' => 'lunch', 'name' => 'Spinach Salad', 'ingredients' => ['Spinach'], 'description' => 'Light lunch'],
+                ['type' => 'lunch', 'name' => 'Salmon Salad', 'ingredients' => ['Salmon'], 'description' => 'Repeated lunch'],
+            ],
+            'tip' => 'Stay hydrated!',
+        ];
+
+        $this->assertFalse($this->validator->validateJson($data, ['Tomato', 'Spinach', 'Salmon']));
+    }
+
     public function test_validate_json_rejects_when_no_product_mentioned(): void
     {
         $data = [

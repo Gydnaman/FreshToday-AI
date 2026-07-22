@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\GuardCode;
+use App\Exceptions\GuardFailedException;
 use App\Models\DailyMenu;
 use App\Models\Product;
 use App\Models\User;
@@ -86,14 +88,97 @@ class MenuRegenerateTest extends TestCase
         }
         $latest = DailyMenu::where('user_id', $this->user->id)->firstOrFail()->menu_content;
         $menuCacheKey = 'ai_menu:user:'.$this->user->id.':date:'.now()->toDateString();
-        $this->assertSame($latest, Cache::get($menuCacheKey));
+        $latestMenu = DailyMenu::where('user_id', $this->user->id)->firstOrFail();
+        $this->assertSame($latestMenu->id, Cache::get($menuCacheKey));
 
         $this->postJson('/api/menu/regenerate')
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'GUARD-AI-RATE');
 
         $this->assertSame(3, $this->provider->generation);
-        $this->assertSame($latest, Cache::get($menuCacheKey));
+        $this->assertSame($latestMenu->id, Cache::get($menuCacheKey));
         $this->assertSame($latest, DailyMenu::where('user_id', $this->user->id)->firstOrFail()->menu_content);
+    }
+
+    public function test_regeneration_counter_initializes_ttl_then_increments_without_stale_put(): void
+    {
+        $regenKey = 'ai_menu:regen:'.$this->user->id.':'.now()->toDateString();
+        $operations = [];
+        Cache::shouldReceive('add')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $key, int $value, int $ttl) use (&$operations, $regenKey): bool {
+                $this->assertSame([$regenKey, 0, 86400], [$key, $value, $ttl]);
+                $operations[] = 'add';
+
+                return false;
+            });
+        Cache::shouldReceive('increment')
+            ->once()
+            ->with($regenKey)
+            ->andReturnUsing(function () use (&$operations): int {
+                $operations[] = 'increment';
+
+                return 4;
+            });
+        Cache::shouldReceive('put')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $key, mixed $value, int $ttl) use (&$operations, $regenKey): bool {
+                $this->assertSame([$regenKey, 4, 86400], [$key, $value, $ttl]);
+                $operations[] = 'put';
+
+                return true;
+            });
+
+        try {
+            app(AiMenuService::class)->regenerate($this->user);
+            $this->fail('Expected the fourth regeneration to be rate limited.');
+        } catch (GuardFailedException $exception) {
+            $this->assertSame(GuardCode::AiRate, $exception->guardCode);
+        }
+
+        $this->assertSame(['add', 'increment'], $operations);
+    }
+
+    public function test_today_menu_links_only_published_in_stock_products(): void
+    {
+        $available = Product::factory()->create([
+            'name' => 'API Available Tomato',
+            'status' => Product::STATUS_PUBLISHED,
+            'stock' => 10,
+        ]);
+        $draft = Product::factory()->create([
+            'name' => 'API Draft Carrot',
+            'status' => Product::STATUS_DRAFT,
+            'stock' => 10,
+        ]);
+        $outOfStock = Product::factory()->create([
+            'name' => 'API Empty Kale',
+            'status' => Product::STATUS_PUBLISHED,
+            'stock' => 0,
+        ]);
+        DailyMenu::create([
+            'user_id' => $this->user->id,
+            'date' => now()->toDateString(),
+            'menu_content' => 'Structured API menu',
+            'menu_json' => [
+                'greeting' => 'API choices',
+                'meals' => [
+                    ['type' => 'breakfast', 'name' => 'Tomato', 'ingredients' => [$available->name], 'description' => 'Tomato'],
+                    ['type' => 'lunch', 'name' => 'Carrot', 'ingredients' => [$draft->name], 'description' => 'Carrot'],
+                    ['type' => 'dinner', 'name' => 'Kale', 'ingredients' => [$outOfStock->name], 'description' => 'Kale'],
+                ],
+                'tip' => 'API tip',
+            ],
+        ]);
+
+        $html = $this->actingAs($this->user)
+            ->getJson('/api/menu/today')
+            ->assertOk()
+            ->json('data.content_html');
+
+        $this->assertIsString($html);
+        $this->assertStringContainsString('/catalog#product-'.$available->id, $html);
+        $this->assertStringNotContainsString('/catalog#product-'.$draft->id, $html);
+        $this->assertStringNotContainsString('/catalog#product-'.$outOfStock->id, $html);
     }
 }
