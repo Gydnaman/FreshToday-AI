@@ -164,8 +164,7 @@ class MenuOutputValidatorTest extends TestCase
     public function test_validate_json_rejects_non_string_or_empty_renderable_fields(
         string $field,
         mixed $invalidValue,
-    ): void
-    {
+    ): void {
         $data = [
             'greeting' => 'Hello',
             'meals' => [

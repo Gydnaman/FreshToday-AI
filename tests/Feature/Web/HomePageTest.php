@@ -134,8 +134,7 @@ class HomePageTest extends TestCase
         string $expectedState,
         string $translationKey,
         bool $expectsMenuError,
-    ): void
-    {
+    ): void {
         $user = User::factory()->create();
         UserPreference::factory()->for($user)->create();
         $serviceMessage = '服务层简体中文错误，不可直接展示';

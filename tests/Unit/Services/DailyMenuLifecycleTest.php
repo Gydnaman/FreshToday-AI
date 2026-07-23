@@ -317,8 +317,7 @@ class DailyMenuLifecycleTest extends TestCase
     public function test_supported_unique_insert_race_returns_the_winner_without_overwriting_it(
         array $errorInfo,
         string $message,
-    ): void
-    {
+    ): void {
         Product::factory()->count(3)->create(['status' => Product::STATUS_PUBLISHED, 'stock' => 10]);
         $this->provider->returnEmpty = false;
         $exception = self::queryException($errorInfo, $message);
@@ -499,8 +498,7 @@ class DailyMenuLifecycleTest extends TestCase
     public function test_invalid_renderable_provider_fields_use_structured_fallback(
         string $field,
         mixed $invalidValue,
-    ): void
-    {
+    ): void {
         Product::factory()->create([
             'name' => 'Carrot',
             'status' => Product::STATUS_PUBLISHED,
@@ -569,8 +567,7 @@ class DailyMenuLifecycleTest extends TestCase
         array $errorInfo,
         string $message,
         string $sql = 'insert into daily_menus (...) values (...)',
-    ): QueryException
-    {
+    ): QueryException {
         $previous = new PDOException($message, (int) $errorInfo[1]);
         $previous->errorInfo = $errorInfo;
 

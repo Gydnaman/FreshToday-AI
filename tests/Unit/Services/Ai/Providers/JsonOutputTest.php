@@ -164,8 +164,7 @@ class JsonOutputTest extends TestCase
 
         $provider->generate(['purpose' => 'X'], ['Tomato']);
 
-        Http::assertSent(fn ($request) =>
-            $request['model'] === 'deepseek-chat'
+        Http::assertSent(fn ($request) => $request['model'] === 'deepseek-chat'
             && $request['max_tokens'] === 400
             && count($request['messages']) === 2
         );

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateDailyMenuJob;
 use App\Models\UserPreference;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SurveyController extends Controller
@@ -17,7 +18,7 @@ class SurveyController extends Controller
         return response()->json(['data' => $pref]);
     }
 
-    public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         // Web 表单多选 checkbox 提交 goals[] 数组；API 客户端提交字符串 —— 统一规整为字符串
         if (is_array($request->input('goals'))) {

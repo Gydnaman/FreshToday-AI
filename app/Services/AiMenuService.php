@@ -54,8 +54,7 @@ class AiMenuService
         User $user,
         ?array $overridePreferences = null,
         bool $force = false,
-    ): DailyMenu
-    {
+    ): DailyMenu {
         $preferences = $overridePreferences ?? $this->resolvePreferences($user);
         if (empty($preferences)) {
             throw new GuardFailedException(GuardCode::Ai, '用户未填写问卷偏好，无法生成菜单', [
