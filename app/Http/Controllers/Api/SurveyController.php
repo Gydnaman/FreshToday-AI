@@ -17,8 +17,13 @@ class SurveyController extends Controller
         return response()->json(['data' => $pref]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
+        // Web 表单多选 checkbox 提交 goals[] 数组；API 客户端提交字符串 —— 统一规整为字符串
+        if (is_array($request->input('goals'))) {
+            $request->merge(['goals' => implode('、', $request->input('goals'))]);
+        }
+
         $data = $request->validate([
             'usage_purpose' => 'required|string|max:100',
             'dietary_habits' => 'required|string|max:100',
@@ -37,6 +42,11 @@ class SurveyController extends Controller
 
         // 异步触发 AI 菜单生成（避免阻塞）
         GenerateDailyMenuJob::dispatch($request->user()->id);
+
+        // 原生表单提交（非 AJAX）：重定向回首页，避免浏览器显示裸 JSON
+        if (! $request->expectsJson()) {
+            return redirect('/');
+        }
 
         return response()->json(['data' => $pref]);
     }

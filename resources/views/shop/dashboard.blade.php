@@ -65,11 +65,13 @@
                     }
                 </style>
                 
-                <div class="mt-6 flex justify-end">
-                    <button class="bg-white text-green-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-50 transition shadow-sm">
-                        {{ i18n('dashboard.addToCart') }}
-                    </button>
-                </div>
+                @if($aiMenuHtml || $aiMenu)
+                    <div class="mt-6 flex justify-end">
+                        <button class="bg-white text-green-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-50 transition shadow-sm">
+                            {{ i18n('dashboard.addToCart') }}
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -78,7 +80,7 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-500 text-sm font-medium">{{ i18n('dashboard.statsCarbonSaved') }}</h3>
-                    <div class="text-2xl font-extrabold text-gray-900 mt-1">12.5 <span class="text-base text-gray-500">kg CO2e</span></div>
+                    <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ number_format($carbonSaved, 1) }} <span class="text-base text-gray-500">kg CO2e</span></div>
                 </div>
                 <div class="bg-green-100 p-3 rounded-full text-green-600">
                     <i data-lucide="tree-deciduous" class="w-6 h-6"></i>
@@ -87,7 +89,7 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-500 text-sm font-medium">{{ i18n('dashboard.statsOrders') }}</h3>
-                    <div class="text-2xl font-extrabold text-gray-900 mt-1">4</div>
+                    <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ $orderCount }}</div>
                 </div>
                 <div class="bg-blue-100 p-3 rounded-full text-blue-600">
                     <i data-lucide="package" class="w-6 h-6"></i>
@@ -96,7 +98,7 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-500 text-sm font-medium">{{ i18n('dashboard.statsSubscription') }}</h3>
-                    <div class="text-2xl font-extrabold text-gray-900 mt-1">Individual</div>
+                    <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ $subscriptionName ?? '—' }}</div>
                 </div>
                 <div class="bg-purple-100 p-3 rounded-full text-purple-600">
                     <i data-lucide="repeat" class="w-6 h-6"></i>

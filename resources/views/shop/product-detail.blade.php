@@ -5,9 +5,9 @@
 @section('content')
 @php($soldOut = (int) $product->stock <= 0)
 <div class="container mx-auto px-4 py-8 md:py-12">
-    <a href="{{ route('catalog') }}" class="inline-flex items-center gap-2 text-green-700 hover:text-green-800 font-semibold">
+    <a href="{{ route('catalog') }}" id="product-detail-back-link" class="inline-flex items-center gap-2 text-green-700 hover:text-green-800 font-semibold">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
-        {{ i18n('productDetail.backToCatalog') }}
+        <span data-back-label>{{ i18n('productDetail.backToCatalog') }}</span>
     </a>
 
     <article class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-8">
@@ -82,4 +82,21 @@
         </div>
     </article>
 </div>
+
+<script>
+    // 从首页菜单进入时，返回链接改为回到首页菜单区块
+    (function() {
+        try {
+            if (! document.referrer) return;
+            var ref = new URL(document.referrer);
+            if (ref.origin !== window.location.origin) return;
+            if (ref.pathname !== '/' && ref.pathname !== '') return;
+            var link = document.getElementById('product-detail-back-link');
+            if (! link) return;
+            link.href = '/#daily-menu';
+            var label = link.querySelector('[data-back-label]');
+            if (label) label.textContent = @json(i18n('productDetail.backToMenu'));
+        } catch (e) { /* 保持默认：返回商品目录 */ }
+    })();
+</script>
 @endsection

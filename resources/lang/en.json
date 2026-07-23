@@ -86,6 +86,7 @@
   },
   "productDetail": {
     "backToCatalog": "Back to catalog",
+    "backToMenu": "Back to menu",
     "organic": "Organic",
     "carbonFootprint": "Carbon footprint",
     "carbonUnit": "kg CO2e",

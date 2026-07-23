@@ -86,6 +86,7 @@
   },
   "productDetail": {
     "backToCatalog": "返回商品目录",
+    "backToMenu": "返回菜单",
     "organic": "有机",
     "carbonFootprint": "碳足迹",
     "carbonUnit": "kg CO2e",

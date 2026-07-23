@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('home.title'))
+@section('title', i18n('home.title'))
 
 @section('content')
 <div class="bg-gradient-to-br from-green-50 to-emerald-100 pb-16 pt-8">
@@ -51,7 +51,7 @@
         </div>
 
         @auth
-        <section data-testid="daily-menu-section" class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100 p-5 sm:p-8">
+        <section id="daily-menu" data-testid="daily-menu-section" class="scroll-mt-24 bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100 p-5 sm:p-8">
             <div class="mb-6">
                 <h2 class="text-3xl font-extrabold text-gray-900">{{ i18n('homeMenu.title') }}</h2>
                 <p class="mt-2 text-gray-600">{{ i18n('homeMenu.subtitle') }}</p>
@@ -185,6 +185,30 @@
 </div>
 
 <script>
+    // 浏览器前进/后退返回首页时恢复滚动位置（部分 webview 原生恢复不可靠）
+    (function() {
+        var STORAGE_KEY = 'home:scrollY';
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        window.addEventListener('pagehide', function() {
+            try { sessionStorage.setItem(STORAGE_KEY, String(window.scrollY)); } catch (e) {}
+        });
+        window.addEventListener('pageshow', function(event) {
+            var nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+            var isBackForward = event.persisted || (nav && nav.type === 'back_forward');
+            if (! isBackForward) {
+                try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                return;
+            }
+            var y = 0;
+            try { y = parseInt(sessionStorage.getItem(STORAGE_KEY) || '0', 10); } catch (e) {}
+            if (y > 0) {
+                requestAnimationFrame(function() { window.scrollTo(0, y); });
+            }
+        });
+    })();
+
     $(document).ready(function() {
         const $tabs = $('[data-menu-date]');
 

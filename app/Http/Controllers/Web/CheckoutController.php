@@ -35,6 +35,11 @@ class CheckoutController extends Controller
 
     public function place(Request $request): RedirectResponse
     {
+        // Web 表单把 items 以 JSON 字符串塞在单个 hidden field 提交，先 decode 成数组再验证
+        if (is_string($request->input('items'))) {
+            $request->merge(['items' => json_decode($request->input('items'), true) ?? []]);
+        }
+
         $data = $request->validate([
             'shipping_address.name' => 'required|string|max:120',
             'shipping_address.phone' => 'required|string|max:32',

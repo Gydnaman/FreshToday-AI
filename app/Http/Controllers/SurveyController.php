@@ -13,8 +13,8 @@ class SurveyController extends Controller
 {
     public function create()
     {
-        // SPA 重定向（前端路由）
-        return redirect()->away('/dashboard#survey');
+        // 直接渲染问卷视图（原重定向 /dashboard#survey 的锚点区块不存在，流程断裂）
+        return view('shop.survey');
     }
 
     public function store()

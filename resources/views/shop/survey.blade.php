@@ -12,6 +12,11 @@
         </div>
 
         <div class="p-8 md:p-12">
+            @if ($errors->any())
+                <div class="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700" role="alert">
+                    {{ $errors->first() }}
+                </div>
+            @endif
             <form id="survey-form" action="{{ url('/api/survey') }}" method="POST" class="space-y-8">
                 @csrf
 
@@ -22,7 +27,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @foreach(['A','B','C','D','E','F'] as $i => $val)
                         <label class="flex items-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-green-50 hover:border-green-300 transition group">
-                            <input type="radio" name="lifestyle" value="{{ i18n('survey.q1.options.' . $i . '.label') }}" required class="w-5 h-5 text-green-600 border-gray-300 focus:ring-green-500">
+                            <input type="radio" name="usage_purpose" value="{{ i18n('survey.q1.options.' . $i . '.label') }}" required class="w-5 h-5 text-green-600 border-gray-300 focus:ring-green-500">
                             <span class="ml-3 text-gray-700 font-medium group-hover:text-green-700">{{ i18n('survey.q1.options.' . $i . '.label') }}</span>
                         </label>
                         @endforeach

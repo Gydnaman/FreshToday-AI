@@ -1,3 +1,5 @@
+@extends('layouts.app')
+
 @section('title', i18n('checkout.title'))
 @section('content')
 @php
@@ -13,6 +15,11 @@
         <p class="text-gray-500 mt-1">{{ i18n('checkout.subtitle') }}</p>
     </div>
 
+    @if($errors->any())
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3" role="alert">
+        {{ $errors->first() }}
+    </div>
+    @endif
     @if($err)
     <div class="mb-6 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 flex items-start gap-2">
         <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>

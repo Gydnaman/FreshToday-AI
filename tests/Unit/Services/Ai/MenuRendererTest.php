@@ -66,11 +66,11 @@ class MenuRendererTest extends TestCase
         $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
 
         // 食材被包装成链接
-        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('<a href="/products/3"', $html);
         $this->assertStringContainsString('>Tomato</a>', $html);
-        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        $this->assertStringContainsString('<a href="/products/5"', $html);
         $this->assertStringContainsString('>Spinach</a>', $html);
-        $this->assertStringContainsString('<a href="/catalog#product-8"', $html);
+        $this->assertStringContainsString('<a href="/products/8"', $html);
         $this->assertStringContainsString('>Salmon</a>', $html);
     }
 
@@ -92,7 +92,7 @@ class MenuRendererTest extends TestCase
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringContainsString('&lt;script&gt;', $html);
         // 食材链接内的商品名也被转义，但链接本身保留
-        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('<a href="/products/3"', $html);
     }
 
     public function test_render_html_skips_ingredients_not_in_product_map(): void
@@ -110,7 +110,7 @@ class MenuRendererTest extends TestCase
         $html = MenuRenderer::renderHtmlFromJson($json, ['Tomato' => 3]);
 
         // Tomato 有映射 → 渲染链接（第一次出现）
-        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('<a href="/products/3"', $html);
         // Unknown Veg 无映射 → 保持纯文本（不出现链接）
         $this->assertStringNotContainsString('Unknown Veg</a>', $html);
     }
@@ -154,7 +154,7 @@ class MenuRendererTest extends TestCase
         $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
 
         // "菜心" 模糊匹配到 "本地有機菜心"，生成链接
-        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('<a href="/products/3"', $html);
         $this->assertStringContainsString('>菜心</a>', $html);
     }
 
@@ -175,7 +175,7 @@ class MenuRendererTest extends TestCase
         $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
 
         // "新鮮有機菜心" 包含 "有機菜心"，生成链接
-        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        $this->assertStringContainsString('<a href="/products/5"', $html);
         $this->assertStringContainsString('>新鮮有機菜心</a>', $html);
     }
 
@@ -196,9 +196,9 @@ class MenuRendererTest extends TestCase
         $html = MenuRenderer::renderHtmlFromJson($json, $productMap);
 
         // Tomato 精确匹配 → 链接
-        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('<a href="/products/3"', $html);
         // 菜心 模糊匹配到 本地有機菜心 → 链接
-        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        $this->assertStringContainsString('<a href="/products/5"', $html);
         // Truffle 无匹配 → 纯文本
         $this->assertStringNotContainsString('Truffle</a>', $html);
     }
@@ -226,9 +226,9 @@ class MenuRendererTest extends TestCase
 
         // 即使 description 不含食材名，ingredients 列表也应显示链接
         $this->assertStringContainsString('🥬 Ingredients:', $html);
-        $this->assertStringContainsString('<a href="/catalog#product-3"', $html);
+        $this->assertStringContainsString('<a href="/products/3"', $html);
         $this->assertStringContainsString('>本地有機紅蘿蔔</a>', $html);
-        $this->assertStringContainsString('<a href="/catalog#product-5"', $html);
+        $this->assertStringContainsString('<a href="/products/5"', $html);
         $this->assertStringContainsString('>本地有機臍橙</a>', $html);
         // Unknown Fruit 无匹配 → 纯文本
         $this->assertStringContainsString('Unknown Fruit', $html);

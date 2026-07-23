@@ -37,9 +37,29 @@ class DashboardController extends Controller
             $aiMenuHtml = MenuRenderer::renderHtmlFromJson($todayMenu->menu_json, $productMap);
         }
 
+        // 真实统计数据（替换原硬编码占位：12.5 kg / 4 单 / Individual）
+        $orderCount = $user->orders()->count();
+
+        $activeSubscription = $user->userSubscriptions()
+            ->where('status', 'active')
+            ->with('subscriptionPlan:id,name')
+            ->latest()
+            ->first();
+
+        // 碳减排：有效订单（非待付/取消/退款）中商品碳足迹 × 数量之和
+        $carbonSaved = \Illuminate\Support\Facades\DB::table('order_product')
+            ->join('orders', 'orders.id', '=', 'order_product.order_id')
+            ->join('products', 'products.id', '=', 'order_product.product_id')
+            ->where('orders.user_id', $user->id)
+            ->whereNotIn('orders.status', ['pending', 'cancelled', 'refunded'])
+            ->sum(\Illuminate\Support\Facades\DB::raw('products.carbon_footprint * order_product.quantity'));
+
         return view('shop.dashboard', [
             'aiMenu' => $todayMenu?->menu_content,
             'aiMenuHtml' => $aiMenuHtml,
+            'orderCount' => $orderCount,
+            'carbonSaved' => (float) $carbonSaved,
+            'subscriptionName' => $activeSubscription?->subscriptionPlan?->name,
         ]);
     }
 }

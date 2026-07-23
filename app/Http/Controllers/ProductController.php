@@ -19,7 +19,6 @@ class ProductController extends Controller
         $products = Product::query()
             ->where('status', Product::STATUS_PUBLISHED)
             ->orderByDesc('created_at')
-            ->limit(12)
             ->get();
 
         return view('shop.catalog', ['products' => $products]);

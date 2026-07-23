@@ -7,7 +7,7 @@ namespace App\Services\Ai;
  *
  * 职责：把结构化 JSON 菜单渲染成纯文本或 HTML。
  *  - renderTextFromJson: 纯文本，供 menu_content 字段使用（兼容现有前端）
- *  - renderHtmlFromJson: HTML，食材名包装成可点击链接（跳转到 catalog 页锚点）
+ *  - renderHtmlFromJson: HTML，食材名包装成可点击链接（跳转到商品详情页 /products/{id}）
  *
  * 纯文本输出格式：
  *   {greeting}
@@ -86,7 +86,7 @@ class MenuRenderer
                 foreach ($meal['ingredients'] as $ingredient) {
                     $matchedProductId = self::fuzzyMatchProduct($ingredient, $productMap);
                     if ($matchedProductId !== null) {
-                        $ingredientLinks[] = '<a href="/catalog#product-'.$matchedProductId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.e($ingredient).'</a>';
+                        $ingredientLinks[] = '<a href="/products/'.$matchedProductId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.e($ingredient).'</a>';
                     } else {
                         $ingredientLinks[] = e($ingredient);
                     }
@@ -130,7 +130,7 @@ class MenuRenderer
                 }
 
                 $escapedIngredient = e($ingredient);
-                $link = '<a href="/catalog#product-'.$matchedProductId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.$escapedIngredient.'</a>';
+                $link = '<a href="/products/'.$matchedProductId.'" class="text-green-600 hover:text-green-700 underline font-medium">'.$escapedIngredient.'</a>';
 
                 // 用 preg_replace 的 limit=1 只替换第一次出现（避免同一食材多次出现全部替换）
                 // 不用 \b 单词边界，因为转义后的 HTML 实体（如 &quot;）会破坏边界匹配

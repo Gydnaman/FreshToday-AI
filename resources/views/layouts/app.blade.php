@@ -108,7 +108,9 @@
                             $('#signin-btn').addClass('hidden');
                             $('#user-area').removeClass('hidden').addClass('flex');
                             $('#user-name').text(user.name || user.email);
-                            $('#admin-link').removeClass('hidden').addClass('flex');
+                            if (user.is_admin) {
+                                $('#admin-link').removeClass('hidden').addClass('flex');
+                            }
                         }
                     })
                     .catch(() => {
@@ -146,14 +148,18 @@
             // F-3 修正：不用 gbFetch（避免 401 全局跳转），直接 fetch + 401 走 fallback
             window.addToCartAuth = function(productId, name, price, qty) {
                 qty = Math.max(1, Math.floor(Number(qty) || 1));
+                const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+                // Sanctum SPA stateful 请求必须带 XSRF header，否则 419
+                const xsrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+                if (xsrf) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf[1]);
                 fetch('/api/cart', {
                     method: 'POST',
                     credentials: 'include',
-                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ product_id: productId, quantity: qty }),
                 }).then(r => {
-                    if (r.status === 401) {
-                        // guest：走 localStorage，不跳登录
+                    if (r.status === 401 || r.status === 419) {
+                        // guest / session 过期：走 localStorage，不跳登录
                         fallbackLocalAdd(productId, name, price, qty);
                         return null;
                     }

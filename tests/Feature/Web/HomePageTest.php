@@ -343,8 +343,8 @@ class HomePageTest extends TestCase
 
         $response = $this->actingAs($user)->get('/')->assertOk();
 
-        $response->assertSee('/catalog#product-'.$available->id, false);
-        $this->assertStringNotContainsString('/catalog#product-'.$draft->id, $response->getContent());
-        $this->assertStringNotContainsString('/catalog#product-'.$outOfStock->id, $response->getContent());
+        $response->assertSee('/products/'.$available->id, false);
+        $this->assertStringNotContainsString('/products/'.$draft->id, $response->getContent());
+        $this->assertStringNotContainsString('/products/'.$outOfStock->id, $response->getContent());
     }
 }

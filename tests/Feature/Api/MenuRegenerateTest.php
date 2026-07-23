@@ -177,8 +177,8 @@ class MenuRegenerateTest extends TestCase
             ->json('data.content_html');
 
         $this->assertIsString($html);
-        $this->assertStringContainsString('/catalog#product-'.$available->id, $html);
-        $this->assertStringNotContainsString('/catalog#product-'.$draft->id, $html);
-        $this->assertStringNotContainsString('/catalog#product-'.$outOfStock->id, $html);
+        $this->assertStringContainsString('/products/'.$available->id, $html);
+        $this->assertStringNotContainsString('/products/'.$draft->id, $html);
+        $this->assertStringNotContainsString('/products/'.$outOfStock->id, $html);
     }
 }

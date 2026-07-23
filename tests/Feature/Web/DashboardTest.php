@@ -79,11 +79,11 @@ class DashboardTest extends TestCase
 
         $response->assertOk();
         // HTML 版本渲染（含链接）
-        $response->assertSee('catalog#product-'.$product->id, false);
+        $response->assertSee('products/'.$product->id, false);
         $response->assertSee('Organic Tomato', false);
         // 食材名被包装成 <a> 标签
         $this->assertStringContainsString(
-            '<a href="/catalog#product-'.$product->id.'"',
+            '<a href="/products/'.$product->id.'"',
             $response->getContent()
         );
     }

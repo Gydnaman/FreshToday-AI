@@ -29,7 +29,22 @@ Route::get('/subscriptions', function () {
 // 需登录的页面
 Route::middleware('auth')->group(function () {
     Route::get('/orders', function () {
-        return view('shop.orders');
+        // 查询当前用户订单并映射为视图所需字段（原闭包未传 $orders，页面永远显示"没有订单"）
+        $orders = auth()->user()->orders()
+            ->with('products.category')
+            ->latest()
+            ->get()
+            ->map(fn ($o) => (object) [
+                'order_number' => $o->order_no,
+                'date' => ($o->placed_at ?? $o->created_at)->format('Y-m-d'),
+                'status' => $o->status->value,
+                'product_name' => $o->products->pluck('name')->join('、') ?: '—',
+                'product_type' => $o->products->first()?->category?->name ?? '',
+                'price' => 'HK$'.number_format((float) $o->total_price, 2),
+                'co2_saved' => number_format($o->products->sum(fn ($p) => (float) $p->carbon_footprint * $p->pivot->quantity), 1),
+            ]);
+
+        return view('shop.orders', ['orders' => $orders]);
     });
     Route::get('/cart', function () {
         return view('shop.cart');
