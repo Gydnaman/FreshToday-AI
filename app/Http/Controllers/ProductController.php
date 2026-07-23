@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use Illuminate\Contracts\View\View;
 
 /**
  * Web 端产品目录页控制器（/catalog）
@@ -13,7 +14,7 @@ use App\Models\Product;
  */
 class ProductController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $products = Product::query()
             ->where('status', Product::STATUS_PUBLISHED)
@@ -22,5 +23,14 @@ class ProductController extends Controller
             ->get();
 
         return view('shop.catalog', ['products' => $products]);
+    }
+
+    public function show(Product $product): View
+    {
+        abort_unless($product->status === Product::STATUS_PUBLISHED, 404);
+
+        $product->load('category:id,name,slug');
+
+        return view('shop.product-detail', ['product' => $product]);
     }
 }

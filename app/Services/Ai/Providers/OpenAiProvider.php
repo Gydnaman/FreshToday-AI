@@ -69,26 +69,34 @@ class OpenAiProvider implements AiProviderInterface
                         return [trim($text), $tokens, $json];
                     }
                     Log::warning('OpenAiProvider: invalid JSON', [
-                        'text' => substr($text, 0, 200),
+                        'provider' => $this->name(),
+                        'model' => $this->config['model'],
+                        'reason' => 'invalid_json',
                     ]);
 
                     return ['', 0, null];
                 }
 
                 Log::warning('OpenAiProvider: empty choices', [
+                    'provider' => $this->name(),
                     'model' => $this->config['model'],
+                    'reason' => 'empty_choices',
                 ]);
 
                 return ['', 0, null];
             }
 
             Log::warning('OpenAiProvider: non-2xx', [
+                'provider' => $this->name(),
+                'model' => $this->config['model'],
                 'status' => $response->status(),
-                'body' => substr($response->body(), 0, 200),
+                'reason' => 'provider_http_error',
             ]);
         } catch (\Throwable $e) {
             Log::warning('OpenAiProvider: exception', [
-                'message' => $e->getMessage(),
+                'provider' => $this->name(),
+                'model' => $this->config['model'],
+                'reason' => 'provider_exception',
             ]);
         }
 

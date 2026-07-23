@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Ai;
 
 use App\Services\Ai\MenuOutputValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class MenuOutputValidatorTest extends TestCase
@@ -68,6 +69,21 @@ class MenuOutputValidatorTest extends TestCase
         $this->assertTrue($this->validator->validateJson($data, ['Tomato', 'Spinach', 'Salmon']));
     }
 
+    public function test_validate_json_requires_each_meal_type_exactly_once(): void
+    {
+        $data = [
+            'greeting' => 'Good morning!',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Tomato Toast', 'ingredients' => ['Tomato'], 'description' => 'Fresh start'],
+                ['type' => 'lunch', 'name' => 'Spinach Salad', 'ingredients' => ['Spinach'], 'description' => 'Light lunch'],
+                ['type' => 'lunch', 'name' => 'Salmon Salad', 'ingredients' => ['Salmon'], 'description' => 'Repeated lunch'],
+            ],
+            'tip' => 'Stay hydrated!',
+        ];
+
+        $this->assertFalse($this->validator->validateJson($data, ['Tomato', 'Spinach', 'Salmon']));
+    }
+
     public function test_validate_json_rejects_when_no_product_mentioned(): void
     {
         $data = [
@@ -97,8 +113,8 @@ class MenuOutputValidatorTest extends TestCase
         $this->assertFalse($this->validator->validateJson($data, ['Tomato', 'Spinach']), 'Truffle 不在商品库，应校验失败');
     }
 
-    /** 模糊匹配：食材名被商品名包含（如"菜心"匹配"本地有機菜心"） */
-    public function test_validate_json_accepts_fuzzy_match_ingredient_in_product(): void
+    /** Provider ingredients must use the exact candidate names. */
+    public function test_validate_json_rejects_fuzzy_match_ingredient_in_product(): void
     {
         $data = [
             'greeting' => 'Hello',
@@ -110,11 +126,11 @@ class MenuOutputValidatorTest extends TestCase
             'tip' => 'Tip',
         ];
         $products = ['本地有機菜心', '本地有機白菜', '本地有機紅蘿蔔'];
-        $this->assertTrue($this->validator->validateJson($data, $products), '模糊匹配：菜心/白菜/紅蘿蔔 应匹配到 本地有機菜心/本地有機白菜/本地有機紅蘿蔔');
+        $this->assertFalse($this->validator->validateJson($data, $products));
     }
 
-    /** 模糊匹配：商品名被食材名包含（如"有機菜心"匹配"菜心"，较少见但应支持） */
-    public function test_validate_json_accepts_fuzzy_match_product_in_ingredient(): void
+    /** Provider ingredients may not add text around a candidate name. */
+    public function test_validate_json_rejects_fuzzy_match_product_in_ingredient(): void
     {
         $data = [
             'greeting' => 'Hello',
@@ -126,11 +142,64 @@ class MenuOutputValidatorTest extends TestCase
             'tip' => 'Tip',
         ];
         $products = ['有機菜心', '白菜', '紅蘿蔔'];
-        $this->assertTrue($this->validator->validateJson($data, $products), '模糊匹配：新鮮有機菜心/嫩白菜/甜紅蘿蔔 应匹配到 有機菜心/白菜/紅蘿蔔');
+        $this->assertFalse($this->validator->validateJson($data, $products));
     }
 
-    /** 混合场景：部分精确匹配 + 部分模糊匹配 + 1 个不匹配 → 失败 */
-    public function test_validate_json_rejects_mixed_scenario_with_one_invalid(): void
+    public function test_validate_json_rejects_non_string_and_empty_ingredients_without_throwing(): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => [['name' => 'Tomato']], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Y', 'ingredients' => [''], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Z', 'ingredients' => ['Tomato'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        $this->assertFalse($this->validator->validateJson($data, ['Tomato']));
+    }
+
+    #[DataProvider('invalidRenderableFieldProvider')]
+    public function test_validate_json_rejects_non_string_or_empty_renderable_fields(
+        string $field,
+        mixed $invalidValue,
+    ): void
+    {
+        $data = [
+            'greeting' => 'Hello',
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'X', 'ingredients' => ['Tomato'], 'description' => 'A'],
+                ['type' => 'lunch', 'name' => 'Y', 'ingredients' => ['Tomato'], 'description' => 'B'],
+                ['type' => 'dinner', 'name' => 'Z', 'ingredients' => ['Tomato'], 'description' => 'C'],
+            ],
+            'tip' => 'Tip',
+        ];
+
+        match ($field) {
+            'greeting', 'tip' => $data[$field] = $invalidValue,
+            'name', 'description' => $data['meals'][0][$field] = $invalidValue,
+        };
+
+        $this->assertFalse($this->validator->validateJson($data, ['Tomato']));
+    }
+
+    public static function invalidRenderableFieldProvider(): array
+    {
+        return [
+            'greeting array' => ['greeting', ['invalid']],
+            'tip array' => ['tip', ['invalid']],
+            'meal name array' => ['name', ['invalid']],
+            'meal description array' => ['description', ['invalid']],
+            'greeting empty' => ['greeting', ''],
+            'tip empty' => ['tip', ''],
+            'meal name empty' => ['name', ''],
+            'meal description empty' => ['description', ''],
+        ];
+    }
+
+    /** A mixed payload is rejected as soon as one ingredient is not an exact candidate. */
+    public function test_validate_json_rejects_mixed_scenario_with_non_exact_ingredient(): void
     {
         $data = [
             'greeting' => 'Hello',

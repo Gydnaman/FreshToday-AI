@@ -54,6 +54,23 @@
     "formCta": "免费创建账户",
     "formTerms": "注册即代表你同意我们的服务条款。"
   },
+  "homeMenu": {
+    "title": "今日菜单",
+    "subtitle": "查看今天及过去六天的个性化推荐菜单。",
+    "today": "今天",
+    "previousDays": "往日菜单",
+    "noMenu": "当日暂无菜单。",
+    "needsPreferences": "请先完成饮食偏好，再生成菜单。",
+    "completePreferences": "填写饮食偏好",
+    "noProducts": "当前没有可用于推荐菜单的商品。",
+    "generationFailed": "今日菜单生成失败。",
+    "rateLimited": "今日重新生成次数已达上限，请明天再试。",
+    "regenerate": "重新生成",
+    "regenerating": "正在重新生成...",
+    "regenerateFailed": "重新生成失败，请稍后重试。",
+    "updated": "今日已保存",
+    "source": "来源"
+  },
   "catalog": {
     "pageTitle": "商品目录",
     "title": "本地农场新鲜直送",
@@ -66,6 +83,20 @@
     "carbonUnit": "kg CO2e",
     "carbonFootprint": "碳足迹",
     "explorePlans": "探索订阅计划"
+  },
+  "productDetail": {
+    "backToCatalog": "返回商品目录",
+    "organic": "有机",
+    "carbonFootprint": "碳足迹",
+    "carbonUnit": "kg CO2e",
+    "origin": "产地",
+    "inStock": "有库存",
+    "stockRemaining": "剩余 :count 件",
+    "quantity": "数量",
+    "addToCart": "加入购物车",
+    "soldOut": "售罄",
+    "description": "商品描述",
+    "imageUnavailable": "暂无商品图片"
   },
     "cart": {
     "title": "我的购物车",

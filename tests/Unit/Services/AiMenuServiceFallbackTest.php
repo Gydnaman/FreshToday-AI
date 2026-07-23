@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Exceptions\GuardFailedException;
 use App\Models\DailyMenu;
 use App\Models\Product;
 use App\Models\User;
@@ -25,7 +26,7 @@ use Tests\TestCase;
  *  - 无 GEMINI_API_KEY：降级 fallback，tokens_used=0
  *  - 降级结果可入 DailyMenu + Cache 复用
  *  - 降级后 24h 内不重复调用 Gemini（命中 cache）
- *  - 边界：可售商品为空时 fallback 文本不爆
+ *  - 边界：没有已发布且有库存的商品时明确拒绝生成
  *
  * 与 AiMenuServiceTest 的差异：
  *  - AiMenuServiceTest 覆盖：缓存 / 限流 / 缺失偏好 / 同日复用
@@ -101,7 +102,9 @@ class AiMenuServiceFallbackTest extends TestCase
         $menu = $this->service->generateDailyMenuForUser($this->user);
 
         $this->assertNotEmpty($menu->menu_content, '5xx 降级后内容必须非空');
-        $this->assertStringContainsString('[AI Demo]', $menu->menu_content, '降级模板应含 [AI Demo] 标识');
+        $this->assertIsArray($menu->menu_json, '降级模板应持久化结构化菜单');
+        $this->assertCount(3, $menu->menu_json['meals']);
+        $this->assertStringContainsString($menu->menu_json['meals'][0]['name'], $menu->menu_content);
         $this->assertEquals('gemini', $menu->source, '5xx 降级时 source 仍记 gemini（fallback 由 callGemini 内部触发）');
         $this->assertEquals(0, $menu->tokens_used, '5xx 降级时 tokens_used 应为 0');
     }
@@ -156,7 +159,8 @@ class AiMenuServiceFallbackTest extends TestCase
         $menu = $this->service->generateDailyMenuForUser($this->user);
 
         $this->assertNotEmpty($menu->menu_content, '空 candidates 降级后内容必须非空');
-        $this->assertStringContainsString('[AI Demo]', $menu->menu_content);
+        $this->assertIsArray($menu->menu_json);
+        $this->assertCount(3, $menu->menu_json['meals']);
     }
 
     /**
@@ -210,10 +214,10 @@ class AiMenuServiceFallbackTest extends TestCase
     }
 
     /**
-     * 场景 7：可售商品列表为空时 fallback 文本不爆
-     * 预期：fallback 用默认 'seasonal produce' 兜底
+     * 场景 7：可售商品列表为空时明确拒绝生成
+     * 预期：抛出包含 NO_AVAILABLE_PRODUCTS 原因的 GUARD-AI
      */
-    public function test_fallback_with_no_available_products(): void
+    public function test_generation_with_no_available_products_is_rejected(): void
     {
         // 删除所有可售商品（Product::where('stock','>',0) 即返回空）
         Product::query()->update(['stock' => 0]);
@@ -222,10 +226,12 @@ class AiMenuServiceFallbackTest extends TestCase
             'generativelanguage.googleapis.com/*' => Http::response('Error', 500),
         ]);
 
-        $menu = $this->service->generateDailyMenuForUser($this->user);
-
-        $this->assertNotEmpty($menu->menu_content);
-        $this->assertStringContainsString('seasonal produce', $menu->menu_content, '无可售商品时应使用 seasonal produce 兜底');
+        try {
+            $this->service->generateDailyMenuForUser($this->user);
+            $this->fail('Expected generation to be rejected without available products.');
+        } catch (GuardFailedException $exception) {
+            $this->assertSame('NO_AVAILABLE_PRODUCTS', $exception->context['reason']);
+        }
     }
 
     /**
@@ -241,7 +247,8 @@ class AiMenuServiceFallbackTest extends TestCase
         $menu = $this->service->generateDailyMenuForUser($this->user);
 
         $this->assertNotEmpty($menu->menu_content, '网络异常时降级后内容必须非空');
-        $this->assertStringContainsString('[AI Demo]', $menu->menu_content);
+        $this->assertIsArray($menu->menu_json);
+        $this->assertCount(3, $menu->menu_json['meals']);
     }
 
     /**
@@ -305,7 +312,63 @@ class AiMenuServiceFallbackTest extends TestCase
         );
 
         $this->assertNotEmpty($content);
-        $this->assertStringContainsString('[AI Demo]', $content);
+        $this->assertStringContainsString('Breakfast: Morning', $content);
+        $this->assertStringContainsString('Lunch: Seasonal', $content);
+        $this->assertStringContainsString('Dinner: Evening', $content);
         $this->assertStringContainsString('Keto', $content);
+    }
+
+    public function test_text_only_interface_rejects_an_empty_product_list(): void
+    {
+        try {
+            $this->service->generateDailyMenu(
+                preferences: ['dietary_habits' => 'Healthy'],
+                availableProducts: [],
+            );
+            $this->fail('Expected generation to be rejected without available products.');
+        } catch (GuardFailedException $exception) {
+            $this->assertSame('NO_AVAILABLE_PRODUCTS', $exception->context['reason']);
+        }
+    }
+
+    public function test_text_only_interface_does_not_accept_invalid_json_as_free_text(): void
+    {
+        $invalidJson = [
+            'greeting' => str_repeat('Fresh Tomato menu. ', 5),
+            'meals' => [],
+            'tip' => 'Tip',
+        ];
+        $rawJson = json_encode($invalidJson, JSON_THROW_ON_ERROR);
+        $provider = new class($rawJson, $invalidJson) implements AiProviderInterface
+        {
+            public function __construct(
+                private readonly string $content,
+                private readonly array $json,
+            ) {}
+
+            public function name(): string
+            {
+                return 'fake';
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function generate(array $preferences, array $products): array
+            {
+                return [$this->content, 50, $this->json];
+            }
+        };
+
+        $content = (new AiMenuService($provider))->generateDailyMenu(
+            preferences: ['dietary_habits' => 'Healthy'],
+            availableProducts: ['Tomato'],
+        );
+
+        $this->assertNotSame($rawJson, $content);
+        $this->assertStringContainsString('Breakfast: Morning Tomato', $content);
+        $this->assertStringContainsString('Dinner: Evening Tomato', $content);
     }
 }

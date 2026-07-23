@@ -63,7 +63,10 @@ class FailoverProvider implements AiProviderInterface
 
             // 跳过熔断的 Provider
             if ($this->breaker->isOpen($name)) {
-                Log::info("FailoverProvider: skip {$name} (circuit open)");
+                Log::info('FailoverProvider: provider skipped', [
+                    'provider' => $name,
+                    'reason' => 'circuit_open',
+                ]);
 
                 continue;
             }
@@ -85,7 +88,10 @@ class FailoverProvider implements AiProviderInterface
                 // Provider 返回空 = 失败
                 $this->breaker->recordFailure($name);
             } catch (\Throwable $e) {
-                Log::warning("FailoverProvider: {$name} exception", ['error' => $e->getMessage()]);
+                Log::warning('FailoverProvider: provider exception', [
+                    'provider' => $name,
+                    'reason' => 'provider_exception',
+                ]);
                 $this->breaker->recordFailure($name);
             }
         }

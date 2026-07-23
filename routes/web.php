@@ -5,13 +5,13 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\Web\CheckoutController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\HomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('pages.welcome');
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/catalog', [ProductController::class, 'index']);
+Route::get('/catalog', [ProductController::class, 'index'])->name('catalog');
+Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
 Route::get('/login', function () {
     return view('auth.login');

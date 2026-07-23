@@ -53,8 +53,37 @@
     $(document).ready(function() {
         let isLogin = true;
         // 读 ?return= 路径，登录后回跳
+        // return-destination:start
+        function normalizeReturnDestination(rawReturn, currentOrigin) {
+            const origin = currentOrigin || window.location.origin;
+
+            if (typeof rawReturn !== 'string') {
+                return '/';
+            }
+
+            const candidate = rawReturn.trim();
+
+            if (candidate === '' || candidate.startsWith('//') || candidate.startsWith('\\')) {
+                return '/';
+            }
+
+            try {
+                const destination = new URL(candidate, origin);
+                const isHttp = destination.protocol === 'http:' || destination.protocol === 'https:';
+
+                if (! isHttp || destination.origin !== origin) {
+                    return '/';
+                }
+
+                return destination.pathname + destination.search + destination.hash;
+            } catch (error) {
+                return '/';
+            }
+        }
+        // return-destination:end
+
         const params = new URLSearchParams(location.search);
-        const returnTo = params.get('return') || '/catalog';
+        const returnTo = normalizeReturnDestination(params.get('return'));
 
         // 已登录则直接跳（session 模式：调 /api/me 判断）
         fetch('/api/me', { credentials: 'include' })

@@ -26,7 +26,8 @@ class MenuController extends Controller
         // 渲染 HTML（食材链接）
         $contentHtml = null;
         if ($menu->menu_json) {
-            $productMap = Product::where('stock', '>', 0)
+            $productMap = Product::where('status', Product::STATUS_PUBLISHED)
+                ->where('stock', '>', 0)
                 ->pluck('id', 'name')
                 ->toArray();
             $contentHtml = MenuRenderer::renderHtmlFromJson($menu->menu_json, $productMap);

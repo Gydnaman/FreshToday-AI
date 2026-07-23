@@ -13,6 +13,7 @@ use App\Services\Ai\MenuRenderer;
 use App\Services\Ai\MetricsRecorder;
 use App\Services\Ai\Providers\NullProvider;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +39,8 @@ class AiMenuService
 
     private const DAILY_REGEN_LIMIT = 3;
 
+    private const MAX_CANDIDATE_PRODUCTS = 8;
+
     private const CACHE_KEY_MENU = 'ai_menu:user:%d:date:%s';
 
     private const CACHE_KEY_REGEN = 'ai_menu:regen:%d:%s';
@@ -47,7 +50,11 @@ class AiMenuService
         private readonly MenuOutputValidator $validator = new MenuOutputValidator,
     ) {}
 
-    public function generateDailyMenuForUser(User $user, ?array $overridePreferences = null): DailyMenu
+    public function generateDailyMenuForUser(
+        User $user,
+        ?array $overridePreferences = null,
+        bool $force = false,
+    ): DailyMenu
     {
         $preferences = $overridePreferences ?? $this->resolvePreferences($user);
         if (empty($preferences)) {
@@ -57,39 +64,67 @@ class AiMenuService
         }
 
         $date = now()->toDateString();
+        $preferences['menu_date'] = $date;
         // 写库时用 Carbon 完整时间戳（00:00:00），与 date cast 一致
         // → updateOrCreate 的 where('date', ...) 才能匹配
         $dateForDb = Carbon::parse($date)->startOfDay();
         $cacheKey = sprintf(self::CACHE_KEY_MENU, $user->id, $date);
 
-        // 1. 命中缓存（无 json 数据，传 null）
-        $cached = Cache::get($cacheKey);
-        if ($cached) {
-            return $this->upsertMenu($user, $date, $cached, $this->provider->name(), 0, null);
-        }
+        if (! $force) {
+            // Cache stores only a persisted row identity; the database remains authoritative.
+            $cached = Cache::get($cacheKey);
+            if ($cached) {
+                $cachedMenu = (is_int($cached) || (is_string($cached) && ctype_digit($cached)))
+                    ? DailyMenu::query()
+                        ->whereKey((int) $cached)
+                        ->where('user_id', $user->id)
+                        ->whereDate('date', $date)
+                        ->first()
+                    : null;
 
-        // 2. 命中 DB
-        $existing = DailyMenu::where('user_id', $user->id)->whereDate('date', $date)->first();
-        if ($existing) {
-            Cache::put($cacheKey, $existing->menu_content, self::CACHE_TTL_SECONDS);
+                if ($cachedMenu) {
+                    return $cachedMenu;
+                }
+            }
 
-            return $existing;
+            // Resolve legacy/stale cache values from the persisted daily row.
+            $existing = DailyMenu::where('user_id', $user->id)->whereDate('date', $date)->first();
+            if ($existing) {
+                Cache::put($cacheKey, $existing->getKey(), self::CACHE_TTL_SECONDS);
+
+                return $existing;
+            }
         }
 
         // 3. 调 Provider
-        $availableProducts = Product::where('stock', '>', 0)->pluck('name')->toArray();
+        $availableProducts = $this->candidateProductNames($user, $date);
+        if ($availableProducts === []) {
+            throw new GuardFailedException(GuardCode::Ai, '暂无可推荐商品', [
+                'reason' => 'NO_AVAILABLE_PRODUCTS',
+            ]);
+        }
+
         [$content, $tokens, $jsonData] = $this->callProvider($preferences, $availableProducts);
 
         // 4. 校验 + 渲染
         // 4a. JSON 模式：优先用结构化数据
-        if ($jsonData !== null && $this->validator->validateJson($jsonData, $availableProducts)) {
-            $content = MenuRenderer::renderTextFromJson($jsonData);
+        if ($jsonData !== null) {
+            $renderedJson = $this->renderValidJsonOutput($jsonData, $availableProducts);
+            if ($renderedJson !== null) {
+                $content = $renderedJson;
+            } else {
+                Log::warning('AiMenuService: provider JSON output failed validation', [
+                    'provider' => $this->provider->name(),
+                ]);
+                $content = '';
+                $tokens = 0;
+            }
         }
         // 4b. 自由文本模式：校验文本合法性
         elseif ($content !== '' && ! $this->validator->validate($content, $availableProducts)) {
             Log::warning('AiMenuService: provider output failed validation', [
                 'provider' => $this->provider->name(),
-                'content_preview' => substr($content, 0, 200),
+                'reason' => 'invalid_output',
             ]);
             $content = ''; // 触发 fallback
             $tokens = 0;
@@ -98,18 +133,20 @@ class AiMenuService
         // 5. Provider 返回空 / 校验失败 → 本地模板
         //    source 仍记 provider 名（保留 Sprint 1 行为："意图调用的 provider"）
         if ($content === '') {
-            $content = $this->generateFallbackMenu($preferences, $availableProducts);
+            $jsonData = $this->generateFallbackMenuJson($preferences, $availableProducts);
+            $content = MenuRenderer::renderTextFromJson($jsonData);
             $tokens = 0;
         }
-
-        Cache::put($cacheKey, $content, self::CACHE_TTL_SECONDS);
 
         // 指标埋点（latency 暂时传 0，后续加 Stopwatch）
         $status = $tokens > 0 ? 'success' : 'failure';
         MetricsRecorder::recordGeneration($this->provider->name(), $status, 0, $tokens);
 
         // 6. 落库
-        return $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens, $jsonData ?? null);
+        $menu = $this->upsertMenu($user, $dateForDb, $content, $this->provider->name(), $tokens, $jsonData ?? null);
+        Cache::put($cacheKey, $menu->getKey(), self::CACHE_TTL_SECONDS);
+
+        return $menu;
     }
 
     /**
@@ -119,10 +156,8 @@ class AiMenuService
     {
         $date = now()->toDateString();
         $regenKey = sprintf(self::CACHE_KEY_REGEN, $user->id, $date);
+        Cache::add($regenKey, 0, self::CACHE_TTL_SECONDS);
         $count = (int) Cache::increment($regenKey);
-        // I-6 修复：每次调用都刷新 TTL + 用 increment 返回值（非固定 1）
-        // 旧代码只在 count===1 时 put(1, TTL)，并发下可能被固定值重置
-        Cache::put($regenKey, $count, self::CACHE_TTL_SECONDS);
         if ($count > self::DAILY_REGEN_LIMIT) {
             throw new GuardFailedException(GuardCode::AiRate, '每日最多重新生成 3 次', [
                 'limit' => self::DAILY_REGEN_LIMIT,
@@ -132,7 +167,7 @@ class AiMenuService
         // 失效缓存
         Cache::forget(sprintf(self::CACHE_KEY_MENU, $user->id, $date));
 
-        return $this->generateDailyMenuForUser($user, $overridePreferences);
+        return $this->generateDailyMenuForUser($user, $overridePreferences, force: true);
     }
 
     public function getTodayMenu(User $user): ?DailyMenu
@@ -145,17 +180,28 @@ class AiMenuService
     /** 兼容旧接口：纯文本输出（供 SurveyController demo） */
     public function generateDailyMenu(array $preferences, array $availableProducts): string
     {
+        if ($availableProducts === []) {
+            throw new GuardFailedException(GuardCode::Ai, '暂无可推荐商品', [
+                'reason' => 'NO_AVAILABLE_PRODUCTS',
+            ]);
+        }
+
         [$content, , $jsonData] = $this->callProvider($preferences, $availableProducts);
 
-        if ($jsonData !== null && $this->validator->validateJson($jsonData, $availableProducts)) {
-            return MenuRenderer::renderTextFromJson($jsonData);
+        if ($jsonData !== null) {
+            return $this->renderValidJsonOutput($jsonData, $availableProducts)
+                ?? MenuRenderer::renderTextFromJson(
+                    $this->generateFallbackMenuJson($preferences, $availableProducts)
+                );
         }
 
         if ($content !== '' && $this->validator->validate($content, $availableProducts)) {
             return $content;
         }
 
-        return $this->generateFallbackMenu($preferences, $availableProducts);
+        return MenuRenderer::renderTextFromJson(
+            $this->generateFallbackMenuJson($preferences, $availableProducts)
+        );
     }
 
     /**
@@ -201,9 +247,45 @@ class AiMenuService
         if ($jsonData !== null) {
             $fillData['menu_json'] = $jsonData;
         }
-        $menu->fill($fillData)->save();
+        $isInsert = ! $menu->exists;
+        try {
+            $menu->fill($fillData)->save();
+        } catch (QueryException $exception) {
+            if (! $isInsert || ! $this->isDailyMenuUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            $menu = DailyMenu::where('user_id', $user->id)
+                ->whereDate('date', $dateStr)
+                ->first();
+
+            if (! $menu) {
+                throw $exception;
+            }
+        }
 
         return $menu;
+    }
+
+    private function isDailyMenuUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $errorInfo = $exception->errorInfo ?? [];
+        $sqlState = (string) ($errorInfo[0] ?? $exception->getCode());
+        $driverCode = (int) ($errorInfo[1] ?? 0);
+        $message = strtolower($exception->getMessage().' '.($errorInfo[2] ?? ''));
+
+        if ($sqlState !== '23000') {
+            return false;
+        }
+
+        if ($driverCode === 1062) {
+            return str_contains($message, 'daily_menus_user_date_unique');
+        }
+
+        return $driverCode === 19
+            && str_contains($message, 'unique constraint failed')
+            && str_contains($message, 'daily_menus.user_id')
+            && str_contains($message, 'daily_menus.date');
     }
 
     /**
@@ -233,21 +315,76 @@ class AiMenuService
             // Provider 自身已捕获异常；这里再兜一次（防御性编程）
             Log::error('AiMenuService: unexpected provider exception', [
                 'provider' => $this->provider->name(),
-                'error' => $e->getMessage(),
+                'reason' => 'unexpected_provider_exception',
             ]);
 
             return ['', 0, null];
         }
     }
 
-    private function generateFallbackMenu(array $preferences, array $availableProducts): string
+    /**
+     * Validate and render provider JSON inside one exception boundary so malformed
+     * output can safely fall back without persisting an unrenderable structure.
+     *
+     * @param  array<string, mixed>  $jsonData
+     * @param  array<int, string>  $availableProducts
+     */
+    private function renderValidJsonOutput(array $jsonData, array $availableProducts): ?string
     {
-        $ingredients = array_slice($availableProducts, 0, 2);
-        $itemsStr = implode(' and ', $ingredients) ?: 'seasonal produce';
-        $habit = $preferences['dietary_habits'] ?? 'Healthy';
+        try {
+            if (! $this->validator->validateJson($jsonData, $availableProducts)) {
+                return null;
+            }
 
-        return "🌱 [AI Demo] A {$habit} lunch just for you: we picked freshly harvested {$itemsStr}. "
-            .'Lightly sauté with a little olive oil to preserve nutrients. '
-            .'Lower-carbon and delicious—enjoy!';
+            return MenuRenderer::renderTextFromJson($jsonData);
+        } catch (\Throwable $exception) {
+            Log::warning('AiMenuService: provider JSON validation or rendering threw an exception', [
+                'provider' => $this->provider->name(),
+                'reason' => 'validation_exception',
+            ]);
+
+            return null;
+        }
+    }
+
+    /** @return array<int, string> */
+    private function candidateProductNames(User $user, string $date): array
+    {
+        $names = Product::query()
+            ->where('status', Product::STATUS_PUBLISHED)
+            ->where('stock', '>', 0)
+            ->orderBy('id')
+            ->pluck('name')
+            ->values();
+
+        if ($names->isEmpty()) {
+            return [];
+        }
+
+        $offset = ($user->id + (int) Carbon::parse($date)->format('Ymd')) % $names->count();
+
+        return $names->slice($offset)
+            ->concat($names->take($offset))
+            ->take(self::MAX_CANDIDATE_PRODUCTS)
+            ->values()
+            ->all();
+    }
+
+    /** @param array<int, string> $products */
+    private function generateFallbackMenuJson(array $preferences, array $products): array
+    {
+        $habit = $preferences['dietary_habits'] ?? 'Healthy';
+        $items = collect($products)->values();
+        $productAt = fn (int $index): string => $items[$index % $items->count()];
+
+        return [
+            'greeting' => "A fresh {$habit} menu selected from today's GreenBite products.",
+            'meals' => [
+                ['type' => 'breakfast', 'name' => 'Morning '.$productAt(0), 'ingredients' => [$productAt(0)], 'description' => 'Serve simply to keep the ingredient fresh and light.'],
+                ['type' => 'lunch', 'name' => 'Seasonal '.$productAt(1), 'ingredients' => [$productAt(1)], 'description' => 'Cook gently with a small amount of oil for a balanced lunch.'],
+                ['type' => 'dinner', 'name' => 'Evening '.$productAt(2), 'ingredients' => [$productAt(2)], 'description' => 'Prepare warm with simple seasoning for a satisfying dinner.'],
+            ],
+            'tip' => 'Use only the portions you need and store the remaining produce carefully.',
+        ];
     }
 }

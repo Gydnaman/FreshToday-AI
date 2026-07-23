@@ -61,6 +61,7 @@ return [
             // DeepSeek 提供 OpenAI 兼容协议
             'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
             'model' => env('AI_DEEPSEEK_MODEL', 'deepseek-chat'),
+            'max_tokens' => (int) env('AI_DEEPSEEK_MAX_TOKENS', 400),
             'timeout' => (int) env('AI_TIMEOUT', 15),
         ],
     ],

@@ -50,8 +50,100 @@
             </div>
         </div>
 
+        @auth
+        <section data-testid="daily-menu-section" class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100 p-5 sm:p-8">
+            <div class="mb-6">
+                <h2 class="text-3xl font-extrabold text-gray-900">{{ i18n('homeMenu.title') }}</h2>
+                <p class="mt-2 text-gray-600">{{ i18n('homeMenu.subtitle') }}</p>
+            </div>
+
+            @if ($menuState === 'needs_preferences')
+                <div data-testid="menu-needs-preferences" class="rounded-2xl bg-amber-50 p-5 text-amber-900">
+                    <p>{{ i18n('homeMenu.needsPreferences') }}</p>
+                    <a href="{{ url('/survey') }}" class="mt-4 inline-flex rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800">
+                        {{ i18n('homeMenu.completePreferences') }}
+                    </a>
+                </div>
+            @elseif ($menuState === 'no_products')
+                <div data-testid="menu-no-products" class="rounded-2xl bg-gray-50 p-5 text-gray-700">
+                    <p>{{ i18n('homeMenu.noProducts') }}</p>
+                    @if ($menuError)
+                        <p class="mt-2 text-sm">{{ $menuError }}</p>
+                    @endif
+                </div>
+            @elseif ($menuState === 'generation_failed')
+                <div data-testid="menu-generation-failed" class="rounded-2xl bg-red-50 p-5 text-red-700" role="alert">
+                    <p>{{ $menuError ?: i18n('homeMenu.generationFailed') }}</p>
+                </div>
+            @else
+                <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">{{ i18n('homeMenu.previousDays') }}</p>
+                <div class="mb-6 overflow-x-auto pb-2">
+                    <div class="flex min-w-max gap-2" role="tablist" aria-label="{{ i18n('homeMenu.previousDays') }}">
+                        @foreach ($menuDays as $day)
+                            <button type="button"
+                                    id="menu-tab-{{ $day['date'] }}"
+                                    role="tab"
+                                    aria-controls="menu-panel-{{ $day['date'] }}"
+                                    aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+                                    tabindex="{{ $loop->first ? '0' : '-1' }}"
+                                    data-menu-date="{{ $day['date'] }}"
+                                    class="rounded-lg border px-4 py-2 font-medium transition {{ $loop->first ? 'border-green-600 bg-green-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-green-300 hover:text-green-700' }}">
+                                {{ $day['label'] }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                @foreach ($menuDays as $day)
+                    <div id="menu-panel-{{ $day['date'] }}"
+                         data-menu-panel="{{ $day['date'] }}"
+                         role="tabpanel"
+                         aria-labelledby="menu-tab-{{ $day['date'] }}"
+                         class="rounded-2xl border border-gray-100 bg-gray-50 p-5 sm:p-6"
+                         @if (! $loop->first) hidden @endif>
+                        <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">{{ $day['label'] }}</h3>
+                                <p class="text-sm text-gray-500">{{ $day['date'] }}</p>
+                                @if ($day['menu'])
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        {{ i18n('homeMenu.source') }}: {{ $day['menu']->source }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            @if ($loop->first && $day['menu'])
+                                <div class="sm:text-right">
+                                    <p class="mb-2 text-sm font-medium text-green-700">{{ i18n('homeMenu.updated') }}</p>
+                                    <button data-testid="regenerate-menu-button"
+                                            type="button"
+                                            id="regenerate-menu-button"
+                                            class="w-full rounded-lg bg-green-600 px-4 py-2 font-semibold text-white transition hover:bg-green-700 disabled:cursor-wait disabled:opacity-60 sm:w-auto">
+                                        {{ i18n('homeMenu.regenerate') }}
+                                    </button>
+                                    <p id="regenerate-menu-error" class="hidden mt-2 max-w-sm text-sm text-red-600" role="alert"></p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="text-gray-700">
+                            @if ($day['html'])
+                                {!! $day['html'] !!}
+                            @elseif ($day['menu'])
+                                <p class="whitespace-pre-line">{{ $day['menu']->menu_content }}</p>
+                            @else
+                                <p>{{ i18n('homeMenu.noMenu') }}</p>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </section>
+        @endauth
+
         <!-- Join CTA -->
-        <div class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100">
+        @guest
+        <div data-testid="guest-signup-section" class="bg-white rounded-3xl shadow-xl overflow-hidden mb-10 border border-gray-100">
             <div class="grid grid-cols-1 lg:grid-cols-2">
                 <div class="p-12 bg-gradient-to-br from-green-600 to-emerald-700 text-white flex flex-col justify-center">
                     <h2 class="text-4xl font-bold mb-4 tracking-tight">{{ i18n('home.joinTitle') }}</h2>
@@ -88,11 +180,88 @@
                 </div>
             </div>
         </div>
+        @endguest
     </div>
 </div>
 
 <script>
     $(document).ready(function() {
+        const $tabs = $('[data-menu-date]');
+
+        function activateMenuTab($tab, shouldFocus) {
+            const selectedDate = $tab.data('menu-date');
+
+            $tabs
+                .attr('aria-selected', 'false')
+                .attr('tabindex', '-1')
+                .removeClass('border-green-600 bg-green-600 text-white')
+                .addClass('border-gray-200 bg-white text-gray-700');
+
+            $tab
+                .attr('aria-selected', 'true')
+                .attr('tabindex', '0')
+                .removeClass('border-gray-200 bg-white text-gray-700')
+                .addClass('border-green-600 bg-green-600 text-white');
+
+            $('[data-menu-panel]').prop('hidden', true);
+            $('[data-menu-panel="' + selectedDate + '"]').prop('hidden', false);
+
+            if (shouldFocus) {
+                $tab.trigger('focus');
+            }
+        }
+
+        $tabs.on('click', function() {
+            activateMenuTab($(this), false);
+        });
+
+        $tabs.on('keydown', function(event) {
+            const currentIndex = $tabs.index(this);
+            let targetIndex;
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    targetIndex = (currentIndex - 1 + $tabs.length) % $tabs.length;
+                    break;
+                case 'ArrowRight':
+                    targetIndex = (currentIndex + 1) % $tabs.length;
+                    break;
+                case 'Home':
+                    targetIndex = 0;
+                    break;
+                case 'End':
+                    targetIndex = $tabs.length - 1;
+                    break;
+                default:
+                    return;
+            }
+
+            event.preventDefault();
+            activateMenuTab($tabs.eq(targetIndex), true);
+        });
+
+        $('#regenerate-menu-button').on('click', function() {
+            const $button = $(this);
+            const $error = $('#regenerate-menu-error');
+            $button.prop('disabled', true).text(@json(i18n('homeMenu.regenerating')));
+            $error.addClass('hidden').text('');
+
+            gbFetch('/api/menu/regenerate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            })
+                .then(async response => ({ ok: response.ok, body: await response.json() }))
+                .then(({ ok, body }) => {
+                    if (! ok) throw new Error(body?.error?.message || @json(i18n('homeMenu.regenerateFailed')));
+                    location.reload();
+                })
+                .catch(error => {
+                    $error.removeClass('hidden').text(error.message || @json(i18n('homeMenu.regenerateFailed')));
+                    $button.prop('disabled', false).text(@json(i18n('homeMenu.regenerate')));
+                });
+        });
+
         $('#signup-form').on('submit', function(e) {
             e.preventDefault();
             const btn = $(this).find('button');
