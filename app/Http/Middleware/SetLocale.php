@@ -44,7 +44,9 @@ class SetLocale
 
         // 仅在 URL 显式带 ?lang= 时回写 cookie（让切换可持久化）
         if ($request->query('lang') !== null) {
-            cookie()->queue(cookie(self::COOKIE, $locale, 60 * 24 * 365, '/', null, false, false));
+            $response->headers->setCookie(
+                cookie(self::COOKIE, $locale, 60 * 24 * 365, '/', null, false, false, false, 'lax')
+            );
         }
 
         $response->headers->set('Content-Language', $locale);

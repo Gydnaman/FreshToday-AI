@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Locale is a harmless user preference and must be readable by SetLocale.
+        $middleware->encryptCookies(except: ['gb_locale']);
         // Sanctum SPA cookie 模式：启用 stateful API（session + csrf 中间件链）
         $middleware->statefulApi();
         $middleware->throttleApi();
