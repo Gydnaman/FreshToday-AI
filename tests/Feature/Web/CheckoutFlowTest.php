@@ -159,6 +159,104 @@ class CheckoutFlowTest extends TestCase
         $this->assertEquals('pending', $aliceOrder->fresh()->status->value);
     }
 
+    public function test_english_checkout_uses_split_date_inputs(): void
+    {
+        $this->actingAs($this->user)
+            ->withUnencryptedCookie('gb_locale', 'en')
+            ->get('/checkout')
+            ->assertOk()
+            ->assertSee('id="delivery-year"', false)
+            ->assertSee('placeholder="YYYY"', false)
+            ->assertSee('id="delivery-month"', false)
+            ->assertSee('placeholder="MM"', false)
+            ->assertSee('id="delivery-day"', false)
+            ->assertSee('placeholder="DD"', false)
+            ->assertSee('name="shipping_address[date]" type="hidden"', false)
+            ->assertDontSee('type="date"', false);
+    }
+
+    public function test_web_checkout_rejects_invalid_delivery_dates(): void
+    {
+        $this->actingAs($this->user);
+
+        foreach ([now()->subDay()->toDateString(), '2026-02-30'] as $date) {
+            $response = $this->from('/checkout')->post('/checkout/place', [
+                'shipping_address' => [
+                    'name' => 'Tester',
+                    'phone' => '+85298765432',
+                    'address' => '88 Test Street',
+                    'district' => 'NT',
+                    'date' => $date,
+                ],
+                'items' => json_encode([
+                    ['product_id' => $this->product->id, 'quantity' => 1],
+                ]),
+            ]);
+
+            $response
+                ->assertRedirect('/checkout')
+                ->assertSessionHasErrors('shipping_address.date');
+        }
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+
+    public function test_sandbox_card_checkout_marks_order_paid_and_redirects_to_success(): void
+    {
+        CartItem::create([
+            'user_id' => $this->user->id,
+            'product_id' => $this->product->id,
+            'quantity' => 1,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->withUnencryptedCookie('gb_locale', 'en')
+            ->post('/checkout/place', [
+                'shipping_address' => [
+                    'name' => 'Demo User',
+                    'phone' => '+85298765432',
+                    'address' => '88 Test Street',
+                    'district' => 'Kowloon',
+                    'date' => now()->addDay()->toDateString(),
+                ],
+                'payment_method' => 'sandbox_card',
+                'items' => json_encode([
+                    ['product_id' => $this->product->id, 'quantity' => 1],
+                ]),
+            ]);
+
+        $order = Order::latest()->firstOrFail();
+        $payment = $order->payments()->firstOrFail();
+
+        $response->assertRedirect('/orders?payment=success&order='.urlencode($order->order_no));
+        $this->assertSame('paid', $order->status->value);
+        $this->assertSame('succeeded', $payment->status);
+        $this->assertSame('sandbox_card', $payment->provider);
+        $this->assertSame(80.0, (float) $order->total_price);
+        $this->assertSame(0, $this->user->cartItems()->count());
+
+        $this->get($response->headers->get('Location'))
+            ->assertOk()
+            ->assertSee('Payment successful')
+            ->assertSee($order->order_no);
+    }
+
+    public function test_checkout_page_shows_sandbox_card_fields_without_submitting_card_data(): void
+    {
+        $this->actingAs($this->user)
+            ->withUnencryptedCookie('gb_locale', 'en')
+            ->get('/checkout')
+            ->assertOk()
+            ->assertSee('id="cardholder-name"', false)
+            ->assertSee('id="card-number"', false)
+            ->assertSee('4242 4242 4242 4242')
+            ->assertSee('name="payment_method" value="sandbox_card"', false)
+            ->assertDontSee('name="card_number"', false)
+            ->assertDontSee('name="cvv"', false);
+    }
+
+
     // ── helpers ─────────────────────────────────────────────
 
     /** 提单 helper：直接调 service，跳过 cart 路径以便测试聚焦 */

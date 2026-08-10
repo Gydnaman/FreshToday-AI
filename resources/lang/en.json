@@ -29,6 +29,22 @@
     "viewAll": "View All",
     "viewDetails": "View Details",
     "edit": "Edit",
+    "validation": {
+      "required": "Please fill out this field.",
+      "select": "Please select an option.",
+      "option": "Please select this option.",
+      "email": "Please enter a valid email address.",
+      "url": "Please enter a valid URL.",
+      "pattern": "Please use the required format.",
+      "number": "Please enter a valid number.",
+      "tooShort": "Please enter at least :min characters.",
+      "tooLong": "Please enter no more than :max characters.",
+      "min": "Please enter a value of :min or more.",
+      "max": "Please enter a value of :max or less.",
+      "step": "Please enter a valid value.",
+      "fallback": "Please check this field."
+    },
+
     "or": "or"
   },
   "home": {
@@ -162,6 +178,17 @@
     "districtNT": "New Territories",
     "districtLantau": "Lantau Island",
     "deliveryDate": "Preferred Delivery Date",
+    "datePlaceholder": "YYYY-MM-DD",
+    "dateFormatHint": "Use YYYY-MM-DD. The date cannot be earlier than today.",
+    "dateYearPlaceholder": "YYYY",
+    "dateMonthPlaceholder": "MM",
+    "dateDayPlaceholder": "DD",
+    "dateYearLabel": "Delivery year",
+    "dateMonthLabel": "Delivery month",
+    "dateDayLabel": "Delivery day",
+    "dateIncomplete": "Enter the full year, month, and day.",
+    "dateInvalid": "Enter a valid calendar date.",
+    "datePast": "Choose today or a later date.",
     "deliveryNotes": "Delivery Notes (optional)",
     "paymentMethod": "Payment Method",
     "methodCard": "Credit Card",
@@ -185,6 +212,14 @@
     "deliveryLabel": "Delivery",
     "totalLabel": "Total",
     "totalPayable": "Total Payable",
+    "sandboxCardNotice": "Demo payment only. No real charge will be made. Card details are checked only on this page and are not sent or saved.",
+    "cardholderPlaceholder": "Demo User",
+    "cardNumberPlaceholder": "4242 4242 4242 4242",
+    "expiryPlaceholder": "MM/YY",
+    "cvvPlaceholder": "123",
+    "testCardLabel": "Test card",
+    "cardExpiryInvalid": "Enter a valid expiry date that is not in the past.",
+
     "processing": "Processing..."
   },
     "auth": {
@@ -249,6 +284,9 @@
     }
   },
   "orders": {
+    "paymentSuccessTitle": "Payment successful",
+    "paymentSuccessDescription": "Your order was created and saved. Order number:",
+
     "title": "My Orders",
     "tabAll": "All Orders",
     "tabProcessing": "Processing",
@@ -380,6 +418,22 @@
     "contact": "Contact Us",
     "copyright": "© 2026 GreenBite HK. All rights reserved."
   },
+  "categories": {
+    "vegetables": "Vegetables",
+    "fruits": "Fruits",
+    "meat-eggs": "Meat & Eggs",
+    "seafood": "Seafood",
+    "staples": "Staples",
+    "seasonings": "Seasonings",
+    "leafy-greens": "Leafy Greens",
+    "root-vegetables": "Root Vegetables",
+    "seasonal": "Seasonal Produce",
+    "citrus": "Citrus",
+    "eggs": "Eggs",
+    "fresh-fish": "Fresh Fish",
+    "rice-noodle": "Rice & Noodles",
+    "sauces": "Sauces"
+  },
   "admin": {
     "login": {
       "title": "Admin Login",
@@ -394,6 +448,10 @@
       "emailPasswordRequired": "Please enter email and password."
     },
     "products": {
+      "success": {
+        "created": "Product created as a draft. Publish it when ready.",
+        "updated": "Product \":name\" was updated."
+      },
       "index": {
         "title": "Product Management",
         "create": "Create Product",

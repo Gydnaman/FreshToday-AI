@@ -62,6 +62,27 @@ class PaymentService
      * P0-3 修复：改用 INSERT + QueryException(UQ) + 重读模式
      * 解决 firstOrCreate 在并发下的业务事件丢失问题。
      */
+    public function completeSandboxPayment(Payment $payment): Payment
+    {
+        return DB::transaction(function () use ($payment) {
+            $payment->update([
+                'status' => 'succeeded',
+                'paid_at' => now(),
+                'raw_response' => ['mode' => 'sandbox_demo'],
+            ]);
+
+            app(OrderService::class)->transition(
+                $payment->order,
+                OrderStatus::Paid,
+                'sandbox_payment_succeeded',
+                ['payment' => $payment->fresh(), 'actor_type' => 'system'],
+            );
+
+            return $payment->fresh();
+        });
+    }
+
+
     public function handleWebhook(string $provider, array $payload, ?string $signature = null): void
     {
         $eventId = $payload['id'] ?? $payload['event_id'] ?? null;

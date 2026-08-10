@@ -32,4 +32,15 @@ class LocalePersistenceTest extends TestCase
             ->assertCookie('gb_locale', 'en', false)
             ->assertSee(i18n('auth.loginTitle', locale: 'en'));
     }
+    public function test_english_pages_include_localized_native_validation_messages(): void
+    {
+        $this->withUnencryptedCookie('gb_locale', 'en')
+            ->get('/login')
+            ->assertOk()
+            ->assertSee('Please select an option.')
+            ->assertSee('Please enter a valid email address.')
+            ->assertSee('gbLocalizedValidation');
+    }
+
+
 }

@@ -65,6 +65,67 @@
 
     <script>
         lucide.createIcons();
+        const gbValidationMessages = {
+            required: @json(i18n('common.validation.required')),
+            select: @json(i18n('common.validation.select')),
+            option: @json(i18n('common.validation.option')),
+            email: @json(i18n('common.validation.email')),
+            url: @json(i18n('common.validation.url')),
+            pattern: @json(i18n('common.validation.pattern')),
+            number: @json(i18n('common.validation.number')),
+            tooShort: @json(i18n('common.validation.tooShort')),
+            tooLong: @json(i18n('common.validation.tooLong')),
+            min: @json(i18n('common.validation.min')),
+            max: @json(i18n('common.validation.max')),
+            step: @json(i18n('common.validation.step')),
+            fallback: @json(i18n('common.validation.fallback')),
+        };
+
+        document.addEventListener('invalid', function(event) {
+            const field = event.target;
+            if (!field.validity || field.validity.valid || field.validity.customError) return;
+
+            let message = gbValidationMessages.fallback;
+            if (field.validity.valueMissing) {
+                if (field.tagName === 'SELECT') {
+                    message = gbValidationMessages.select;
+                } else if (field.type === 'checkbox' || field.type === 'radio') {
+                    message = gbValidationMessages.option;
+                } else {
+                    message = gbValidationMessages.required;
+                }
+            } else if (field.validity.typeMismatch) {
+                message = field.type === 'email' ? gbValidationMessages.email : gbValidationMessages.url;
+            } else if (field.validity.patternMismatch) {
+                message = gbValidationMessages.pattern;
+            } else if (field.validity.badInput) {
+                message = gbValidationMessages.number;
+            } else if (field.validity.tooShort) {
+                message = gbValidationMessages.tooShort.replace(':min', field.minLength);
+            } else if (field.validity.tooLong) {
+                message = gbValidationMessages.tooLong.replace(':max', field.maxLength);
+            } else if (field.validity.rangeUnderflow) {
+                message = gbValidationMessages.min.replace(':min', field.min);
+            } else if (field.validity.rangeOverflow) {
+                message = gbValidationMessages.max.replace(':max', field.max);
+            } else if (field.validity.stepMismatch) {
+                message = gbValidationMessages.step;
+            }
+
+            field.dataset.gbLocalizedValidation = 'true';
+            field.setCustomValidity(message);
+        }, true);
+
+        function clearLocalizedValidation(event) {
+            const field = event.target;
+            if (field.dataset && field.dataset.gbLocalizedValidation === 'true') {
+                field.setCustomValidity('');
+                delete field.dataset.gbLocalizedValidation;
+            }
+        }
+        document.addEventListener('input', clearLocalizedValidation, true);
+        document.addEventListener('change', clearLocalizedValidation, true);
+
 
         // ── Auth-aware cart count + auth area rendering ───────────────────
         $(document).ready(function() {

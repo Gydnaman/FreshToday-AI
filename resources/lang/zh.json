@@ -29,6 +29,22 @@
     "viewAll": "查看全部",
     "viewDetails": "查看详情",
     "edit": "编辑",
+    "validation": {
+      "required": "\u8bf7\u586b\u5199\u6b64\u5b57\u6bb5\u3002",
+      "select": "\u8bf7\u9009\u62e9\u4e00\u4e2a\u9009\u9879\u3002",
+      "option": "\u8bf7\u9009\u62e9\u6b64\u9009\u9879\u3002",
+      "email": "\u8bf7\u8f93\u5165\u6709\u6548\u7684\u7535\u5b50\u90ae\u7bb1\u5730\u5740\u3002",
+      "url": "\u8bf7\u8f93\u5165\u6709\u6548\u7684\u7f51\u5740\u3002",
+      "pattern": "\u8bf7\u4f7f\u7528\u8981\u6c42\u7684\u683c\u5f0f\u3002",
+      "number": "\u8bf7\u8f93\u5165\u6709\u6548\u7684\u6570\u5b57\u3002",
+      "tooShort": "\u8bf7\u81f3\u5c11\u8f93\u5165 :min \u4e2a\u5b57\u7b26\u3002",
+      "tooLong": "\u8bf7\u8f93\u5165\u4e0d\u8d85\u8fc7 :max \u4e2a\u5b57\u7b26\u3002",
+      "min": "\u8bf7\u8f93\u5165\u4e0d\u5c0f\u4e8e :min \u7684\u503c\u3002",
+      "max": "\u8bf7\u8f93\u5165\u4e0d\u5927\u4e8e :max \u7684\u503c\u3002",
+      "step": "\u8bf7\u8f93\u5165\u6709\u6548\u503c\u3002",
+      "fallback": "\u8bf7\u68c0\u67e5\u6b64\u5b57\u6bb5\u3002"
+    },
+
     "or": "或"
   },
   "home": {
@@ -162,6 +178,17 @@
     "districtNT": "新界",
     "districtLantau": "大屿山",
     "deliveryDate": "首选送货日期",
+    "datePlaceholder": "YYYY-MM-DD",
+    "dateFormatHint": "日期格式为 YYYY-MM-DD，且不能早于今天。",
+    "dateYearPlaceholder": "\u5e74",
+    "dateMonthPlaceholder": "\u6708",
+    "dateDayPlaceholder": "\u65e5",
+    "dateYearLabel": "\u914d\u9001\u5e74\u4efd",
+    "dateMonthLabel": "\u914d\u9001\u6708\u4efd",
+    "dateDayLabel": "\u914d\u9001\u65e5\u671f",
+    "dateIncomplete": "\u8bf7\u5b8c\u6574\u586b\u5199\u5e74\u3001\u6708\u3001\u65e5\u3002",
+    "dateInvalid": "\u8bf7\u8f93\u5165\u6709\u6548\u7684\u65e5\u671f\u3002",
+    "datePast": "\u8bf7\u9009\u62e9\u4eca\u5929\u6216\u4e4b\u540e\u7684\u65e5\u671f\u3002",
     "deliveryNotes": "送货备注（可选）",
     "paymentMethod": "支付方式",
     "methodCard": "信用卡",
@@ -185,6 +212,14 @@
     "deliveryLabel": "送货",
     "totalLabel": "总计",
     "totalPayable": "应付总额",
+    "sandboxCardNotice": "\u6f14\u793a\u652f\u4ed8\uff0c\u4e0d\u4f1a\u4ea7\u751f\u771f\u5b9e\u6263\u6b3e\u3002\u4fe1\u7528\u5361\u4fe1\u606f\u53ea\u5728\u5f53\u524d\u9875\u9762\u6821\u9a8c\uff0c\u4e0d\u4f1a\u53d1\u9001\u6216\u4fdd\u5b58\u3002",
+    "cardholderPlaceholder": "\u6f14\u793a\u7528\u6237",
+    "cardNumberPlaceholder": "4242 4242 4242 4242",
+    "expiryPlaceholder": "\u6708/\u5e74",
+    "cvvPlaceholder": "123",
+    "testCardLabel": "\u6d4b\u8bd5\u5361\u53f7",
+    "cardExpiryInvalid": "\u8bf7\u8f93\u5165\u6709\u6548\u4e14\u672a\u8fc7\u671f\u7684\u65e5\u671f\u3002",
+
     "processing": "处理中..."
   },
     "auth": {
@@ -249,6 +284,9 @@
     }
   },
   "orders": {
+    "paymentSuccessTitle": "\u652f\u4ed8\u6210\u529f",
+    "paymentSuccessDescription": "\u8ba2\u5355\u5df2\u521b\u5efa\u5e76\u4fdd\u5b58\u3002\u8ba2\u5355\u7f16\u53f7\uff1a",
+
     "title": "我的订单",
     "tabAll": "全部订单",
     "tabProcessing": "处理中",
@@ -380,6 +418,22 @@
     "contact": "联系我们",
     "copyright": "© 2026 GreenBite HK 版权所有"
   },
+  "categories": {
+    "vegetables": "蔬菜",
+    "fruits": "水果",
+    "meat-eggs": "肉蛋",
+    "seafood": "海鲜",
+    "staples": "主食",
+    "seasonings": "调味",
+    "leafy-greens": "叶菜",
+    "root-vegetables": "根茎",
+    "seasonal": "时令",
+    "citrus": "柑橘",
+    "eggs": "鸡蛋",
+    "fresh-fish": "鲜鱼",
+    "rice-noodle": "米面",
+    "sauces": "酱料"
+  },
   "admin": {
     "login": {
       "title": "管理员登录",
@@ -394,6 +448,10 @@
       "emailPasswordRequired": "请输入邮箱和密码"
     },
     "products": {
+      "success": {
+        "created": "产品已创建为草稿，可在准备好后手动上架。",
+        "updated": "产品“:name”已更新。"
+      },
       "index": {
         "title": "产品管理",
         "create": "新建产品",

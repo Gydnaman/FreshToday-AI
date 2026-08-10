@@ -9,6 +9,7 @@ use App\Services\PaymentService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Web 端结算页控制器（Sprint 1 + I-3 修复）
@@ -45,8 +46,9 @@ class CheckoutController extends Controller
             'shipping_address.phone' => 'required|string|max:32',
             'shipping_address.address' => 'required|string|max:255',
             'shipping_address.district' => 'required|string|max:64',
-            'shipping_address.date' => 'nullable|date',
+            'shipping_address.date' => 'nullable|date_format:Y-m-d|after_or_equal:today',
             'shipping_address.notes' => 'nullable|string|max:255',
+            'payment_method' => 'required|in:sandbox_card',
             'items' => 'required|array',
             'coupon_code' => 'nullable|string|max:32',
         ]);
@@ -85,21 +87,28 @@ class CheckoutController extends Controller
         ];
 
         try {
-            $order = $this->orderService->createOrder(
-                user: $request->user(),
-                items: $normalized,
-                shippingAddress: $shippingAddress,
-                couponCode: $data['coupon_code'] ?? null,
-            );
+            $order = DB::transaction(function () use ($request, $normalized, $shippingAddress, $data) {
+                $order = $this->orderService->createOrder(
+                    user: $request->user(),
+                    items: $normalized,
+                    shippingAddress: $shippingAddress,
+                    couponCode: $data['coupon_code'] ?? null,
+                );
 
-            // 清空购物车
-            $request->user()->cartItems()->delete();
+                if ((float) $order->total_price < 200) {
+                    $order->increment('total_price', 30);
+                    $order->refresh();
+                }
 
-            // 创建支付意图（直接调 PaymentService，不走 HTTP）
-            $returnUrl = rtrim(config('app.url') ?: $request->getSchemeAndHttpHost(), '/').'/orders';
-            $payment = $this->paymentService->createIntent($order, 'stripe', $returnUrl);
+                $returnUrl = rtrim(config('app.url') ?: $request->getSchemeAndHttpHost(), '/').'/orders';
+                $payment = $this->paymentService->createIntent($order, 'sandbox_card', $returnUrl);
+                $this->paymentService->completeSandboxPayment($payment);
+                $request->user()->cartItems()->delete();
 
-            return redirect()->away($returnUrl.'?payment_id='.$payment->id);
+                return $order->fresh();
+            });
+
+            return redirect()->to('/orders?payment=success&order='.urlencode($order->order_no));
         } catch (\Throwable $e) {
             $msg = method_exists($e, 'toApiPayload')
                 ? ($e->toApiPayload()['message'] ?? '订单创建失败')

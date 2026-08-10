@@ -48,6 +48,7 @@
     <form id="checkout-form" method="POST" action="{{ route('web.checkout.place') }}">
         @csrf
         <input type="hidden" name="items" id="items-field">
+        <input type="hidden" name="payment_method" value="sandbox_card">
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -104,8 +105,20 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('checkout.deliveryDate') }}</label>
-                                <input name="shipping_address[date]" type="date"
-                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                                <input id="delivery-date" name="shipping_address[date]" type="hidden" value="{{ old('shipping_address.date') }}">
+                                <div class="flex items-center gap-2" aria-label="{{ i18n('checkout.deliveryDate') }}">
+                                    <input id="delivery-year" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}"
+                                        placeholder="{{ i18n('checkout.dateYearPlaceholder') }}" aria-label="{{ i18n('checkout.dateYearLabel') }}" autocomplete="off"
+                                        class="w-2/5 min-w-0 px-3 py-3 text-center bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                                    <span class="text-gray-400" aria-hidden="true">/</span>
+                                    <input id="delivery-month" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}"
+                                        placeholder="{{ i18n('checkout.dateMonthPlaceholder') }}" aria-label="{{ i18n('checkout.dateMonthLabel') }}" autocomplete="off"
+                                        class="w-1/4 min-w-0 px-2 py-3 text-center bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                                    <span class="text-gray-400" aria-hidden="true">/</span>
+                                    <input id="delivery-day" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}"
+                                        placeholder="{{ i18n('checkout.dateDayPlaceholder') }}" aria-label="{{ i18n('checkout.dateDayLabel') }}" autocomplete="off"
+                                        class="w-1/4 min-w-0 px-2 py-3 text-center bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                                </div>
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('checkout.deliveryNotes') }} <span class="text-gray-400">{{ i18n('common.optional') }}</span></label>
@@ -128,8 +141,44 @@
                         </h2>
                         <div class="bg-blue-50 text-blue-700 text-xs rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
                             <i data-lucide="shield-check" class="w-4 h-4"></i>
-                            {!! i18n('checkout.sandboxNotice') !!}
+                            {{ i18n('checkout.sandboxCardNotice') }}
                         </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="cardholder-name" class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('checkout.nameOnCard') }}</label>
+                                <input id="cardholder-name" data-sandbox-card type="text" required maxlength="120" autocomplete="off"
+                                    placeholder="{{ i18n('checkout.cardholderPlaceholder') }}"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="card-number" class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('checkout.cardNumber') }}</label>
+                                <input id="card-number" data-sandbox-card type="text" required inputmode="numeric" maxlength="19"
+                                    pattern="[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}" autocomplete="off"
+                                    placeholder="{{ i18n('checkout.cardNumberPlaceholder') }}"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm tracking-wider">
+                            </div>
+                            <div>
+                                <label for="card-expiry" class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('checkout.expiry') }}</label>
+                                <input id="card-expiry" data-sandbox-card type="text" required inputmode="numeric" maxlength="5"
+                                    pattern="(0[1-9]|1[0-2])/[0-9]{2}" autocomplete="off"
+                                    placeholder="{{ i18n('checkout.expiryPlaceholder') }}"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                            </div>
+                            <div>
+                                <label for="card-cvv" class="block text-sm font-medium text-gray-700 mb-1">{{ i18n('checkout.cvv') }}</label>
+                                <input id="card-cvv" data-sandbox-card type="password" required inputmode="numeric" maxlength="3"
+                                    pattern="[0-9]{3}" autocomplete="off" placeholder="{{ i18n('checkout.cvvPlaceholder') }}"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 transition text-sm">
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-4 py-3 text-xs text-gray-600">
+                            <span>{{ i18n('checkout.testCardLabel') }}</span>
+                            <code class="font-semibold text-gray-800">4242 4242 4242 4242</code>
+                        </div>
+                        <p class="mt-3 text-xs text-gray-500 flex items-center gap-1.5">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i> {{ i18n('checkout.security') }}
+                        </p>
+
                         <div class="flex gap-3 mt-6">
                             <button type="button" onclick="goStep(1)" class="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition">← {{ i18n('common.back') }}</button>
                             <button type="button" onclick="goStep(3)" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3.5 rounded-xl font-bold hover:from-green-600 hover:to-emerald-700 transition shadow-lg shadow-green-500/25">
@@ -194,12 +243,133 @@ const checkoutI18n = {
     phoneLabel: @json(i18n('checkout.phoneLabel')),
     addressLabel: @json(i18n('checkout.addressLabel')),
     dateLabel: @json(i18n('checkout.dateLabel')),
+    dateIncomplete: @json(i18n('checkout.dateIncomplete')),
+    dateInvalid: @json(i18n('checkout.dateInvalid')),
+    datePast: @json(i18n('checkout.datePast')),
+    cardExpiryInvalid: @json(i18n('checkout.cardExpiryInvalid')),
     totalPayable: @json(i18n('checkout.totalPayable')),
 };
 
 $(document).ready(function() {
     const FREE_AT = 200, DELIVERY = 30;
     let currentStep = 1;
+    const dateYear = document.getElementById('delivery-year');
+    const dateMonth = document.getElementById('delivery-month');
+    const dateDay = document.getElementById('delivery-day');
+    const deliveryDate = document.getElementById('delivery-date');
+
+    function setDatePartBehavior(input, digits, nextInput = null, previousInput = null) {
+        input.addEventListener('input', () => {
+            input.value = input.value.replace(/\D/g, '').slice(0, digits);
+            input.setCustomValidity('');
+            if (input.value.length === digits && nextInput) nextInput.focus();
+            syncDeliveryDate(false);
+        });
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Backspace' && input.value === '' && previousInput) previousInput.focus();
+        });
+    }
+
+    function syncDeliveryDate(showErrors = true) {
+        [dateYear, dateMonth, dateDay].forEach(input => input.setCustomValidity(''));
+        const year = dateYear.value;
+        const month = dateMonth.value;
+        const day = dateDay.value;
+
+        if (!year && !month && !day) {
+            deliveryDate.value = '';
+            return true;
+        }
+        if (year.length !== 4 || month.length !== 2 || day.length !== 2) {
+            deliveryDate.value = '';
+            if (showErrors) {
+                const incompleteInput = year.length !== 4 ? dateYear : (month.length !== 2 ? dateMonth : dateDay);
+                incompleteInput.setCustomValidity(checkoutI18n.dateIncomplete);
+            }
+            return false;
+        }
+
+        const y = Number(year), m = Number(month), d = Number(day);
+        const selected = new Date(y, m - 1, d);
+        const isRealDate = y >= 1000 && m >= 1 && m <= 12 && d >= 1 &&
+            selected.getFullYear() === y && selected.getMonth() === m - 1 && selected.getDate() === d;
+        if (!isRealDate) {
+            deliveryDate.value = '';
+            if (showErrors) dateDay.setCustomValidity(checkoutI18n.dateInvalid);
+            return false;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selected < today) {
+            deliveryDate.value = '';
+            if (showErrors) dateDay.setCustomValidity(checkoutI18n.datePast);
+            return false;
+        }
+
+        deliveryDate.value = `${year}-${month}-${day}`;
+        return true;
+    }
+
+    setDatePartBehavior(dateYear, 4, dateMonth);
+    setDatePartBehavior(dateMonth, 2, dateDay, dateYear);
+    setDatePartBehavior(dateDay, 2, null, dateMonth);
+
+    dateYear.addEventListener('paste', event => {
+        const digits = event.clipboardData.getData('text').replace(/\D/g, '');
+        if (digits.length < 8) return;
+        event.preventDefault();
+        dateYear.value = digits.slice(0, 4);
+        dateMonth.value = digits.slice(4, 6);
+        dateDay.value = digits.slice(6, 8);
+        dateDay.focus();
+        syncDeliveryDate(false);
+    });
+
+    const savedDate = deliveryDate.value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (savedDate) {
+        dateYear.value = savedDate[1];
+        dateMonth.value = savedDate[2];
+        dateDay.value = savedDate[3];
+    }
+    const cardNumber = document.getElementById('card-number');
+    const cardExpiry = document.getElementById('card-expiry');
+    const cardCvv = document.getElementById('card-cvv');
+
+    cardNumber.addEventListener('input', () => {
+        const digits = cardNumber.value.replace(/\D/g, '').slice(0, 16);
+        cardNumber.value = digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+        cardNumber.setCustomValidity('');
+    });
+
+    cardExpiry.addEventListener('input', () => {
+        const digits = cardExpiry.value.replace(/\D/g, '').slice(0, 4);
+        cardExpiry.value = digits.length > 2 ? digits.slice(0, 2) + '/' + digits.slice(2) : digits;
+        cardExpiry.setCustomValidity('');
+    });
+
+    cardCvv.addEventListener('input', () => {
+        cardCvv.value = cardCvv.value.replace(/\D/g, '').slice(0, 3);
+        cardCvv.setCustomValidity('');
+    });
+
+    function validateCardExpiry(showErrors = true) {
+        cardExpiry.setCustomValidity('');
+        const match = cardExpiry.value.match(/^(0[1-9]|1[0-2])\/(\d{2})$/);
+        if (!match) {
+            if (showErrors) cardExpiry.setCustomValidity(checkoutI18n.cardExpiryInvalid);
+            return false;
+        }
+
+        const now = new Date();
+        const month = Number(match[1]);
+        const year = 2000 + Number(match[2]);
+        const valid = year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1);
+        if (!valid && showErrors) cardExpiry.setCustomValidity(checkoutI18n.cardExpiryInvalid);
+        return valid;
+    }
+
+
 
     // ── 登录态判断（session 模式：调 /api/me）─────────────────────
     fetch('/api/me', { credentials: 'include' })
@@ -266,17 +436,25 @@ $(document).ready(function() {
 
     // ── Step navigation ──────────────────────────────────────────────
     window.goStep = function(n) {
-        // session 认证由后端 auth middleware 拦截，前端不需额外检查
         if (n === 2) {
-            // 校验 delivery 表单
-            const form = document.getElementById('checkout-form');
-            if (!form.checkValidity()) {
-                form.reportValidity();
+            syncDeliveryDate(true);
+            const deliveryFields = Array.from(document.querySelectorAll('#form-step-1 input:not([type="hidden"]), #form-step-1 select'));
+            const invalidDelivery = deliveryFields.find(field => !field.checkValidity());
+            if (invalidDelivery) {
+                invalidDelivery.reportValidity();
                 return;
             }
             $('#step1-err').addClass('hidden');
         }
+
         if (n === 3) {
+            validateCardExpiry(true);
+            const paymentFields = Array.from(document.querySelectorAll('#form-step-2 [data-sandbox-card]'));
+            const invalidPayment = paymentFields.find(field => !field.checkValidity());
+            if (invalidPayment) {
+                invalidPayment.reportValidity();
+                return;
+            }
             buildConfirm();
         }
 
@@ -288,6 +466,8 @@ $(document).ready(function() {
         updateStepUI(n);
         $('html,body').animate({scrollTop:0}, 200);
     };
+
+
 
     function updateStepUI(n) {
         [1,2,3].forEach(i => {
@@ -335,6 +515,12 @@ $(document).ready(function() {
     }
 
     $('#checkout-form').on('submit', function(e) {
+        if (!syncDeliveryDate(true)) {
+            e.preventDefault();
+            this.reportValidity();
+            return;
+        }
+
         const btn = $('#place-order-btn');
         btn.prop('disabled', true).html('<i data-lucide="loader" class="animate-spin w-5 h-5 mr-2"></i> ' + checkoutI18n.processing);
         lucide.createIcons();

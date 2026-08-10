@@ -139,4 +139,17 @@ class PaymentServiceTest extends TestCase
         // 关键断言：payment 不应变 refunded
         $this->assertNotEquals('refunded', $payment->fresh()->status, 'payment should not be refunded when guard fails');
     }
+    public function test_sandbox_payment_completes_order_without_card_data(): void
+    {
+        $payment = $this->service->createIntent($this->order, 'sandbox_card', '/orders');
+
+        $completed = $this->service->completeSandboxPayment($payment);
+
+        $this->assertSame('succeeded', $completed->status);
+        $this->assertNotNull($completed->paid_at);
+        $this->assertSame(['mode' => 'sandbox_demo'], $completed->raw_response);
+        $this->assertSame(OrderStatus::Paid, $this->order->fresh()->status);
+    }
+
+
 }

@@ -13,6 +13,17 @@
             </a>
         </div>
 
+        @if(request('payment') === 'success')
+        <div class="mb-8 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-green-800 flex items-start gap-3" role="status">
+            <i data-lucide="circle-check-big" class="w-6 h-6 mt-0.5 flex-shrink-0"></i>
+            <div>
+                <p class="font-bold">{{ i18n('orders.paymentSuccessTitle') }}</p>
+                <p class="text-sm mt-0.5">{{ i18n('orders.paymentSuccessDescription') }} <strong>{{ request('order') }}</strong></p>
+            </div>
+        </div>
+        @endif
+
+
         <!-- Order Status Tabs -->
         <div class="flex gap-2 mb-8 border-b border-gray-200" id="order-tabs">
             <button class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 transition -mb-px text-green-700 border-green-600" data-target="all">{{ i18n('orders.tabAll') }}</button>
@@ -35,6 +46,11 @@
                                 <span class="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
                                     <i data-lucide="check-circle" class="w-3 h-3"></i> {{ i18n('orders.statusDelivered') }}
                                 </span>
+                            @elseif(strtolower($order->status) === 'paid')
+                                <span class="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                                    <i data-lucide="badge-check" class="w-3 h-3"></i> {{ i18n('orders.statusPaid') }}
+                                </span>
+
                             @else
                                 <span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
                                     <i data-lucide="truck" class="w-3 h-3"></i> {{ i18n('orders.statusOutForDelivery') }}
