@@ -28,6 +28,13 @@ class ProductImageUrlTest extends TestCase
         $this->assertSame('http://localhost/storage/products/2026/07/04/test.jpg', $product->image_url);
     }
 
+    public function test_image_url_uses_public_path_for_versioned_product_image(): void
+    {
+        $product = new Product(['image' => 'images/products/seed/eggs.jpg']);
+
+        $this->assertSame('http://localhost/images/products/seed/eggs.jpg', $product->image_url);
+    }
+
     public function test_image_url_included_in_json_serialization(): void
     {
         $product = new Product([

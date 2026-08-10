@@ -72,7 +72,8 @@ class Product extends Model
 
     /**
      * 返回可在 <img src="..."> 中直接使用的图片 URL。
-     * 外部 URL 直接返回；本地上传路径自动拼接 /storage 前缀。
+     * 外部 URL 直接返回；随代码发布的图片从 /images 读取；
+     * 管理员上传的图片路径自动拼接 /storage 前缀。
      */
     public function getImageUrlAttribute(): ?string
     {
@@ -82,6 +83,10 @@ class Product extends Model
 
         if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
             return $this->image;
+        }
+
+        if (str_starts_with($this->image, 'images/')) {
+            return asset($this->image);
         }
 
         return asset('storage/'.$this->image);
