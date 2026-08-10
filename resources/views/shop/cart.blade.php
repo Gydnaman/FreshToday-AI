@@ -124,7 +124,7 @@ $(document).ready(function() {
     const DELIVERY_FEE     = 30;
     const FREE_DELIVERY_AT = 200;
     const token = localStorage.getItem('gb_token');
-    const isLoggedIn = !!token;
+    let isLoggedIn = false;
 
     // 兜底：guest 用 localStorage；登录后从 /api/cart 拉真实数据
     function localCart() {
@@ -141,8 +141,25 @@ $(document).ready(function() {
 
     // 拉取数据
     function fetchData() {
-        if (isLoggedIn) {
-            return gbFetch('/api/cart').then(r => r.json()).then(d => {
+        const headers = { 'Accept': 'application/json' };
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        return fetch('/api/cart', {
+            credentials: 'include',
+            headers: headers,
+        }).then(r => {
+            if (r.status === 401) {
+                return null;
+            }
+            if (!r.ok) {
+                throw new Error('CART_LOAD_FAILED');
+            }
+            return r.json();
+        }).then(d => {
+            if (d) {
+                isLoggedIn = true;
                 items = (d.items || []).map(it => ({
                     id: it.id,                 // cart_item id
                     product_id: it.product_id,
@@ -152,12 +169,14 @@ $(document).ready(function() {
                     image: it.product.image_url,
                 }));
                 $('#cart-count').text(d.item_count || 0);
-            });
-        }
-        // guest: 保留旧 localStorage 逻辑（按 name 聚合）
-        const agg = aggregateLocal(localCart());
-        items = agg.map((a, i) => ({ id: 'local-' + i, name: a.name, price: a.price, qty: a.qty, image: null }));
-        return Promise.resolve();
+                return;
+            }
+
+            // guest: 保留旧 localStorage 逻辑（按 name 聚合）
+            isLoggedIn = false;
+            const agg = aggregateLocal(localCart());
+            items = agg.map((a, i) => ({ id: 'local-' + i, name: a.name, price: a.price, qty: a.qty, image: null }));
+        });
     }
 
     function aggregateLocal(cart) {
@@ -232,6 +251,7 @@ $(document).ready(function() {
         const remaining  = Math.max(0, FREE_DELIVERY_AT - subtotal);
         const pct        = Math.min(100, (subtotal / FREE_DELIVERY_AT) * 100);
 
+        $('#cart-count').text(itemCount);
         $('#summary-count').text(itemCount);
         $('#summary-subtotal').text(subtotal.toFixed(2));
         $('#summary-delivery').text(delivery === 0 ? '🎉 ' + cartI18n.free : `HK$${delivery.toFixed(2)}`);
@@ -266,6 +286,10 @@ $(document).ready(function() {
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
+    function isRemoteItem(id) {
+        return isLoggedIn && !String(id).startsWith('local-');
+    }
+
     window.changeQty = function(id, delta) {
         const item = items.find(i => String(i.id) === String(id));
         if (!item) return;
@@ -274,7 +298,7 @@ $(document).ready(function() {
             return window.removeItem(id);
         }
 
-        if (isLoggedIn && typeof id === 'number') {
+        if (isRemoteItem(id)) {
             gbFetch(`/api/cart/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -289,7 +313,7 @@ $(document).ready(function() {
         } else {
             // guest: 通过 localCart 增减
             const cart = localCart();
-            const it = items.find(i => i.id === id);
+            const it = item;
             if (!it) return;
             const diff = newQty - it.qty;
             it.qty = newQty;
@@ -310,12 +334,12 @@ $(document).ready(function() {
         const item = items.find(i => String(i.id) === String(id));
         if (!item) return;
 
-        if (isLoggedIn && typeof id === 'number') {
+        if (isRemoteItem(id)) {
             if (!confirm(cartI18n.deleteConfirm)) return;
             gbFetch(`/api/cart/${id}`, { method: 'DELETE' })
                 .then(r => {
                     if (!r.ok) throw new Error(cartI18n.deleteFailed);
-                    items = items.filter(i => i.id !== id);
+                    items = items.filter(i => String(i.id) !== String(id));
                     render();
                 });
         } else {
@@ -323,7 +347,7 @@ $(document).ready(function() {
             let cart = localCart();
             cart = cart.filter(x => x.name !== item.name);
             saveLocalCart(cart);
-            items = items.filter(i => i.id !== id);
+            items = items.filter(i => String(i.id) !== String(id));
             render();
         }
     };

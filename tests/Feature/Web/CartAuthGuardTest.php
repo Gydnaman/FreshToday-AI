@@ -144,4 +144,19 @@ class CartAuthGuardTest extends TestCase
             CartItem::where('user_id', $this->bob->id)->count()
         );
     }
+
+    public function test_cart_page_checks_session_api_before_guest_storage(): void
+    {
+        $this->actingAs($this->alice)
+            ->get('/cart')
+            ->assertOk()
+            ->assertSee("return fetch('/api/cart'", false)
+            ->assertSee("credentials: 'include'", false)
+            ->assertSee('if (r.status === 401)', false)
+            ->assertSee('if (isRemoteItem(id))', false)
+            ->assertSee('String(i.id) !== String(id)', false)
+            ->assertDontSee("typeof id === 'number'", false)
+            ->assertSee("$('#cart-count').text(itemCount)", false)
+            ->assertDontSee('const isLoggedIn = !!token', false);
+    }
 }
