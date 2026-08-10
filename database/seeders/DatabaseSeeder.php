@@ -112,25 +112,25 @@ class DatabaseSeeder extends Seeder
 
         $products = [
             // 葉菜 / 有机
-            ['cat' => 'leafy-greens', 'name' => '本地有機菜心',     'price' => 28.00, 'stock' => 50, 'is_organic' => 1, 'origin' => '元朗八鄉農場',     'carbon' => 0.310, 'image' => 'images/products/seed/choysum.jpg', 'desc' => '當日採摘，水嫩清甜，香港本地有機認證。'],
-            ['cat' => 'leafy-greens', 'name' => '本地有機白菜',     'price' => 24.00, 'stock' => 60, 'is_organic' => 1, 'origin' => '元朗新田農場',     'carbon' => 0.290, 'image' => 'images/products/seed/cabbage.jpg', 'desc' => '本地當造白菜，適合清炒或滾湯。'],
+            ['cat' => 'leafy-greens', 'name' => '本地有機菜心',     'price' => 28.00, 'stock' => 50, 'is_organic' => 1, 'origin' => '元朗八鄉農場',     'carbon' => 0.310, 'image' => 'images/products/catalog-v2/choysum.jpg', 'desc' => '當日採摘，水嫩清甜，香港本地有機認證。'],
+            ['cat' => 'leafy-greens', 'name' => '本地有機白菜',     'price' => 24.00, 'stock' => 60, 'is_organic' => 1, 'origin' => '元朗新田農場',     'carbon' => 0.290, 'image' => 'images/products/catalog-v2/napa-cabbage.jpg', 'desc' => '本地當造白菜，適合清炒或滾湯。'],
             ['cat' => 'leafy-greens', 'name' => '本地西洋菜',       'price' => 22.00, 'stock' => 40, 'is_organic' => 0, 'origin' => '粉嶺鶴藪',         'carbon' => 0.250, 'image' => 'images/products/seed/spinach.jpg', 'desc' => '鮮嫩西洋菜，廣東滾湯必備。'],
             // 根莖
             ['cat' => 'root-vegetables', 'name' => '本地有機紅蘿蔔',  'price' => 18.00, 'stock' => 80, 'is_organic' => 1, 'origin' => '打鼓嶺農場',       'carbon' => 0.180, 'image' => 'images/products/seed/carrot.jpg', 'desc' => '帶泥土清香，適合煲湯或榨汁。'],
-            ['cat' => 'root-vegetables', 'name' => '本地黃薑',        'price' => 32.00, 'stock' => 30, 'is_organic' => 0, 'origin' => '大埔林村',         'carbon' => 0.220, 'image' => 'images/products/seed/ginger.jpg', 'desc' => '新鮮黃薑，辛香濃郁。'],
-            ['cat' => 'root-vegetables', 'name' => '本地紫薯',        'price' => 38.00, 'stock' => 0,  'is_organic' => 1, 'origin' => '西貢北潭涌',       'carbon' => 0.270, 'image' => 'images/products/seed/potato.jpg', 'desc' => '當造紫薯已售罄，下批預計下週到貨。'],
+            ['cat' => 'root-vegetables', 'name' => '本地黃薑',        'price' => 32.00, 'stock' => 30, 'is_organic' => 0, 'origin' => '大埔林村',         'carbon' => 0.220, 'image' => 'images/products/catalog-v2/ginger.jpg', 'desc' => '新鮮黃薑，辛香濃郁。'],
+            ['cat' => 'root-vegetables', 'name' => '本地紫薯',        'price' => 38.00, 'stock' => 0,  'is_organic' => 1, 'origin' => '西貢北潭涌',       'carbon' => 0.270, 'image' => 'images/products/catalog-v2/purple-sweet-potato.jpg', 'desc' => '當造紫薯已售罄，下批預計下週到貨。'],
             // 時令水果
-            ['cat' => 'seasonal',   'name' => '本地沙田柚',         'price' => 48.00, 'stock' => 25, 'is_organic' => 0, 'origin' => '沙田瀝源',         'carbon' => 0.420, 'image' => 'images/products/seed/grapefruit.jpg', 'desc' => '果肉飽滿多汁，秋季限定。'],
-            ['cat' => 'seasonal',   'name' => '本地楊桃',           'price' => 35.00, 'stock' => 20, 'is_organic' => 1, 'origin' => '大埔大埔滘',       'carbon' => 0.380, 'image' => 'images/products/seed/guava.jpg', 'desc' => '切片後星形漂亮，酸甜開胃。'],
+            ['cat' => 'seasonal',   'name' => '本地沙田柚',         'price' => 48.00, 'stock' => 25, 'is_organic' => 0, 'origin' => '沙田瀝源',         'carbon' => 0.420, 'image' => 'images/products/catalog-v2/pomelo.jpg', 'desc' => '果肉飽滿多汁，秋季限定。'],
+            ['cat' => 'seasonal',   'name' => '本地楊桃',           'price' => 35.00, 'stock' => 20, 'is_organic' => 1, 'origin' => '大埔大埔滘',       'carbon' => 0.380, 'image' => 'images/products/catalog-v2/starfruit.jpg', 'desc' => '切片後星形漂亮，酸甜開胃。'],
             ['cat' => 'seasonal',   'name' => '本地木瓜',           'price' => 42.00, 'stock' => 18, 'is_organic' => 1, 'origin' => '元朗流浮山',       'carbon' => 0.350, 'image' => 'images/products/seed/papaya.jpg', 'desc' => '完熟木瓜，鮮甜軟糯。'],
             // 柑橘
             ['cat' => 'citrus',     'name' => '本地有機臍橙',       'price' => 56.00, 'stock' => 30, 'is_organic' => 1, 'origin' => '北區蓮麻坑',       'carbon' => 0.480, 'image' => 'images/products/seed/orange.jpg', 'desc' => '皮薄多汁，維 C 豐富。'],
-            ['cat' => 'citrus',     'name' => '本地青檸',           'price' => 28.00, 'stock' => 40, 'is_organic' => 0, 'origin' => '長洲',             'carbon' => 0.260, 'image' => 'images/products/seed/lemon.jpg', 'desc' => '酸味濃郁，調飲、海鮮必備。'],
+            ['cat' => 'citrus',     'name' => '本地青檸',           'price' => 28.00, 'stock' => 40, 'is_organic' => 0, 'origin' => '長洲',             'carbon' => 0.260, 'image' => 'images/products/catalog-v2/lime.jpg', 'desc' => '酸味濃郁，調飲、海鮮必備。'],
             // 雞蛋
-            ['cat' => 'eggs',       'name' => '本地走地雞蛋（10 隻）', 'price' => 68.00, 'stock' => 50, 'is_organic' => 1, 'origin' => '元朗雞場',         'carbon' => 1.250, 'image' => 'images/products/seed/eggs.jpg', 'desc' => '放山雞隻，蛋香濃郁。'],
+            ['cat' => 'eggs',       'name' => '本地走地雞蛋（10 隻）', 'price' => 68.00, 'stock' => 50, 'is_organic' => 1, 'origin' => '元朗雞場',         'carbon' => 1.250, 'image' => 'images/products/catalog-v2/eggs.jpg', 'desc' => '放山雞隻，蛋香濃郁。'],
             ['cat' => 'eggs',       'name' => '本地初生蛋（6 隻）',  'price' => 58.00, 'stock' => 0,  'is_organic' => 1, 'origin' => '打鼓嶺',           'carbon' => 1.180, 'image' => 'images/products/seed/eggs2.jpg', 'desc' => '初生蛋體型細小，蛋味極濃（已售罄）。'],
             // 鮮魚
-            ['cat' => 'fresh-fish', 'name' => '本地新鮮烏頭',       'price' => 88.00, 'stock' => 12, 'is_organic' => 0, 'origin' => '西貢漁民直送',     'carbon' => 2.100, 'image' => 'images/products/seed/fish.jpg', 'desc' => '當日捕撈，肉質鮮甜。'],
+            ['cat' => 'fresh-fish', 'name' => '本地新鮮烏頭',       'price' => 88.00, 'stock' => 12, 'is_organic' => 0, 'origin' => '西貢漁民直送',     'carbon' => 2.100, 'image' => 'images/products/catalog-v2/mullet.jpg', 'desc' => '當日捕撈，肉質鮮甜。'],
             ['cat' => 'fresh-fish', 'name' => '本地龍躉柳',         'price' => 168.00, 'stock' => 8,  'is_organic' => 0, 'origin' => '南丫島',           'carbon' => 3.500, 'image' => 'images/products/seed/fish2.jpg', 'desc' => '厚切魚柳，適合清蒸。'],
             ['cat' => 'fresh-fish', 'name' => '本地蝦仁',           'price' => 98.00, 'stock' => 20, 'is_organic' => 0, 'origin' => '香港仔魚市場',     'carbon' => 4.200, 'image' => 'images/products/seed/shrimp.jpg', 'desc' => '急凍新鮮蝦仁，已剝殼。'],
             // 米麵
@@ -138,11 +138,11 @@ class DatabaseSeeder extends Seeder
             ['cat' => 'rice-noodle', 'name' => '本地蝦子麵',         'price' => 32.00, 'stock' => 60, 'is_organic' => 0, 'origin' => '長洲老字號',       'carbon' => 0.880, 'image' => 'images/products/seed/noodles.jpg', 'desc' => '傳統竹昇麵，爽口彈牙。'],
             ['cat' => 'rice-noodle', 'name' => '本地米線',           'price' => 28.00, 'stock' => 45, 'is_organic' => 0, 'origin' => '大埔',             'carbon' => 0.920, 'image' => 'images/products/seed/ricenoodle.jpg', 'desc' => '無添加米線，健康之選。'],
             // 醬料
-            ['cat' => 'sauces',     'name' => '本地手工豉油',       'price' => 45.00, 'stock' => 35, 'is_organic' => 0, 'origin' => '九龍城老醬園',     'carbon' => 0.520, 'image' => 'images/products/seed/soysauce.jpg', 'desc' => '古法釀造 180 天，醬香醇厚。'],
-            ['cat' => 'sauces',     'name' => '本地XO醬',           'price' => 88.00, 'stock' => 20, 'is_organic' => 0, 'origin' => '上環老牌醬廠',     'carbon' => 0.950, 'image' => 'images/products/seed/sauce.jpg', 'desc' => '瑤柱蝦米熬製，送禮自用皆宜。'],
-            ['cat' => 'sauces',     'name' => '本地蜜糖（龍眼蜜）',  'price' => 120.00, 'stock' => 15, 'is_organic' => 1, 'origin' => '沙頭角蜂農',       'carbon' => 0.380, 'image' => 'images/products/seed/honey.jpg', 'desc' => '100% 純天然龍眼蜜，無添加。'],
+            ['cat' => 'sauces',     'name' => '本地手工豉油',       'price' => 45.00, 'stock' => 35, 'is_organic' => 0, 'origin' => '九龍城老醬園',     'carbon' => 0.520, 'image' => 'images/products/catalog-v2/soysauce.jpg', 'desc' => '古法釀造 180 天，醬香醇厚。'],
+            ['cat' => 'sauces',     'name' => '本地XO醬',           'price' => 88.00, 'stock' => 20, 'is_organic' => 0, 'origin' => '上環老牌醬廠',     'carbon' => 0.950, 'image' => 'images/products/catalog-v2/xo-sauce.jpg', 'desc' => '瑤柱蝦米熬製，送禮自用皆宜。'],
+            ['cat' => 'sauces',     'name' => '本地蜜糖（龍眼蜜）',  'price' => 120.00, 'stock' => 15, 'is_organic' => 1, 'origin' => '沙頭角蜂農',       'carbon' => 0.380, 'image' => 'images/products/catalog-v2/honey.jpg', 'desc' => '100% 純天然龍眼蜜，無添加。'],
             // 補充素食
-            ['cat' => 'rice-noodle', 'name' => '本地有機豆腐 3 盒裝',  'price' => 38.00, 'stock' => 30, 'is_organic' => 1, 'origin' => '元朗豆腐廠',       'carbon' => 0.680, 'image' => 'images/products/seed/tofu.jpg', 'desc' => '本地黃豆即日製，嫩滑清香。'],
+            ['cat' => 'rice-noodle', 'name' => '本地有機豆腐 3 盒裝',  'price' => 38.00, 'stock' => 30, 'is_organic' => 1, 'origin' => '元朗豆腐廠',       'carbon' => 0.680, 'image' => 'images/products/catalog-v2/tofu.jpg', 'desc' => '本地黃豆即日製，嫩滑清香。'],
             ['cat' => 'root-vegetables', 'name' => '本地粟米',       'price' => 20.00, 'stock' => 0,  'is_organic' => 0, 'origin' => '屯門',             'carbon' => 0.230, 'image' => 'images/products/seed/corn.jpg', 'desc' => '本地甜粟米（已售罄，請預購下批）。'],
         ];
 

@@ -19,7 +19,11 @@ class ProductSeedImageTest extends TestCase
         $this->assertCount(24, $products);
 
         foreach ($products as $product) {
-            $this->assertStringStartsWith('images/products/seed/', $product->image, $product->name);
+            $this->assertMatchesRegularExpression(
+                '#^images/products/(seed|catalog-v2)/[^/]+\.jpg$#',
+                $product->image,
+                $product->name,
+            );
             $this->assertFileExists(public_path($product->image), $product->name);
         }
     }
